@@ -264,7 +264,7 @@ export default function PhotoPager() {
             width: PHOTO_WIDTH,
             height: PHOTO_HEIGHT,
             overflow: "hidden",
-            borderRadius: 20,
+            borderRadius: 0,
             background: "#000",
             cursor: "grab",
             touchAction: "pan-y",
@@ -289,20 +289,10 @@ export default function PhotoPager() {
                   height: PHOTO_HEIGHT,
                   flexShrink: 0,
                   marginRight: i < PHOTO_COUNT - 1 ? GAP : 0,
-                  background: GRAY,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-                  fontSize: 128,
-                  fontWeight: 300,
-                  color: NUM_COLOR,
-                  letterSpacing: "-0.05em",
+                  background: `#111 url(/photos/portrait-${String(i + 1)}.webp) center/cover no-repeat`,
                   willChange: "transform",
                 }}
-              >
-                {String(i + 1).padStart(2, "0")}
-              </div>
+              />
             ))}
           </div>
         </div>
