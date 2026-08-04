@@ -2,37 +2,82 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 
-/* ------------------------------------------------------------------ */
-/*  Constants                                                          */
-/* ------------------------------------------------------------------ */
-
 const PHOTO_WIDTH = 340;
 const PHOTO_HEIGHT = 480;
-const GAP = 20; // black gap between photos
-const STRIDE = PHOTO_WIDTH + GAP; // per-photo horizontal slot
+const GAP = 20;
+const STRIDE = PHOTO_WIDTH + GAP;
 const PHOTO_COUNT = 8;
-
-const SLOWDOWN = 0.3; // incoming-layer lag factor
-const COMMIT_RATIO = 0.28; // distance threshold to advance
-const VELOCITY_THR = 8; // px/frame flick threshold
-
-const GRAY = "#c8c8c8";
-const NUM_COLOR = "#8a8a8a";
-
-/* ------------------------------------------------------------------ */
-/*  Physics helpers                                                    */
-/* ------------------------------------------------------------------ */
+const PARALLAX_AMOUNT = 30;
+const COMMIT_RATIO = 0.25;
+const VELOCITY_THR = 500;
+const SPRING_K = 350;
+const SPRING_D = 38;
 
 const rubberBand = (offset, dim) =>
   (1 - 1 / (Math.abs(offset) / dim + 1)) * dim * Math.sign(offset);
 
-/* ------------------------------------------------------------------ */
-/*  Component                                                          */
-/* ------------------------------------------------------------------ */
+function Odometer({ value, total }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "0.35em",
+        fontVariantNumeric: "tabular-nums",
+        fontSize: 13,
+        fontWeight: 500,
+        color: "#666",
+        letterSpacing: "0.02em",
+        lineHeight: 1,
+      }}
+      aria-hidden="true"
+    >
+      <div
+        style={{ height: "1em", overflow: "hidden", display: "inline-block" }}
+      >
+        <div
+          style={{
+            transform: `translateY(-${value - 1}em)`,
+            transition: "transform 500ms cubic-bezier(0.16, 1, 0.3, 1)",
+          }}
+        >
+          {Array.from({ length: total }).map((_, i) => (
+            <div
+              key={i}
+              style={{ height: "1em", lineHeight: 1, color: "#fff" }}
+            >
+              {i + 1}
+            </div>
+          ))}
+        </div>
+      </div>
+      <span>of {total}</span>
+    </div>
+  );
+}
+
+function Chevron({ direction }) {
+  const d = direction === "left" ? "M10 12L6 8L10 4" : "M6 4L10 8L6 12";
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d={d} />
+    </svg>
+  );
+}
 
 export default function PhotoPager() {
   const trackRef = useRef(null);
-  const photoRefs = useRef([]);
+  const imgRefs = useRef([]);
 
   const currentIndexRef = useRef(0);
   const dragOffsetRef = useRef(0);
@@ -42,64 +87,60 @@ export default function PhotoPager() {
   const lastMoveTimeRef = useRef(0);
   const lastMoveXRef = useRef(0);
   const velocityRef = useRef(0);
+  const displayIdxRef = useRef(1);
 
   const [displayIdx, setDisplayIdx] = useState(1);
+  const [committedIdx, setCommittedIdx] = useState(0);
+  const [isPressed, setIsPressed] = useState(false);
 
-  /* --- write current state to the DOM --- */
   const applyState = useCallback(() => {
     const N = currentIndexRef.current;
     const rawOff = dragOffsetRef.current;
 
-    // rubber-band at first/last photo
     const atLeftEdge = N === 0 && rawOff > 0;
     const atRightEdge = N === PHOTO_COUNT - 1 && rawOff < 0;
     const isEdge = atLeftEdge || atRightEdge;
-
     const offset = isEdge ? rubberBand(rawOff, PHOTO_WIDTH) : rawOff;
 
-    // track base translate
     if (trackRef.current) {
       const trackX = -N * STRIDE + offset;
       trackRef.current.style.transform = `translate3d(${trackX}px, 0, 0)`;
     }
 
-    // per-photo parallax offset
-    // incoming layer lags behind the finger by SLOWDOWN, fading to 0 at full commit
-    const fade = 1 - Math.min(1, Math.abs(rawOff) / STRIDE);
     for (let i = 0; i < PHOTO_COUNT; i++) {
-      const el = photoRefs.current[i];
-      if (!el) continue;
+      const imgEl = imgRefs.current[i];
+      if (!imgEl) continue;
+      const progress = ((i - N) * STRIDE + offset) / STRIDE;
+      const shift = -progress * PARALLAX_AMOUNT;
+      imgEl.style.transform = `translate3d(${shift}px, 0, 0)`;
+    }
 
-      let extra = 0;
-      if (!isEdge && rawOff !== 0) {
-        const M = i - N; // signed distance to current
-        const incoming =
-          (M > 0 && rawOff < 0) || // revealing photos to the right
-          (M < 0 && rawOff > 0); // revealing photos to the left
-        if (incoming) {
-          extra = -rawOff * SLOWDOWN * fade;
-        }
-      }
-      el.style.transform = `translate3d(${extra}px, 0, 0)`;
+    const rawPos = N + -rawOff / STRIDE;
+    const rounded = Math.max(0, Math.min(PHOTO_COUNT - 1, Math.round(rawPos)));
+    const nextDisplayIdx = rounded + 1;
+    if (displayIdxRef.current !== nextDisplayIdx) {
+      displayIdxRef.current = nextDisplayIdx;
+      setDisplayIdx(nextDisplayIdx);
     }
   }, []);
 
-  /* --- spring animate the drag offset toward a target, then callback --- */
   const springTo = useCallback(
     (target, onDone) => {
-      const stiffness = 0.18;
-      const damping = 0.68;
       let velocity = velocityRef.current;
+      const dt = 16 / 1000;
 
       const step = () => {
         const current = dragOffsetRef.current;
-        const distance = target - current;
-        velocity = velocity * damping + distance * stiffness;
-        dragOffsetRef.current = current + velocity;
+        const dist = target - current;
+        const acc = SPRING_K * dist - SPRING_D * velocity;
+        velocity += acc * dt;
+        dragOffsetRef.current = current + velocity * dt;
         applyState();
 
-        if (Math.abs(distance) < 0.5 && Math.abs(velocity) < 0.3) {
+        if (Math.abs(dist) < 0.5 && Math.abs(velocity) < 10) {
           dragOffsetRef.current = target;
+          velocityRef.current = 0;
+          rafRef.current = 0;
           applyState();
           if (onDone) onDone();
           return;
@@ -111,13 +152,11 @@ export default function PhotoPager() {
     [applyState],
   );
 
-  /* --- decide what to spring to on release --- */
   const onRelease = useCallback(() => {
     const N = currentIndexRef.current;
     const offset = dragOffsetRef.current;
     const velocity = velocityRef.current;
 
-    // at edges, only option is to snap back
     if ((N === 0 && offset > 0) || (N === PHOTO_COUNT - 1 && offset < 0)) {
       springTo(0);
       return;
@@ -143,17 +182,44 @@ export default function PhotoPager() {
       if (commitTo === "next") {
         currentIndexRef.current = N + 1;
         dragOffsetRef.current = 0;
-        setDisplayIdx(N + 2);
+        setCommittedIdx(N + 1);
       } else if (commitTo === "prev") {
         currentIndexRef.current = N - 1;
         dragOffsetRef.current = 0;
-        setDisplayIdx(N);
+        setCommittedIdx(N - 1);
       }
       applyState();
     });
   }, [springTo, applyState]);
 
-  /* --- pointer handlers on the viewport (interruptible) --- */
+  const goToNext = useCallback(() => {
+    if (isDraggingRef.current) return;
+    const N = currentIndexRef.current;
+    if (N >= PHOTO_COUNT - 1) return;
+    cancelAnimationFrame(rafRef.current);
+    velocityRef.current = 0;
+    springTo(-STRIDE, () => {
+      currentIndexRef.current = N + 1;
+      dragOffsetRef.current = 0;
+      setCommittedIdx(N + 1);
+      applyState();
+    });
+  }, [springTo, applyState]);
+
+  const goToPrev = useCallback(() => {
+    if (isDraggingRef.current) return;
+    const N = currentIndexRef.current;
+    if (N <= 0) return;
+    cancelAnimationFrame(rafRef.current);
+    velocityRef.current = 0;
+    springTo(STRIDE, () => {
+      currentIndexRef.current = N - 1;
+      dragOffsetRef.current = 0;
+      setCommittedIdx(N - 1);
+      applyState();
+    });
+  }, [springTo, applyState]);
+
   useEffect(() => {
     const trackEl = trackRef.current;
     if (!trackEl) return;
@@ -164,24 +230,22 @@ export default function PhotoPager() {
       e.preventDefault();
       cancelAnimationFrame(rafRef.current);
       isDraggingRef.current = true;
-      // origin = clientX - existing offset, so future deltas are absolute
+      setIsPressed(true);
       dragStartPtrRef.current = e.clientX - dragOffsetRef.current;
       lastMoveTimeRef.current = performance.now();
       lastMoveXRef.current = e.clientX;
       velocityRef.current = 0;
       viewport.setPointerCapture(e.pointerId);
-      viewport.style.cursor = "grabbing";
     };
 
     const onMove = (e) => {
       if (!isDraggingRef.current) return;
       dragOffsetRef.current = e.clientX - dragStartPtrRef.current;
       applyState();
-
       const now = performance.now();
-      const dt = now - lastMoveTimeRef.current;
+      const dt = (now - lastMoveTimeRef.current) / 1000;
       if (dt > 0) {
-        velocityRef.current = ((e.clientX - lastMoveXRef.current) / dt) * 16;
+        velocityRef.current = (e.clientX - lastMoveXRef.current) / dt;
       }
       lastMoveTimeRef.current = now;
       lastMoveXRef.current = e.clientX;
@@ -190,10 +254,10 @@ export default function PhotoPager() {
     const onUp = (e) => {
       if (!isDraggingRef.current) return;
       isDraggingRef.current = false;
+      setIsPressed(false);
       try {
         viewport.releasePointerCapture(e.pointerId);
       } catch (_) {}
-      viewport.style.cursor = "grab";
       onRelease();
     };
 
@@ -201,7 +265,6 @@ export default function PhotoPager() {
     viewport.addEventListener("pointermove", onMove);
     viewport.addEventListener("pointerup", onUp);
     viewport.addEventListener("pointercancel", onUp);
-
     applyState();
 
     return () => {
@@ -213,37 +276,52 @@ export default function PhotoPager() {
     };
   }, [applyState, onRelease]);
 
-  /* ------------------------------------------------------------------ */
-  /*  Render                                                             */
-  /* ------------------------------------------------------------------ */
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === "ArrowRight") {
+        e.preventDefault();
+        goToNext();
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        goToPrev();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [goToNext, goToPrev]);
 
   return (
     <div
+      role="region"
+      aria-roledescription="carousel"
+      aria-label="Photo gallery"
       style={{
         minHeight: "100vh",
         background: "#000",
-        color: "#c9c9c9",
-        fontFamily:
-          '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif',
+        color: "#fff",
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
         display: "flex",
         flexDirection: "column",
         userSelect: "none",
         WebkitUserSelect: "none",
       }}
     >
+      <div className="sr-only" aria-live="polite" aria-atomic="true">
+        Photo {committedIdx + 1} of {PHOTO_COUNT}
+      </div>
+
       <header
         style={{
           display: "flex",
           justifyContent: "space-between",
           padding: "20px 24px",
-          fontSize: 11,
-          fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-          color: "#5a5a5a",
-          letterSpacing: "0.03em",
+          fontSize: 12,
+          fontWeight: 500,
+          color: "#888",
         }}
       >
-        <span>photo_pager.jsx</span>
-        <span>prototype 01 · 2026</span>
+        <span>Photo Pager</span>
+        <span>Interaction 02</span>
       </header>
 
       <main
@@ -253,22 +331,20 @@ export default function PhotoPager() {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          gap: 32,
-          padding: "24px",
+          gap: 40,
         }}
       >
-        {/* viewport: overflow-hidden window; the black gap between photos
-            shows through here during a drag */}
         <div
           style={{
+            transform: isPressed ? "scale(0.97)" : "scale(1)",
+            transition: "transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
             width: PHOTO_WIDTH,
             height: PHOTO_HEIGHT,
-            overflow: "hidden",
-            borderRadius: 0,
-            background: "#000",
-            cursor: "grab",
-            touchAction: "pan-y",
             position: "relative",
+            overflow: "hidden",
+            borderRadius: 8,
+            cursor: isPressed ? "grabbing" : "grab",
+            touchAction: "pan-y",
           }}
         >
           <div
@@ -283,48 +359,110 @@ export default function PhotoPager() {
             {Array.from({ length: PHOTO_COUNT }).map((_, i) => (
               <div
                 key={i}
-                ref={(el) => (photoRefs.current[i] = el)}
+                role="group"
+                aria-roledescription="slide"
+                aria-label={`Photo ${i + 1} of ${PHOTO_COUNT}`}
+                aria-hidden={i !== committedIdx}
                 style={{
                   width: PHOTO_WIDTH,
                   height: PHOTO_HEIGHT,
                   flexShrink: 0,
                   marginRight: i < PHOTO_COUNT - 1 ? GAP : 0,
-                  background: `#111 url(/photos/portrait-${String(i + 1)}.webp) center/cover no-repeat`,
-                  willChange: "transform",
+                  overflow: "hidden",
+                  position: "relative",
+                  backgroundColor: "#111",
                 }}
-              />
+              >
+                <div
+                  ref={(el) => (imgRefs.current[i] = el)}
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: -PARALLAX_AMOUNT,
+                    width: PHOTO_WIDTH + 2 * PARALLAX_AMOUNT,
+                    height: "100%",
+                    background: `#111 url(/photos/portrait-${String(i + 1)}.webp) center/cover no-repeat`,
+                    willChange: "transform",
+                  }}
+                />
+                <div
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.08)",
+                    pointerEvents: "none",
+                  }}
+                />
+              </div>
             ))}
           </div>
         </div>
 
-        {/* counter */}
-        <div
-          style={{
-            fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-            fontSize: 11,
-            color: "#5a5a5a",
-            letterSpacing: "0.05em",
-          }}
-        >
-          <span style={{ color: "#d5d5d5" }}>
-            {String(displayIdx).padStart(2, "0")}
-          </span>
-          <span> / {String(PHOTO_COUNT).padStart(2, "0")}</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <button
+            className="nav"
+            onClick={goToPrev}
+            disabled={committedIdx === 0}
+            aria-label="Previous photo"
+          >
+            <Chevron direction="left" />
+          </button>
+          <Odometer value={displayIdx} total={PHOTO_COUNT} />
+          <button
+            className="nav"
+            onClick={goToNext}
+            disabled={committedIdx === PHOTO_COUNT - 1}
+            aria-label="Next photo"
+          >
+            <Chevron direction="right" />
+          </button>
         </div>
       </main>
 
-      <footer
-        style={{
-          padding: "20px 24px 24px",
-          fontSize: 10,
-          color: "#3a3a3a",
-          letterSpacing: "0.22em",
-          textTransform: "uppercase",
-          textAlign: "center",
-        }}
-      >
-        drag to swipe · flick to page
-      </footer>
+      <style jsx>{`
+        .nav {
+          background: transparent;
+          border: none;
+          padding: 0;
+          width: 44px;
+          height: 44px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #666;
+          cursor: pointer;
+          border-radius: 10px;
+          transition:
+            color 200ms,
+            background 200ms,
+            transform 150ms;
+          -webkit-tap-highlight-color: transparent;
+        }
+        .nav:hover:not(:disabled) {
+          color: #fff;
+          background: rgba(255, 255, 255, 0.04);
+        }
+        .nav:focus-visible {
+          outline: 2px solid rgba(255, 255, 255, 0.5);
+          outline-offset: 2px;
+          color: #fff;
+        }
+        .nav:active:not(:disabled) {
+          transform: scale(0.92);
+        }
+        .nav:disabled {
+          opacity: 0.25;
+          cursor: default;
+        }
+        .sr-only {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          overflow: hidden;
+          clip-path: inset(50%);
+          white-space: nowrap;
+        }
+      `}</style>
     </div>
   );
 }
