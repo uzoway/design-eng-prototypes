@@ -310,7 +310,7 @@ export default function PhotoPager() {
         Photo {committedIdx + 1} of {PHOTO_COUNT}
       </div>
 
-      <header
+      {/* <header
         style={{
           display: "flex",
           justifyContent: "space-between",
@@ -322,8 +322,7 @@ export default function PhotoPager() {
       >
         <span>Photo Pager</span>
         <span>Interaction 02</span>
-      </header>
-
+      </header> */}
       <main
         style={{
           flex: 1,
