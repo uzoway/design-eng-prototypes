@@ -3,6 +3,12 @@ import Link from "next/link";
 export default function Home() {
   const prototypes = [
     { slug: "photo-pager", title: "Photo pager", date: "2026" },
+    { slug: "grid-to-detail", title: "Grid to Detail", date: "2026" },
+    {
+      slug: "predictive-completion",
+      title: "Predictive Completion",
+      date: "2026",
+    },
   ];
 
   return (
