@@ -31,7 +31,7 @@ const INITIAL_STEPS = [
 
 const REVIEWERS = [
   { id: "uzo", name: "Uzo", seed: "Uzo", background: "bg-[#d9f1fb]" },
-  { id: "mara", name: "Mara", seed: "Mara", background: "bg-[#eee0fa]" },
+  { id: "Victor", name: "Victor", seed: "Victor", background: "bg-[#eee0fa]" },
   { id: "devin", name: "Devin", seed: "Devin", background: "bg-[#fbe3df]" },
 ];
 
@@ -495,7 +495,7 @@ function ReviewerList({ reducedMotion }) {
   return (
     <div
       className="flex flex-wrap items-center gap-2"
-      aria-label="Reviewers: Uzo, Mara, and Devin"
+      aria-label="Reviewers: Uzo, Victor, and Devin"
     >
       {REVIEWERS.map((member, index) => (
         <motion.div
@@ -718,7 +718,7 @@ export default function MerchantOnboarding() {
                       type="button"
                       aria-expanded="false"
                       aria-controls={detailsId}
-                      aria-label={`Expand Stripe Retail onboarding. ${completedCount} of ${steps.length} steps complete.`}
+                      aria-label={`Expand Uzo Retail onboarding. ${completedCount} of ${steps.length} steps complete.`}
                       onClick={openDetails}
                       whileTap={reducedMotion ? undefined : { scale: 0.992 }}
                       className="group w-full cursor-pointer touch-manipulation rounded-[12px] text-left outline-none focus-visible:ring-2 focus-visible:ring-[#6f64ef]/55 focus-visible:ring-offset-4"
@@ -732,7 +732,7 @@ export default function MerchantOnboarding() {
                             id={titleId}
                             className="truncate whitespace-nowrap text-[16px] font-semibold tracking-[-0.015em] text-[#33353a]"
                           >
-                            Stripe Retail Inc.
+                            Uzo Retail Inc.
                           </span>
                         </div>
 
@@ -816,7 +816,7 @@ export default function MerchantOnboarding() {
                           id={titleId}
                           className="truncate text-[18px] font-semibold tracking-[-0.02em] text-[#303237]"
                         >
-                          Stripe Retail Inc.
+                          Uzo Retail Inc.
                         </span>
                         <DisclosureChevron expanded />
                       </motion.button>
