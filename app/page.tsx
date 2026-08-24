@@ -5,8 +5,8 @@ export default function Home() {
     { slug: "photo-pager", title: "Photo pager", date: "2026" },
     { slug: "grid-to-detail", title: "Grid to Detail", date: "2026" },
     {
-      slug: "predictive-completion",
-      title: "Predictive Completion",
+      slug: "merchant-onboarding",
+      title: "Merchant Onboarding",
       date: "2026",
     },
   ];
