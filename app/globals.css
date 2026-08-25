@@ -24,3 +24,326 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@import "tailwindcss";
+
+/* MERCHANT ONBOARDING - Foundation tokens */
+
+:root {
+  /* Typography */
+
+  --mo-font-size-11: 11px;
+  --mo-font-size-12: 12px;
+  --mo-font-size-13: 13px;
+  --mo-font-size-14: 14px;
+  --mo-font-size-16: 16px;
+  --mo-font-size-18: 18px;
+
+  --mo-font-weight-medium: 500;
+  --mo-font-weight-semibold: 600;
+
+  --mo-tracking-title: -0.015em;
+  --mo-tracking-title-lg: -0.02em;
+  --mo-tracking-wide: 0.05em;
+
+  /* Radius */
+
+  --mo-radius-sm: 9px;
+  --mo-radius-md: 10px;
+  --mo-radius-lg: 14px;
+  --mo-radius-card: 18px;
+  --mo-radius-card-expanded: 22px;
+  --mo-radius-pill: 999px;
+
+  /* Motion */
+
+  --mo-theme-transition-duration: 240ms;
+  --mo-theme-transition-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /* LIGHT THEME - Existing visual values preserved */
+
+  --mo-page: #ffffff;
+
+  --mo-surface: #ffffff;
+  --mo-surface-subtle: #fbfbfc;
+  --mo-surface-hover: #f7f7f8;
+
+  --mo-menu-bg: rgba(255, 255, 255, 0.95);
+  --mo-menu-hover: #f5f5f6;
+
+  --mo-border-card: rgba(0, 0, 0, 0.055);
+  --mo-border-brand: rgba(0, 0, 0, 0.07);
+  --mo-border-menu: rgba(0, 0, 0, 0.06);
+  --mo-menu-ring: rgba(0, 0, 0, 0.02);
+
+  --mo-text-root: #35373c;
+  --mo-text-title: #33353a;
+  --mo-text-title-expanded: #303237;
+
+  --mo-text-body: #5e6168;
+  --mo-text-secondary: #676a71;
+  --mo-text-compact: #686b72;
+
+  --mo-text-menu: #4b4e54;
+  --mo-text-menu-secondary: #5c5f66;
+
+  --mo-text-reviewer: #62656b;
+
+  --mo-text-muted: #83868c;
+  --mo-text-meta: #777a80;
+  --mo-text-progress: #85888e;
+
+  --mo-icon-brand: #60636a;
+  --mo-icon-actions: #5d6066;
+  --mo-icon: #9a9ca2;
+  --mo-icon-muted: #a8aab0;
+  --mo-chevron: #8a8c92;
+
+  --mo-focus: #6f64ef;
+  --mo-focus-ring: rgba(111, 100, 239, 0.55);
+  --mo-focus-ring-soft: rgba(111, 100, 239, 0.5);
+
+  --mo-progress-track: #ebecef;
+  --mo-progress: #57c36a;
+  --mo-progress-complete: #3fb765;
+  --mo-progress-icon: #b3b5ba;
+
+  --mo-connector: #dedfe2;
+
+  --mo-checkbox-bg: #ffffff;
+  --mo-checkbox-border: #cfd1d5;
+  --mo-checkbox-complete: #4b4e54;
+  --mo-checkbox-check: #ffffff;
+
+  /* Semantic states */
+
+  --mo-success-bg: #e4f2ea;
+  --mo-success-text: #4c7a5e;
+  --mo-success-ring: #d2e8dc;
+
+  --mo-neutral-bg: #eef0f3;
+  --mo-neutral-text: #5b5f67;
+  --mo-neutral-ring: #e2e5ea;
+
+  --mo-warning-bg: #faf3d8;
+  --mo-warning-text: #746837;
+  --mo-warning-ring: #eee4ba;
+
+  --mo-elevated-bg: #f8e4e6;
+  --mo-elevated-text: #8c525a;
+  --mo-elevated-ring: #f1d2d6;
+
+  --mo-danger: #c2544f;
+  --mo-danger-icon: #cf6b66;
+  --mo-danger-hover: #fbeceb;
+
+  /* Tooltip */
+
+  --mo-tooltip-bg: #27272a;
+  --mo-tooltip-text: #ffffff;
+
+  /* Avatars */
+
+  --mo-avatar-ring: #ffffff;
+  --mo-avatar-uzo: #d9f1fb;
+  --mo-avatar-victor: #eee0fa;
+  --mo-avatar-devin: #fbe3df;
+
+  /* Approval */
+
+  --mo-approved-shimmer: rgba(63, 183, 101, 0.22);
+
+  /* Shadows */
+
+  --mo-shadow-brand: 0 1px 2px rgba(0, 0, 0, 0.06);
+
+  --mo-shadow-control: 0 1px 2px rgba(0, 0, 0, 0.04);
+
+  --mo-shadow-reviewer: 0 1px 2px rgba(0, 0, 0, 0.035);
+
+  --mo-shadow-progress-inset: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+
+  --mo-shadow-card:
+    0 13px 36px rgba(24, 24, 27, 0.09), 0 2px 6px rgba(24, 24, 27, 0.05);
+
+  --mo-shadow-card-expanded:
+    0 22px 60px rgba(24, 24, 27, 0.105), 0 3px 10px rgba(24, 24, 27, 0.06);
+
+  --mo-shadow-menu:
+    0 1px 1px rgba(0, 0, 0, 0.04), 0 10px 20px -6px rgba(15, 23, 42, 0.14),
+    0 24px 48px -12px rgba(15, 23, 42, 0.14);
+
+  /* Theme switcher */
+
+  --mo-switcher-bg: rgba(255, 255, 255, 0.78);
+  --mo-switcher-border: rgba(0, 0, 0, 0.065);
+
+  --mo-switcher-active-bg: #ffffff;
+  --mo-switcher-active-border: rgba(0, 0, 0, 0.065);
+
+  --mo-switcher-text: #7a7d84;
+  --mo-switcher-text-active: #35373c;
+
+  --mo-shadow-switcher:
+    0 10px 32px rgba(24, 24, 27, 0.08), 0 2px 6px rgba(24, 24, 27, 0.04);
+
+  --mo-shadow-switcher-active:
+    0 1px 2px rgba(0, 0, 0, 0.07), 0 4px 10px rgba(0, 0, 0, 0.05);
+
+  color-scheme: light;
+}
+
+/* DARK THEME */
+
+html[data-theme="dark"] {
+  --mo-page: #0f1012;
+
+  --mo-surface: #17181b;
+  --mo-surface-subtle: #1c1d21;
+  --mo-surface-hover: #212328;
+
+  --mo-menu-bg: rgba(23, 24, 27, 0.95);
+  --mo-menu-hover: #23252a;
+
+  --mo-border-card: rgba(255, 255, 255, 0.08);
+  --mo-border-brand: rgba(255, 255, 255, 0.1);
+  --mo-border-menu: rgba(255, 255, 255, 0.09);
+  --mo-menu-ring: rgba(255, 255, 255, 0.025);
+
+  --mo-text-root: #e7e8eb;
+  --mo-text-title: #f2f3f5;
+  --mo-text-title-expanded: #f2f3f5;
+
+  --mo-text-body: #c8cbd1;
+  --mo-text-secondary: #aeb1b8;
+  --mo-text-compact: #b8bac0;
+
+  --mo-text-menu: #d9dadd;
+  --mo-text-menu-secondary: #bfc1c7;
+
+  --mo-text-reviewer: #c4c6cb;
+
+  --mo-text-muted: #9ea1a8;
+  --mo-text-meta: #9ea1a8;
+  --mo-text-progress: #a5a8af;
+
+  --mo-icon-brand: #b7bac1;
+  --mo-icon-actions: #b3b6bd;
+  --mo-icon: #9ca0a8;
+  --mo-icon-muted: #979aa2;
+  --mo-chevron: #a8abb2;
+
+  --mo-focus: #a49cff;
+  --mo-focus-ring: rgba(164, 156, 255, 0.72);
+  --mo-focus-ring-soft: rgba(164, 156, 255, 0.62);
+
+  --mo-progress-track: #2a2c31;
+  --mo-progress: #56ca76;
+  --mo-progress-complete: #48bf6b;
+  --mo-progress-icon: #737780;
+
+  --mo-connector: #3d4047;
+
+  --mo-checkbox-bg: #17181b;
+  --mo-checkbox-border: #555963;
+  --mo-checkbox-complete: #737780;
+  --mo-checkbox-check: #ffffff;
+
+  --mo-success-bg: #1f3327;
+  --mo-success-text: #a9dfb9;
+  --mo-success-ring: #365640;
+
+  --mo-neutral-bg: #292c32;
+  --mo-neutral-text: #d0d2d7;
+  --mo-neutral-ring: #3b3f47;
+
+  --mo-warning-bg: #393220;
+  --mo-warning-text: #ead88c;
+  --mo-warning-ring: #51472a;
+
+  --mo-elevated-bg: #3b262a;
+  --mo-elevated-text: #f2b7be;
+  --mo-elevated-ring: #58333a;
+
+  --mo-danger: #f0958f;
+  --mo-danger-icon: #e88781;
+  --mo-danger-hover: #392426;
+
+  --mo-tooltip-bg: #f2f3f5;
+  --mo-tooltip-text: #1d1f23;
+
+  --mo-avatar-ring: #17181b;
+  --mo-avatar-uzo: #263b43;
+  --mo-avatar-victor: #392e43;
+  --mo-avatar-devin: #44302d;
+
+  --mo-approved-shimmer: rgba(72, 191, 107, 0.2);
+
+  --mo-shadow-brand: 0 1px 2px rgba(0, 0, 0, 0.28);
+
+  --mo-shadow-control: 0 1px 2px rgba(0, 0, 0, 0.22);
+
+  --mo-shadow-reviewer: 0 1px 2px rgba(0, 0, 0, 0.2);
+
+  --mo-shadow-progress-inset: inset 0 1px 0 rgba(255, 255, 255, 0.035);
+
+  --mo-shadow-card:
+    0 16px 42px rgba(0, 0, 0, 0.28), 0 2px 8px rgba(0, 0, 0, 0.2);
+
+  --mo-shadow-card-expanded:
+    0 24px 72px rgba(0, 0, 0, 0.34), 0 4px 14px rgba(0, 0, 0, 0.24);
+
+  --mo-shadow-menu:
+    0 1px 1px rgba(0, 0, 0, 0.18), 0 12px 24px -6px rgba(0, 0, 0, 0.42),
+    0 28px 56px -14px rgba(0, 0, 0, 0.5);
+
+  --mo-switcher-bg: rgba(23, 24, 27, 0.8);
+  --mo-switcher-border: rgba(255, 255, 255, 0.09);
+
+  --mo-switcher-active-bg: #292b30;
+  --mo-switcher-active-border: rgba(255, 255, 255, 0.08);
+
+  --mo-switcher-text: #a0a3aa;
+  --mo-switcher-text-active: #f2f3f5;
+
+  --mo-shadow-switcher:
+    0 12px 36px rgba(0, 0, 0, 0.28), 0 2px 8px rgba(0, 0, 0, 0.18);
+
+  --mo-shadow-switcher-active:
+    0 1px 2px rgba(0, 0, 0, 0.28), 0 5px 12px rgba(0, 0, 0, 0.18);
+
+  color-scheme: dark;
+}
+
+/* THEME TRANSITION
+  Only enabled briefly when the user explicitly changes
+  theme. We intentionally do not use "transition: all".
+*/
+
+html[data-theme-transitioning="true"] [data-theme-animate],
+html[data-theme-transitioning="true"] [data-theme-animate] * {
+  transition-property:
+    background-color, border-color, color, box-shadow, outline-color, fill,
+    stroke !important;
+
+  transition-duration: var(--mo-theme-transition-duration) !important;
+  transition-timing-function: var(--mo-theme-transition-ease) !important;
+}
+
+/* REDUCED MOTION */
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme-transitioning="true"] [data-theme-animate],
+  html[data-theme-transitioning="true"] [data-theme-animate] * {
+    transition-duration: 0s !important;
+  }
+}
+
+/* WINDOWS HIGH CONTRAST / FORCED COLORS */
+
+@media (forced-colors: active) {
+  [data-theme-option][data-active="true"] {
+    outline: 1px solid CanvasText;
+    outline-offset: -3px;
+  }
+}

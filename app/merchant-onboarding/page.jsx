@@ -21,6 +21,7 @@ import {
   ShieldCheck,
   Store,
 } from "lucide-react";
+import ThemeSwitcher from "../components/theme-switcher";
 
 const INITIAL_STEPS = [
   { id: "business", label: "Business details", completed: true },
@@ -30,9 +31,24 @@ const INITIAL_STEPS = [
 ];
 
 const REVIEWERS = [
-  { id: "uzo", name: "Uzo", seed: "Uzo", background: "bg-[#d9f1fb]" },
-  { id: "Victor", name: "Victor", seed: "Victor", background: "bg-[#eee0fa]" },
-  { id: "devin", name: "Devin", seed: "Devin", background: "bg-[#fbe3df]" },
+  {
+    id: "uzo",
+    name: "Uzo",
+    seed: "Uzo",
+    background: "bg-[var(--mo-avatar-uzo)]",
+  },
+  {
+    id: "Victor",
+    name: "Victor",
+    seed: "Victor",
+    background: "bg-[var(--mo-avatar-victor)]",
+  },
+  {
+    id: "devin",
+    name: "Devin",
+    seed: "Devin",
+    background: "bg-[var(--mo-avatar-devin)]",
+  },
 ];
 
 const RISK_TIERS = ["Low", "Standard", "Elevated"];
@@ -41,7 +57,9 @@ const REVIEW_STATUSES = ["Not started", "In review", "Approved"];
 const DROPDOWN_EASE = [0.2, 0.8, 0.2, 1];
 
 const avatarUrl = (seed) =>
-  `https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(seed)}&radius=50&backgroundColor=transparent`;
+  `https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(
+    seed,
+  )}&radius=50&backgroundColor=transparent`;
 
 function AnimatedText({
   value,
@@ -107,6 +125,7 @@ function AnimatedCount({ count, suffix, reducedMotion }) {
           </motion.span>
         </AnimatePresence>
       </span>
+
       <span className="whitespace-pre">{suffix}</span>
     </span>
   );
@@ -116,9 +135,12 @@ function BrandMark() {
   return (
     <span
       aria-hidden="true"
-      className="relative grid size-8 shrink-0 place-items-center rounded-[10px] border border-black/[0.07] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
+      className="relative grid size-8 shrink-0 place-items-center rounded-[var(--mo-radius-md)] border border-[var(--mo-border-brand)] bg-[var(--mo-surface)] shadow-[var(--mo-shadow-brand)]"
     >
-      <Store className="size-[18px] text-[#60636a]" strokeWidth={1.7} />
+      <Store
+        className="size-[18px] text-[var(--mo-icon-brand)]"
+        strokeWidth={1.7}
+      />
     </span>
   );
 }
@@ -127,18 +149,27 @@ function ProgressTrack({ value, complete, className = "" }) {
   return (
     <span
       aria-hidden="true"
-      className={`relative block h-[6px] overflow-hidden rounded-full bg-[#ebecef] ${className}`}
+      className={`relative block h-[6px] overflow-hidden rounded-full bg-[var(--mo-progress-track)] ${className}`}
     >
       <motion.span
         className="absolute inset-0 origin-left rounded-full"
         initial={false}
         animate={{
           scaleX: value / 100,
-          backgroundColor: complete ? "#3fb765" : "#57c36a",
+          backgroundColor: complete
+            ? "var(--mo-progress-complete)"
+            : "var(--mo-progress)",
         }}
         transition={{
-          scaleX: { type: "spring", stiffness: 480, damping: 40, mass: 0.7 },
-          backgroundColor: { duration: 0.3 },
+          scaleX: {
+            type: "spring",
+            stiffness: 480,
+            damping: 40,
+            mass: 0.7,
+          },
+          backgroundColor: {
+            duration: 0.3,
+          },
         }}
       />
     </span>
@@ -148,7 +179,7 @@ function ProgressTrack({ value, complete, className = "" }) {
 function Avatar({ member, size = "size-8" }) {
   return (
     <span
-      className={`relative grid shrink-0 place-items-center overflow-hidden rounded-full ring-2 ring-white ${member.background} ${size}`}
+      className={`relative grid shrink-0 place-items-center overflow-hidden rounded-full ring-2 ring-[var(--mo-avatar-ring)] ${member.background} ${size}`}
       aria-hidden="true"
     >
       <img
@@ -167,10 +198,11 @@ function Avatar({ member, size = "size-8" }) {
 
 function CompactMetadata({ kind, icon: Icon, value, reducedMotion }) {
   return (
-    <span className="flex min-w-0 items-center gap-1.5 text-[14px] text-[#686b72]">
+    <span className="flex min-w-0 items-center gap-1.5 text-[length:var(--mo-font-size-14)] text-[var(--mo-text-compact)]">
       <motion.span layoutId={`${kind}-icon`} className="shrink-0">
         <Icon aria-hidden="true" className="size-[15px]" strokeWidth={1.8} />
       </motion.span>
+
       <motion.span
         layoutId={`${kind}-value`}
         className="truncate whitespace-nowrap"
@@ -183,16 +215,26 @@ function CompactMetadata({ kind, icon: Icon, value, reducedMotion }) {
 
 function pillStyle(kind, value) {
   if (kind === "risk") {
-    if (value === "Elevated")
-      return "bg-[#f8e4e6] text-[#8c525a] ring-[#f1d2d6]";
-    if (value === "Standard")
-      return "bg-[#eef0f3] text-[#5b5f67] ring-[#e2e5ea]";
-    return "bg-[#e4f2ea] text-[#4c7a5e] ring-[#d2e8dc]";
+    if (value === "Elevated") {
+      return "bg-[var(--mo-elevated-bg)] text-[var(--mo-elevated-text)] ring-[var(--mo-elevated-ring)]";
+    }
+
+    if (value === "Standard") {
+      return "bg-[var(--mo-neutral-bg)] text-[var(--mo-neutral-text)] ring-[var(--mo-neutral-ring)]";
+    }
+
+    return "bg-[var(--mo-success-bg)] text-[var(--mo-success-text)] ring-[var(--mo-success-ring)]";
   }
-  if (value === "Approved") return "bg-[#e4f2ea] text-[#4c7a5e] ring-[#d2e8dc]";
-  if (value === "In review")
-    return "bg-[#faf3d8] text-[#746837] ring-[#eee4ba]";
-  return "bg-[#eef0f3] text-[#5b5f67] ring-[#e2e5ea]";
+
+  if (value === "Approved") {
+    return "bg-[var(--mo-success-bg)] text-[var(--mo-success-text)] ring-[var(--mo-success-ring)]";
+  }
+
+  if (value === "In review") {
+    return "bg-[var(--mo-warning-bg)] text-[var(--mo-warning-text)] ring-[var(--mo-warning-ring)]";
+  }
+
+  return "bg-[var(--mo-neutral-bg)] text-[var(--mo-neutral-text)] ring-[var(--mo-neutral-ring)]";
 }
 
 function MetadataSelect({
@@ -208,14 +250,15 @@ function MetadataSelect({
 
   return (
     <div className="grid grid-cols-[104px_minmax(0,1fr)] items-center gap-3">
-      <div className="flex items-center gap-2 text-[14px] text-[#676a71]">
+      <div className="flex items-center gap-2 text-[length:var(--mo-font-size-14)] text-[var(--mo-text-secondary)]">
         <motion.span layoutId={`${kind}-icon`}>
           <Icon
             aria-hidden="true"
-            className="size-[15px] text-[#9a9ca2]"
+            className="size-[15px] text-[var(--mo-icon)]"
             strokeWidth={1.8}
           />
         </motion.span>
+
         <span>{label}</span>
       </div>
 
@@ -225,15 +268,23 @@ function MetadataSelect({
             layoutId={`${kind}-value`}
             type="button"
             aria-label={`Change ${label.toLowerCase()}. Current value: ${value}`}
-            className={`flex h-8 w-fit max-w-full cursor-pointer touch-manipulation items-center gap-1.5 rounded-[9px] px-3 text-[13px] font-medium outline-none ring-1 ring-inset transition-[color,background-color,box-shadow] duration-300 focus-visible:ring-2 focus-visible:ring-[#6f64ef]/55 ${pillStyle(kind, value)}`}
+            className={`flex h-8 w-fit max-w-full cursor-pointer touch-manipulation items-center gap-1.5 rounded-[var(--mo-radius-sm)] px-3 text-[length:var(--mo-font-size-13)] font-medium outline-none ring-1 ring-inset transition-[color,background-color,box-shadow] duration-300 focus-visible:ring-2 focus-visible:ring-[var(--mo-focus-ring)] ${pillStyle(
+              kind,
+              value,
+            )}`}
           >
             <motion.span layout className="truncate">
               <AnimatedText value={value} reducedMotion={reducedMotion} />
             </motion.span>
+
             <motion.span
               aria-hidden="true"
               animate={{ rotate: open ? 180 : 0 }}
-              transition={{ type: "spring", stiffness: 500, damping: 30 }}
+              transition={{
+                type: "spring",
+                stiffness: 500,
+                damping: 30,
+              }}
             >
               <ChevronDown className="size-3.5" strokeWidth={2} />
             </motion.span>
@@ -250,29 +301,32 @@ function MetadataSelect({
                   exit={{ opacity: 0, scale: 0.94, y: -5 }}
                   transition={{ duration: 0.17, ease: DROPDOWN_EASE }}
                   style={{ transformOrigin: "top left" }}
-                  className="z-50 min-w-[176px] overflow-hidden rounded-[14px] border border-black/[0.06] bg-white/95 p-1 shadow-[0_1px_1px_rgba(0,0,0,0.04),0_10px_20px_-6px_rgba(15,23,42,0.14),0_24px_48px_-12px_rgba(15,23,42,0.14)] backdrop-blur-xl ring-1 ring-black/[0.02]"
+                  className="z-50 min-w-[176px] overflow-hidden rounded-[var(--mo-radius-lg)] border border-[var(--mo-border-menu)] bg-[var(--mo-menu-bg)] p-1 shadow-[var(--mo-shadow-menu)] backdrop-blur-xl ring-1 ring-[var(--mo-menu-ring)]"
                 >
-                  <div className="px-2.5 pb-1 pt-1.5 text-[11px] font-medium uppercase tracking-wider text-[#a8aab0]">
+                  <div className="px-2.5 pb-1 pt-1.5 text-[length:var(--mo-font-size-11)] font-medium uppercase tracking-wider text-[var(--mo-icon-muted)]">
                     {label}
                   </div>
+
                   <DropdownMenu.RadioGroup
                     value={value}
                     onValueChange={onValueChange}
                   >
                     {options.map((option) => {
                       const active = option === value;
+
                       return (
                         <DropdownMenu.RadioItem
                           key={option}
                           value={option}
-                          className={`relative flex h-9 cursor-pointer select-none items-center rounded-[10px] px-2.5 pr-9 text-[13px] outline-none transition-colors data-[highlighted]:bg-[#f5f5f6] ${
+                          className={`relative flex h-9 cursor-pointer select-none items-center rounded-[var(--mo-radius-md)] px-2.5 pr-9 text-[length:var(--mo-font-size-13)] outline-none transition-colors data-[highlighted]:bg-[var(--mo-menu-hover)] ${
                             active
-                              ? "font-medium text-[#2f3136]"
-                              : "text-[#5c5f66]"
+                              ? "font-medium text-[var(--mo-text-title-expanded)]"
+                              : "text-[var(--mo-text-menu-secondary)]"
                           }`}
                         >
                           {option}
-                          <DropdownMenu.ItemIndicator className="absolute right-2.5 text-[#6f64ef]">
+
+                          <DropdownMenu.ItemIndicator className="absolute right-2.5 text-[var(--mo-focus)]">
                             <Check
                               aria-hidden="true"
                               className="size-4"
@@ -298,6 +352,7 @@ function StepChecklist({ steps, onToggle, reducedMotion }) {
     <ul className="relative ml-1 space-y-0.5 pl-[26px]">
       {steps.map((step, index) => {
         const isLast = index === steps.length - 1;
+
         return (
           <motion.li
             layout="position"
@@ -317,7 +372,7 @@ function StepChecklist({ steps, onToggle, reducedMotion }) {
           >
             <svg
               aria-hidden="true"
-              className="absolute -left-[19px] top-0 h-full w-5 overflow-visible text-[#dedfe2]"
+              className="absolute -left-[19px] top-0 h-full w-5 overflow-visible text-[var(--mo-connector)]"
               fill="none"
               stroke="currentColor"
               strokeWidth="1.5"
@@ -336,12 +391,17 @@ function StepChecklist({ steps, onToggle, reducedMotion }) {
                 onChange={() => onToggle(step.id)}
                 className="peer sr-only"
               />
+
               <motion.span
                 aria-hidden="true"
-                className="relative grid size-[20px] shrink-0 place-items-center rounded-full border peer-focus-visible:ring-2 peer-focus-visible:ring-[#6f64ef]/50 peer-focus-visible:ring-offset-2"
+                className="relative grid size-[20px] shrink-0 place-items-center rounded-full border peer-focus-visible:ring-2 peer-focus-visible:ring-[var(--mo-focus-ring-soft)] peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-[var(--mo-surface)]"
                 animate={{
-                  backgroundColor: step.completed ? "#4b4e54" : "#ffffff",
-                  borderColor: step.completed ? "#4b4e54" : "#cfd1d5",
+                  backgroundColor: step.completed
+                    ? "var(--mo-checkbox-complete)"
+                    : "var(--mo-checkbox-bg)",
+                  borderColor: step.completed
+                    ? "var(--mo-checkbox-complete)"
+                    : "var(--mo-checkbox-border)",
                 }}
                 transition={{ duration: 0.15 }}
               >
@@ -357,14 +417,20 @@ function StepChecklist({ steps, onToggle, reducedMotion }) {
                         damping: 35,
                       }}
                     >
-                      <Check className="size-3 text-white" strokeWidth={2.8} />
+                      <Check
+                        className="size-3 text-[var(--mo-checkbox-check)]"
+                        strokeWidth={2.8}
+                      />
                     </motion.span>
                   )}
                 </AnimatePresence>
               </motion.span>
+
               <span
-                className={`text-[14px] transition-colors ${
-                  step.completed ? "text-[#83868c]" : "text-[#5e6168]"
+                className={`text-[length:var(--mo-font-size-14)] transition-colors ${
+                  step.completed
+                    ? "text-[var(--mo-text-muted)]"
+                    : "text-[var(--mo-text-body)]"
                 }`}
               >
                 {step.label}
@@ -398,7 +464,7 @@ function ActionsMenu({
               type="button"
               aria-label="Account actions"
               whileTap={{ scale: 0.92 }}
-              className="grid size-9 shrink-0 cursor-pointer touch-manipulation place-items-center rounded-[10px] border border-black/[0.055] bg-white text-[#5d6066] shadow-[0_1px_2px_rgba(0,0,0,0.04)] outline-none transition-colors hover:bg-[#f7f7f8] focus-visible:ring-2 focus-visible:ring-[#6f64ef]/50"
+              className="grid size-9 shrink-0 cursor-pointer touch-manipulation place-items-center rounded-[var(--mo-radius-md)] border border-[var(--mo-border-card)] bg-[var(--mo-surface)] text-[var(--mo-icon-actions)] shadow-[var(--mo-shadow-control)] outline-none transition-colors hover:bg-[var(--mo-surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--mo-focus-ring)]"
             >
               <Ellipsis
                 aria-hidden="true"
@@ -413,10 +479,10 @@ function ActionsMenu({
           <Tooltip.Content
             side="top"
             sideOffset={7}
-            className="z-[60] rounded-md bg-[#27272a] px-2.5 py-1.5 text-xs text-white shadow-lg"
+            className="z-[60] rounded-md bg-[var(--mo-tooltip-bg)] px-2.5 py-1.5 text-xs text-[var(--mo-tooltip-text)] shadow-lg"
           >
             Actions
-            <Tooltip.Arrow className="fill-[#27272a]" />
+            <Tooltip.Arrow className="fill-[var(--mo-tooltip-bg)]" />
           </Tooltip.Content>
         </Tooltip.Portal>
       </Tooltip.Root>
@@ -428,9 +494,9 @@ function ActionsMenu({
               asChild
               sideOffset={8}
               align="end"
-              onCloseAutoFocus={(e) => {
+              onCloseAutoFocus={(event) => {
                 if (skipFocusRef.current) {
-                  e.preventDefault();
+                  event.preventDefault();
                   skipFocusRef.current = false;
                 }
               }}
@@ -442,42 +508,51 @@ function ActionsMenu({
                   opacity: 0,
                   scale: 0.97,
                   y: -3,
-                  transition: { duration: 0.1, ease: [0.4, 0, 1, 1] },
+                  transition: {
+                    duration: 0.1,
+                    ease: [0.4, 0, 1, 1],
+                  },
                 }}
-                transition={{ duration: 0.19, ease: DROPDOWN_EASE }}
+                transition={{
+                  duration: 0.19,
+                  ease: DROPDOWN_EASE,
+                }}
                 style={{ transformOrigin: "top right" }}
-                className="z-50 min-w-[204px] overflow-hidden rounded-[14px] border border-black/[0.06] bg-white/95 p-1 shadow-[0_1px_1px_rgba(0,0,0,0.04),0_10px_20px_-6px_rgba(15,23,42,0.14),0_24px_48px_-12px_rgba(15,23,42,0.14)] backdrop-blur-xl ring-1 ring-black/[0.02]"
+                className="z-50 min-w-[204px] overflow-hidden rounded-[var(--mo-radius-lg)] border border-[var(--mo-border-menu)] bg-[var(--mo-menu-bg)] p-1 shadow-[var(--mo-shadow-menu)] backdrop-blur-xl ring-1 ring-[var(--mo-menu-ring)]"
               >
                 <DropdownMenu.Item
                   onSelect={() => {
                     skipFocusRef.current = true;
                     onCollapse();
                   }}
-                  className="flex h-9 cursor-pointer select-none items-center gap-2.5 rounded-[10px] px-2.5 text-[13px] text-[#4b4e54] outline-none transition-colors data-[highlighted]:bg-[#f5f5f6]"
+                  className="flex h-9 cursor-pointer select-none items-center gap-2.5 rounded-[var(--mo-radius-md)] px-2.5 text-[length:var(--mo-font-size-13)] text-[var(--mo-text-menu)] outline-none transition-colors data-[highlighted]:bg-[var(--mo-menu-hover)]"
                 >
                   <PanelTopClose
-                    className="size-4 text-[#9a9ca2]"
+                    className="size-4 text-[var(--mo-icon)]"
                     strokeWidth={1.9}
                   />
                   Collapse details
                 </DropdownMenu.Item>
+
                 <DropdownMenu.Item
                   onSelect={onCompleteAll}
-                  className="flex h-9 cursor-pointer select-none items-center gap-2.5 rounded-[10px] px-2.5 text-[13px] text-[#4b4e54] outline-none transition-colors data-[highlighted]:bg-[#f5f5f6]"
+                  className="flex h-9 cursor-pointer select-none items-center gap-2.5 rounded-[var(--mo-radius-md)] px-2.5 text-[length:var(--mo-font-size-13)] text-[var(--mo-text-menu)] outline-none transition-colors data-[highlighted]:bg-[var(--mo-menu-hover)]"
                 >
                   <CheckCheck
-                    className="size-4 text-[#9a9ca2]"
+                    className="size-4 text-[var(--mo-icon)]"
                     strokeWidth={1.9}
                   />
                   Mark all verified
                 </DropdownMenu.Item>
-                <DropdownMenu.Separator className="my-1 h-px bg-[#ececed]" />
+
+                <DropdownMenu.Separator className="my-1 h-px bg-[var(--mo-border-card)]" />
+
                 <DropdownMenu.Item
                   onSelect={onReset}
-                  className="flex h-9 cursor-pointer select-none items-center gap-2.5 rounded-[10px] px-2.5 text-[13px] text-[#c2544f] outline-none transition-colors data-[highlighted]:bg-[#fbeceb]"
+                  className="flex h-9 cursor-pointer select-none items-center gap-2.5 rounded-[var(--mo-radius-md)] px-2.5 text-[length:var(--mo-font-size-13)] text-[var(--mo-danger)] outline-none transition-colors data-[highlighted]:bg-[var(--mo-danger-hover)]"
                 >
                   <RotateCcw
-                    className="size-4 text-[#cf6b66]"
+                    className="size-4 text-[var(--mo-danger-icon)]"
                     strokeWidth={1.9}
                   />
                   Reset verification
@@ -494,6 +569,7 @@ function ActionsMenu({
 function ReviewerList({ reducedMotion }) {
   return (
     <div
+      role="group"
       className="flex flex-wrap items-center gap-2"
       aria-label="Reviewers: Uzo, Victor, and Devin"
     >
@@ -501,21 +577,37 @@ function ReviewerList({ reducedMotion }) {
         <motion.div
           layout="position"
           key={member.id}
-          className="flex h-9 items-center gap-2 rounded-full border border-black/[0.055] bg-white py-1 pl-1 pr-3 shadow-[0_1px_2px_rgba(0,0,0,0.035)]"
+          className="flex h-9 items-center gap-2 rounded-full border border-[var(--mo-border-card)] bg-[var(--mo-surface)] py-1 pl-1 pr-3 shadow-[var(--mo-shadow-reviewer)]"
           initial={
-            reducedMotion ? false : { opacity: 0, filter: "blur(5px)", y: -3 }
+            reducedMotion
+              ? false
+              : {
+                  opacity: 0,
+                  filter: "blur(5px)",
+                  y: -3,
+                }
           }
-          animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
+          animate={{
+            opacity: 1,
+            filter: "blur(0px)",
+            y: 0,
+          }}
           transition={
             reducedMotion
               ? { duration: 0 }
-              : { delay: 0.1 + index * 0.03, duration: 0.2 }
+              : {
+                  delay: 0.1 + index * 0.03,
+                  duration: 0.2,
+                }
           }
         >
           <motion.span layoutId={`avatar-${member.id}`}>
             <Avatar member={member} size="size-7" />
           </motion.span>
-          <span className="text-[13px] text-[#62656b]">{member.name}</span>
+
+          <span className="text-[length:var(--mo-font-size-13)] text-[var(--mo-text-reviewer)]">
+            {member.name}
+          </span>
         </motion.div>
       ))}
     </div>
@@ -527,9 +619,15 @@ function DisclosureChevron({ expanded }) {
     <motion.span
       layoutId="disclosure-chevron"
       aria-hidden="true"
-      className="grid size-7 shrink-0 place-items-center rounded-full text-[#8a8c92]"
-      animate={{ rotate: expanded ? 180 : 0 }}
-      transition={{ type: "spring", stiffness: 520, damping: 36 }}
+      className="grid size-7 shrink-0 place-items-center rounded-full text-[var(--mo-chevron)]"
+      animate={{
+        rotate: expanded ? 180 : 0,
+      }}
+      transition={{
+        type: "spring",
+        stiffness: 520,
+        damping: 36,
+      }}
     >
       <ChevronDown className="size-4" strokeWidth={2} />
     </motion.span>
@@ -538,6 +636,7 @@ function DisclosureChevron({ expanded }) {
 
 export default function MerchantOnboarding() {
   const reducedMotion = useReducedMotion();
+
   const generatedId = useId().replace(/:/g, "");
   const detailsId = `onboarding-details-${generatedId}`;
   const titleId = `onboarding-title-${generatedId}`;
@@ -548,22 +647,28 @@ export default function MerchantOnboarding() {
   const [reviewStatus, setReviewStatus] = useState("In review");
   const [actionsOpen, setActionsOpen] = useState(false);
   const [tooltipOpen, setTooltipOpen] = useState(false);
-  const tooltipSuppressed = useRef(false);
   const [justApproved, setJustApproved] = useState(false);
+
+  const tooltipSuppressed = useRef(false);
 
   const collapsedButtonRef = useRef(null);
   const expandedButtonRef = useRef(null);
+
   const pendingFocus = useRef(null);
   const wasComplete = useRef(false);
+
   const approveTimer = useRef(null);
   const suppressTimer = useRef(null);
+
   const pendingCollapse = useRef(false);
 
   const completedCount = useMemo(
-    () => steps.filter((s) => s.completed).length,
+    () => steps.filter((step) => step.completed).length,
     [steps],
   );
+
   const isComplete = completedCount === steps.length;
+
   const progress = Math.round(
     (completedCount / Math.max(steps.length, 1)) * 100,
   );
@@ -571,15 +676,22 @@ export default function MerchantOnboarding() {
   useEffect(() => {
     if (isComplete && !wasComplete.current) {
       setReviewStatus("Approved");
+
       if (!reducedMotion) {
         setJustApproved(true);
+
         clearTimeout(approveTimer.current);
-        approveTimer.current = setTimeout(() => setJustApproved(false), 1400);
+
+        approveTimer.current = setTimeout(() => {
+          setJustApproved(false);
+        }, 1400);
       }
     }
+
     if (!isComplete && wasComplete.current && reviewStatus === "Approved") {
       setReviewStatus("In review");
     }
+
     wasComplete.current = isComplete;
   }, [isComplete, reducedMotion, reviewStatus]);
 
@@ -593,111 +705,149 @@ export default function MerchantOnboarding() {
 
   useEffect(() => {
     if (pendingFocus.current === "expanded" && expanded) {
-      expandedButtonRef.current?.focus({ preventScroll: true });
+      expandedButtonRef.current?.focus({
+        preventScroll: true,
+      });
+
       pendingFocus.current = null;
     }
+
     if (pendingFocus.current === "collapsed" && !expanded) {
-      collapsedButtonRef.current?.focus({ preventScroll: true });
+      collapsedButtonRef.current?.focus({
+        preventScroll: true,
+      });
+
       pendingFocus.current = null;
     }
   }, [expanded]);
 
-  const openDetails = () => {
+  function openDetails() {
     pendingFocus.current = "expanded";
     setExpanded(true);
-  };
+  }
 
-  const handleActionsOpenChange = (open) => {
+  function handleActionsOpenChange(open) {
     setActionsOpen(open);
+
     if (!open) {
       tooltipSuppressed.current = true;
       setTooltipOpen(false);
+
       clearTimeout(suppressTimer.current);
+
       suppressTimer.current = setTimeout(() => {
         tooltipSuppressed.current = false;
       }, 500);
     }
-  };
+  }
 
-  const handleTooltipOpenChange = (open) => {
+  function handleTooltipOpenChange(open) {
     if (open && (tooltipSuppressed.current || actionsOpen)) return;
-    setTooltipOpen(open);
-  };
 
-  const closeDetails = () => {
+    setTooltipOpen(open);
+  }
+
+  function closeDetails() {
     setTooltipOpen(false);
     pendingFocus.current = "collapsed";
     setExpanded(false);
-  };
+  }
 
-  const collapseFromMenu = () => {
-    // Start the dropdown's exit, but DON'T collapse the panel yet.
-    // We wait for the dropdown to fully unmount (its AnimatePresence
-    // onExitComplete -> handleActionsClosed) before collapsing, so:
-    //   1. the portaled dropdown node isn't orphaned mid-exit while its
-    //      trigger is being torn down (that's the "hangs then pops" bug), and
-    //   2. the expanded->collapsed swap stays a SINGLE atomic commit, so the
-    //      shared-layout elements (brand-mark, avatars, risk/status pills)
-    //      have their exiting copies present to morph from (no opacity flash).
+  function collapseFromMenu() {
     pendingCollapse.current = true;
+
     setTooltipOpen(false);
     setActionsOpen(false);
-  };
+  }
 
-  const handleActionsClosed = () => {
+  function handleActionsClosed() {
     if (!pendingCollapse.current) return;
+
     pendingCollapse.current = false;
     closeDetails();
-  };
+  }
 
-  const toggleStep = (id) => {
-    setSteps((cur) =>
-      cur.map((s) => (s.id === id ? { ...s, completed: !s.completed } : s)),
+  function toggleStep(id) {
+    setSteps((currentSteps) =>
+      currentSteps.map((step) =>
+        step.id === id
+          ? {
+              ...step,
+              completed: !step.completed,
+            }
+          : step,
+      ),
     );
-  };
+  }
 
   const spring = reducedMotion
     ? { duration: 0 }
     : expanded
-      ? { type: "spring", stiffness: 430, damping: 35, mass: 0.72 }
-      : { type: "spring", stiffness: 560, damping: 42, mass: 0.66 };
+      ? {
+          type: "spring",
+          stiffness: 430,
+          damping: 35,
+          mass: 0.72,
+        }
+      : {
+          type: "spring",
+          stiffness: 560,
+          damping: 42,
+          mass: 0.66,
+        };
 
   const revealInitial = reducedMotion
     ? false
-    : { opacity: 0, filter: "blur(8px)", y: -7 };
+    : {
+        opacity: 0,
+        filter: "blur(8px)",
+        y: -7,
+      };
+
   const revealExit = reducedMotion
     ? { opacity: 0 }
     : {
         opacity: 0,
         filter: "blur(7px)",
         y: -5,
-        transition: { duration: 0.12, ease: [0.4, 0, 1, 1] },
+        transition: {
+          duration: 0.12,
+          ease: [0.4, 0, 1, 1],
+        },
       };
 
   return (
     <Tooltip.Provider delayDuration={350} skipDelayDuration={0}>
-      <main className="grid min-h-svh place-items-center bg-white px-4 py-12 text-[#35373c]">
+      <main className="grid min-h-svh place-items-center bg-[var(--mo-page)] px-4 py-12 text-[var(--mo-text-root)]">
+        <ThemeSwitcher />
+
         <MotionConfig transition={spring} reducedMotion="user">
           <LayoutGroup id={`onboarding-${generatedId}`}>
             <motion.section
               layout
-              aria-label="Merchant onboarding"
+              aria-labelledby={titleId}
               initial={false}
               animate={{
                 padding: expanded ? 18 : 12,
                 borderRadius: expanded ? 22 : 18,
                 boxShadow: expanded
-                  ? "0 22px 60px rgba(24, 24, 27, 0.105), 0 3px 10px rgba(24, 24, 27, 0.06)"
-                  : "0 13px 36px rgba(24, 24, 27, 0.09), 0 2px 6px rgba(24, 24, 27, 0.05)",
+                  ? "var(--mo-shadow-card-expanded)"
+                  : "var(--mo-shadow-card)",
               }}
               transition={{
                 layout: spring,
                 padding: spring,
                 borderRadius: spring,
-                boxShadow: { duration: reducedMotion ? 0 : 0.22 },
+                boxShadow: {
+                  duration: reducedMotion ? 0 : 0.22,
+                },
               }}
-              className="relative w-full max-w-[404px] overflow-hidden border border-black/[0.055] bg-white"
+              className="relative w-full max-w-[404px] overflow-hidden border border-[var(--mo-border-card)] bg-[var(--mo-surface)]"
             >
+              <span id={titleId} className="sr-only">
+                Uzo Retail Inc.
+              </span>
+
               <span aria-live="polite" aria-atomic="true" className="sr-only">
                 {completedCount} of {steps.length} verification steps complete.
                 {reviewStatus === "Approved" ? " Merchant approved." : ""}
@@ -711,7 +861,11 @@ export default function MerchantOnboarding() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    transition={{ opacity: { duration: 0.15 } }}
+                    transition={{
+                      opacity: {
+                        duration: 0.15,
+                      },
+                    }}
                   >
                     <motion.button
                       ref={collapsedButtonRef}
@@ -720,18 +874,22 @@ export default function MerchantOnboarding() {
                       aria-controls={detailsId}
                       aria-label={`Expand Uzo Retail onboarding. ${completedCount} of ${steps.length} steps complete.`}
                       onClick={openDetails}
-                      whileTap={reducedMotion ? undefined : { scale: 0.992 }}
-                      className="group w-full cursor-pointer touch-manipulation rounded-[12px] text-left outline-none focus-visible:ring-2 focus-visible:ring-[#6f64ef]/55 focus-visible:ring-offset-4"
+                      whileTap={
+                        reducedMotion
+                          ? undefined
+                          : {
+                              scale: 0.992,
+                            }
+                      }
+                      className="group w-full cursor-pointer touch-manipulation rounded-[12px] text-left outline-none focus-visible:ring-2 focus-visible:ring-[var(--mo-focus-ring)] focus-visible:ring-offset-4 focus-visible:ring-offset-[var(--mo-surface)]"
                     >
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex min-w-0 items-center gap-2.5">
                           <motion.span layoutId="brand-mark">
                             <BrandMark />
                           </motion.span>
-                          <span
-                            id={titleId}
-                            className="truncate whitespace-nowrap text-[16px] font-semibold tracking-[-0.015em] text-[#33353a]"
-                          >
+
+                          <span className="truncate whitespace-nowrap text-[length:var(--mo-font-size-16)] font-semibold tracking-[var(--mo-tracking-title)] text-[var(--mo-text-title)]">
                             Uzo Retail Inc.
                           </span>
                         </div>
@@ -747,9 +905,11 @@ export default function MerchantOnboarding() {
                               className="w-[72px] sm:w-[88px]"
                             />
                           </motion.span>
-                          <span className="w-9 text-right text-[13px] tabular-nums text-[#777a80]">
+
+                          <span className="w-9 text-right text-[length:var(--mo-font-size-13)] tabular-nums text-[var(--mo-text-meta)]">
                             {progress}%
                           </span>
+
                           <DisclosureChevron expanded={false} />
                         </div>
                       </div>
@@ -762,6 +922,7 @@ export default function MerchantOnboarding() {
                             value={risk}
                             reducedMotion={reducedMotion}
                           />
+
                           <CompactMetadata
                             kind="status"
                             icon={CircleCheck}
@@ -769,9 +930,11 @@ export default function MerchantOnboarding() {
                             reducedMotion={reducedMotion}
                           />
                         </div>
+
                         <div
+                          role="group"
                           className="flex shrink-0 -space-x-2"
-                          aria-label="Reviewers"
+                          aria-label="Reviewers: Uzo, Victor, and Devin"
                         >
                           {REVIEWERS.map((member) => (
                             <motion.span
@@ -796,7 +959,11 @@ export default function MerchantOnboarding() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    transition={{ opacity: { duration: 0.15 } }}
+                    transition={{
+                      opacity: {
+                        duration: 0.15,
+                      },
+                    }}
                   >
                     <header className="flex items-center justify-between gap-3">
                       <motion.button
@@ -806,33 +973,50 @@ export default function MerchantOnboarding() {
                         aria-controls={detailsId}
                         aria-label="Collapse onboarding details"
                         onClick={closeDetails}
-                        whileTap={reducedMotion ? undefined : { scale: 0.985 }}
-                        className="-m-1 flex min-h-11 min-w-0 flex-1 cursor-pointer touch-manipulation items-center gap-2.5 rounded-xl p-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-[#6f64ef]/55"
+                        whileTap={
+                          reducedMotion
+                            ? undefined
+                            : {
+                                scale: 0.985,
+                              }
+                        }
+                        className="-m-1 flex min-h-11 min-w-0 flex-1 cursor-pointer touch-manipulation items-center gap-2.5 rounded-xl p-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-[var(--mo-focus-ring)]"
                       >
                         <motion.span layoutId="brand-mark">
                           <BrandMark />
                         </motion.span>
-                        <span
-                          id={titleId}
-                          className="truncate text-[18px] font-semibold tracking-[-0.02em] text-[#303237]"
-                        >
+
+                        <span className="truncate text-[length:var(--mo-font-size-18)] font-semibold tracking-[var(--mo-tracking-title-lg)] text-[var(--mo-text-title-expanded)]">
                           Uzo Retail Inc.
                         </span>
+
                         <DisclosureChevron expanded />
                       </motion.button>
 
                       <motion.div
                         initial={
-                          reducedMotion ? false : { opacity: 0, scale: 0.9 }
-                        }
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={
                           reducedMotion
-                            ? { opacity: 0 }
+                            ? false
                             : {
                                 opacity: 0,
                                 scale: 0.9,
-                                transition: { duration: 0.09 },
+                              }
+                        }
+                        animate={{
+                          opacity: 1,
+                          scale: 1,
+                        }}
+                        exit={
+                          reducedMotion
+                            ? {
+                                opacity: 0,
+                              }
+                            : {
+                                opacity: 0,
+                                scale: 0.9,
+                                transition: {
+                                  duration: 0.09,
+                                },
                               }
                         }
                         transition={{
@@ -849,8 +1033,11 @@ export default function MerchantOnboarding() {
                           onCollapse={collapseFromMenu}
                           onReset={() => setSteps(INITIAL_STEPS)}
                           onCompleteAll={() =>
-                            setSteps((cur) =>
-                              cur.map((s) => ({ ...s, completed: true })),
+                            setSteps((currentSteps) =>
+                              currentSteps.map((step) => ({
+                                ...step,
+                                completed: true,
+                              })),
                             )
                           }
                         />
@@ -859,7 +1046,11 @@ export default function MerchantOnboarding() {
 
                     <motion.div
                       initial={revealInitial}
-                      animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
+                      animate={{
+                        opacity: 1,
+                        filter: "blur(0px)",
+                        y: 0,
+                      }}
                       exit={revealExit}
                       transition={{
                         opacity: {
@@ -881,25 +1072,31 @@ export default function MerchantOnboarding() {
                         aria-valuemax={steps.length}
                         aria-valuenow={completedCount}
                         aria-valuetext={`${completedCount} of ${steps.length} steps complete`}
-                        className="relative flex h-9 items-center gap-3 overflow-hidden rounded-full border border-black/[0.055] bg-[#fbfbfc] px-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]"
+                        className="relative flex h-9 items-center gap-3 overflow-hidden rounded-full border border-[var(--mo-border-card)] bg-[var(--mo-surface-subtle)] px-3 shadow-[var(--mo-shadow-progress-inset)]"
                       >
                         <motion.span
                           aria-hidden="true"
                           animate={{
-                            color: isComplete ? "#3fb765" : "#b3b5ba",
+                            color: isComplete
+                              ? "var(--mo-progress-complete)"
+                              : "var(--mo-progress-icon)",
                           }}
-                          transition={{ duration: 0.3 }}
+                          transition={{
+                            duration: 0.3,
+                          }}
                           className="shrink-0"
                         >
                           <CircleCheck className="size-4" strokeWidth={1.8} />
                         </motion.span>
-                        <span className="whitespace-nowrap text-[12px] font-medium text-[#85888e]">
+
+                        <span className="whitespace-nowrap text-[length:var(--mo-font-size-12)] font-medium text-[var(--mo-text-progress)]">
                           <AnimatedCount
                             count={completedCount}
                             suffix={` of ${steps.length}`}
                             reducedMotion={reducedMotion}
                           />
                         </span>
+
                         <motion.span
                           layoutId="progress-track"
                           className="block min-w-0 flex-1"
@@ -910,7 +1107,8 @@ export default function MerchantOnboarding() {
                             className="w-full"
                           />
                         </motion.span>
-                        <span className="w-9 text-right text-[12px] tabular-nums text-[#85888e]">
+
+                        <span className="w-9 text-right text-[length:var(--mo-font-size-12)] tabular-nums text-[var(--mo-text-progress)]">
                           {progress}%
                         </span>
 
@@ -919,13 +1117,24 @@ export default function MerchantOnboarding() {
                             <motion.span
                               aria-hidden="true"
                               className="pointer-events-none absolute inset-0"
-                              initial={{ opacity: 0, x: "-100%" }}
-                              animate={{ opacity: [0, 0.5, 0], x: "100%" }}
-                              exit={{ opacity: 0 }}
-                              transition={{ duration: 0.9, ease: "easeOut" }}
+                              initial={{
+                                opacity: 0,
+                                x: "-100%",
+                              }}
+                              animate={{
+                                opacity: [0, 0.5, 0],
+                                x: "100%",
+                              }}
+                              exit={{
+                                opacity: 0,
+                              }}
+                              transition={{
+                                duration: 0.9,
+                                ease: "easeOut",
+                              }}
                               style={{
                                 background:
-                                  "linear-gradient(100deg, transparent, rgba(63,183,101,0.22), transparent)",
+                                  "linear-gradient(100deg, transparent, var(--mo-approved-shimmer), transparent)",
                               }}
                             />
                           )}
@@ -948,6 +1157,7 @@ export default function MerchantOnboarding() {
                           onValueChange={setRisk}
                           reducedMotion={reducedMotion}
                         />
+
                         <MetadataSelect
                           kind="status"
                           label="Status"
