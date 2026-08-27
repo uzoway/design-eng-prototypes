@@ -45,17 +45,24 @@ export default function Home() {
     <main className="portfolio-shell">
       <div className="portfolio-page">
         <header className="portfolio-header portfolio-reveal">
-          <Link className="portfolio-name" href="/" aria-label="Uzo Okafor, home">
+          <Link
+            className="portfolio-name"
+            href="/"
+            aria-label="Uzo Okafor, home"
+          >
             Uzo Okafor
           </Link>
 
           <div className="portfolio-role">
-            <span className="portfolio-status" aria-hidden="true" />
-            Design engineer · Nigeria
+            {/* <span className="portfolio-status" aria-hidden="true" /> */}
+            Web Design engineer
           </div>
         </header>
 
-        <section className="portfolio-intro portfolio-reveal" aria-labelledby="intro-heading">
+        <section
+          className="portfolio-intro portfolio-reveal"
+          aria-labelledby="intro-heading"
+        >
           <p className="portfolio-kicker">Hello, I’m Uzo.</p>
           <h1 className="portfolio-lede" id="intro-heading">
             I turn rough ideas into clear, thoughtful interfaces, then stay with
@@ -67,7 +74,10 @@ export default function Home() {
           </p>
         </section>
 
-        <section className="portfolio-work portfolio-reveal" aria-labelledby="work-heading">
+        <section
+          className="portfolio-work portfolio-reveal"
+          aria-labelledby="work-heading"
+        >
           <div className="portfolio-section-heading">
             <h2 id="work-heading">Selected work</h2>
             <span>2026</span>
