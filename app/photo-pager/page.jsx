@@ -12,6 +12,7 @@ const COMMIT_RATIO = 0.25;
 const VELOCITY_THR = 500;
 const SPRING_K = 350;
 const SPRING_D = 38;
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
 const rubberBand = (offset, dim) =>
   (1 - 1 / (Math.abs(offset) / dim + 1)) * dim * Math.sign(offset);
@@ -380,7 +381,7 @@ export default function PhotoPager() {
                     left: -PARALLAX_AMOUNT,
                     width: PHOTO_WIDTH + 2 * PARALLAX_AMOUNT,
                     height: "100%",
-                    background: `#111 url(/photos/portrait-${String(i + 1)}.webp) center/cover no-repeat`,
+                    background: `#111 url(${BASE_PATH}/photos/portrait-${String(i + 1)}.webp) center/cover no-repeat`,
                     willChange: "transform",
                   }}
                 />

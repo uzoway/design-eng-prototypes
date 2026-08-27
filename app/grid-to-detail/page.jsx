@@ -11,10 +11,11 @@ import {
 const PHOTO_FILE_COUNT = 20;
 const PHOTO_ASPECT = 340 / 480;
 const DETAIL_MAX_WIDTH = 400;
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
 const PHOTOS = Array.from({ length: PHOTO_FILE_COUNT }).map((_, i) => ({
   id: `photo-${i}`,
-  src: `/photos/portrait-${i + 1}.webp`,
+  src: `${BASE_PATH}/photos/portrait-${i + 1}.webp`,
   aspectRatio: PHOTO_ASPECT,
 }));
 
