@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://uzoway.github.io"),
+  metadataBase: new URL("https://uzookafor.com"),
   title: "Uzo Okafor — Web Design Engineer",
   description:
     "Bridging the gap between design intent and production code. Specializing in fluid micro-interactions and high-performance financial products.",
@@ -23,10 +23,10 @@ export const metadata: Metadata = {
     description:
       "Bridging the gap between design intent and production code. Specializing in fluid micro-interactions and high-performance financial products.",
     type: "website",
-    url: "https://uzoway.github.io/design-eng-prototypes/",
+    url: "https://uzookafor.com/",
     images: [
       {
-        url: "/design-eng-prototypes/og.png",
+        url: "/og.png",
         width: 1200,
         height: 630,
         alt: "Uzo Okafor — Web Design Engineer portfolio",
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
     title: "Uzo Okafor — Web Design Engineer",
     description:
       "Bridging the gap between design intent and production code. Specializing in fluid micro-interactions and high-performance financial products.",
-    images: ["/design-eng-prototypes/og.png"],
+    images: ["/og.png"],
   },
 };
 
