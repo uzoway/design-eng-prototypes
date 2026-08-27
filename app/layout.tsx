@@ -15,13 +15,13 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://uzoway.github.io"),
-  title: "Uzo Okafor — Design Engineer",
+  title: "Uzo Okafor — Web Design Engineer",
   description:
-    "Design engineer building thoughtful interfaces, interaction prototypes, and financial product experiences with React and Next.js.",
+    "Bridging the gap between design intent and production code. Specializing in fluid micro-interactions and high-performance financial products.",
   openGraph: {
-    title: "Uzo Okafor — Design Engineer",
+    title: "Uzo Okafor — Web Design Engineer",
     description:
-      "Thoughtful interfaces, interaction prototypes, and financial product experiences.",
+      "Bridging the gap between design intent and production code. Specializing in fluid micro-interactions and high-performance financial products.",
     type: "website",
     url: "https://uzoway.github.io/design-eng-prototypes/",
     images: [
@@ -29,15 +29,15 @@ export const metadata: Metadata = {
         url: "/design-eng-prototypes/og.png",
         width: 1200,
         height: 630,
-        alt: "Uzo Okafor — Design Engineer",
+        alt: "Uzo Okafor — Web Design Engineer portfolio",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Uzo Okafor — Design Engineer",
+    title: "Uzo Okafor — Web Design Engineer",
     description:
-      "Thoughtful interfaces, interaction prototypes, and financial product experiences.",
+      "Bridging the gap between design intent and production code. Specializing in fluid micro-interactions and high-performance financial products.",
     images: ["/design-eng-prototypes/og.png"],
   },
 };
