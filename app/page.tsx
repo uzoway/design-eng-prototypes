@@ -12,11 +12,11 @@ const websites = [
     disciplines: ["Product marketing", "Proptech"],
   },
   {
-    href: "https://www.genyro.com/",
-    title: "Genyro",
+    href: "https://www.hyperspectral.ai/",
+    title: "HyperSpectral AI",
     description:
-      "A biotech site that explains programmable DNA construction through structured storytelling, restrained motion, and a clear visual hierarchy.",
-    disciplines: ["Interaction", "Biotech"],
+      "A high-craft AI and life sciences site that turns complex spectral intelligence into a clear story through layered visuals, motion, and technical content.",
+    disciplines: ["Interaction", "AI / Life sciences"],
   },
   {
     href: "https://www.mailatafamilyfoundation.org/",
@@ -38,6 +38,13 @@ const websites = [
     description:
       "A responsive biotech site that presents RNA therapeutics, delivery technology, and pipeline information clearly for scientific and investor audiences.",
     disciplines: ["Web development", "Biotech"],
+  },
+  {
+    href: "https://www.genyro.com/",
+    title: "Genyro",
+    description:
+      "A biotech site that explains programmable DNA construction through structured storytelling, restrained motion, and a clear visual hierarchy.",
+    disciplines: ["Interaction", "Biotech"],
   },
 ];
 
