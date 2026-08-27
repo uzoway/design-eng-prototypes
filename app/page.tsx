@@ -1,130 +1,276 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
+
+const websites = [
+  {
+    href: "https://www.oun.homes/",
+    title: "Oun Homes",
+    description:
+      "A product marketing site for an AI real estate platform, turning a complex transaction workflow into a clear, focused story.",
+    disciplines: ["Product marketing", "Proptech"],
+  },
+  {
+    href: "https://www.genyro.com/",
+    title: "Genyro",
+    description:
+      "A biotech site that explains programmable DNA construction through structured storytelling, restrained motion, and a clear visual hierarchy.",
+    disciplines: ["Interaction", "Biotech"],
+  },
+  {
+    href: "https://www.mailatafamilyfoundation.org/",
+    title: "Mailata Family Foundation",
+    description:
+      "A story-led nonprofit site that brings the foundation's mission, programmes, and community work together in a responsive, media-rich experience.",
+    disciplines: ["Storytelling", "Nonprofit"],
+  },
+  {
+    href: "https://dtiglobal.net/",
+    title: "DTI Global",
+    description:
+      "A CMS-driven B2B manufacturing site that organizes dense technical content into a clear, responsive experience for automotive tooling customers.",
+    disciplines: ["Web systems", "Automotive"],
+  },
+  {
+    href: "https://www.thaliatx.com/",
+    title: "Thalia Therapeutics",
+    description:
+      "A responsive biotech site that presents RNA therapeutics, delivery technology, and pipeline information clearly for scientific and investor audiences.",
+    disciplines: ["Web development", "Biotech"],
+  },
+];
 
 const prototypes = [
-  {
-    slug: "photo-pager",
-    title: "Photo pager",
-    description:
-      "A tactile photo browser with gesture-led navigation, strict tab-trapping, and a precise sense of spatial position.",
-    disciplines: ["Interaction", "Motion"],
-  },
-  {
-    slug: "grid-to-detail",
-    title: "Grid to detail",
-    description:
-      "A fluid layout projection from a responsive grid into a focused view, utilizing spring-based cubic-bezier easing curves.",
-    disciplines: ["Prototyping", "Layout"],
-  },
   {
     slug: "merchant-onboarding",
     title: "Merchant onboarding",
     description:
-      "A review workflow that makes verification status clear. Built with clean DOM structures and ARIA-compliant state management.",
-    disciplines: ["Product design", "Fintech"],
+      "A verification review flow that keeps status, actions, and focus clear across mouse and keyboard interactions.",
+    disciplines: ["Product UI", "Accessibility"],
   },
   {
     slug: "currency-converter",
     title: "Currency converter",
     description:
-      "A conversion flow designed to make rates and fees transparent before commitment. Fast, accessible, and responsive.",
-    disciplines: ["Product design", "Fintech"],
+      "A conversion flow that makes rates, fees, and the final amount clear before commitment, across screen sizes and input states.",
+    disciplines: ["Product UI", "Fintech"],
+  },
+  {
+    slug: "grid-to-detail",
+    title: "Grid to detail",
+    description:
+      "A fluid transition from a responsive image grid into a focused detail view, tuned around motion and layout continuity.",
+    disciplines: ["Prototyping", "Layout"],
+  },
+  {
+    slug: "photo-pager",
+    title: "Photo pager",
+    description:
+      "A tactile photo browser with gesture-led navigation, predictable keyboard behaviour, and a clear sense of spatial position.",
+    disciplines: ["Interaction", "Motion"],
   },
 ];
 
 const techStack = [
   "TypeScript",
-  "React & Next.js",
+  "React / Next.js",
+  "JavaScript",
+  "HTML / CSS",
   "Framer Motion",
   "GSAP",
   "Tailwind CSS",
-  "Figma",
   "Webflow",
+  "Figma",
 ];
 
 const externalLinks = [
   { label: "X", href: "https://x.com/uzodev" },
+  { label: "Contra", href: "https://contra.com/uzochukwu_okafor/work" },
   { label: "GitHub", href: "https://github.com/uzoway" },
-  { label: "LinkedIn", href: "https://www.linkedin.com/in/uzochukwuokafor/" },
-  { label: "Webflow Sites", href: "http://uzo-okafor.webflow.io/" },
+  {
+    label: "LinkedIn",
+    href: "https://www.linkedin.com/in/uzochukwuokafor/",
+  },
 ];
 
+type ProjectRowProps = {
+  href: string;
+  title: string;
+  description: string;
+  disciplines: string[];
+  external?: boolean;
+};
+
+function ProjectRow({
+  href,
+  title,
+  description,
+  disciplines,
+  external = false,
+}: ProjectRowProps) {
+  const content = (
+    <>
+      <div className="relative z-10 flex flex-col justify-between gap-2 md:flex-row md:items-baseline md:gap-6">
+        <h3 className="text-base font-medium text-neutral-200 transition-colors group-hover:text-white">
+          {title}
+          {external && (
+            <>
+              <span
+                aria-hidden="true"
+                className="ml-2 inline-block text-neutral-600 transition-colors group-hover:text-neutral-400"
+              ></span>
+              <span className="sr-only"> opens in a new tab</span>
+            </>
+          )}
+        </h3>
+
+        <div className="flex gap-3 font-mono text-xs font-medium text-neutral-600">
+          {disciplines.map((discipline) => (
+            <span key={discipline}>{discipline}</span>
+          ))}
+        </div>
+      </div>
+
+      <p className="relative z-10 mt-2 max-w-md text-sm text-neutral-500 transition-colors group-hover:text-neutral-400">
+        {description}
+      </p>
+    </>
+  );
+
+  const className =
+    "group block rounded-sm py-6 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-neutral-500 focus-visible:ring-offset-4 focus-visible:ring-offset-[#0a0a0a]";
+
+  if (external) {
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={className}
+      >
+        {content}
+      </a>
+    );
+  }
+
+  return (
+    <Link href={href} className={className}>
+      {content}
+    </Link>
+  );
+}
+
 export default function Home() {
+  const shouldReduceMotion = useReducedMotion();
+
   return (
     <motion.main
-      initial={{ opacity: 0, filter: "blur(8px)", y: 10 }}
-      animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
-      transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+      initial={
+        shouldReduceMotion
+          ? false
+          : {
+              opacity: 0,
+              filter: "blur(8px)",
+              y: 10,
+            }
+      }
+      animate={{
+        opacity: 1,
+        filter: "blur(0px)",
+        y: 0,
+      }}
+      transition={{
+        duration: shouldReduceMotion ? 0 : 0.7,
+        ease: [0.16, 1, 0.3, 1],
+      }}
       className="min-h-screen bg-[#0a0a0a] text-neutral-200 selection:bg-neutral-800 selection:text-white"
     >
-      <div className="max-w-2xl mx-auto px-6 py-24 md:py-32 flex flex-col gap-24">
+      <div className="mx-auto flex max-w-2xl flex-col gap-24 px-6 py-24 md:py-32">
         <section className="space-y-8">
-          <header className="flex justify-between items-center text-sm font-medium tracking-tight text-neutral-500">
+          <header className="flex items-center justify-between text-sm font-medium tracking-tight text-neutral-500">
             <Link
               href="/"
-              className="text-white hover:text-neutral-300 transition-colors"
+              className="rounded-sm text-white transition-colors hover:text-neutral-300 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-neutral-500 focus-visible:ring-offset-4 focus-visible:ring-offset-[#0a0a0a]"
             >
               Uzo Okafor
             </Link>
+
             <span>Web Design Engineer</span>
           </header>
 
           <div className="space-y-6 text-lg leading-relaxed tracking-tight text-neutral-300">
             <p>
-              I design and engineer interfaces for the web. Currently focused on
-              building tactile, high-performance financial products where the
-              micro-interactions matter as much as the architecture.
+              I design and engineer interfaces for the web, with a focus on the
+              details that make them feel right in production.
             </p>
+
             <p className="text-neutral-500">
-              Whether I'm tuning spring animations, ensuring strict WCAG
-              accessibility, or refining a component's state machine, my goal is
-              to close the gap between design intent and production code. I
-              leverage AI tools like Claude and ChatGPT to ship precise, fluid
-              experiences at speed.
+              My work sits between design and frontend engineering, from
+              responsive behaviour and interaction to accessibility, component
+              structure, performance, and the systems that keep a build useful
+              after launch.
             </p>
           </div>
         </section>
 
         <section className="space-y-8">
-          <div className="flex justify-between items-end border-b border-neutral-800 pb-4">
+          <div className="flex items-end justify-between border-b border-neutral-800 pb-4">
             <h2 className="text-sm font-medium tracking-tight text-neutral-500">
               Selected Work
             </h2>
-            <span className="text-sm font-mono text-neutral-600">2026</span>
           </div>
 
-          <div className="flex flex-col">
-            {prototypes.map((prototype) => (
-              <Link
-                key={prototype.slug}
-                href={`/${prototype.slug}`}
-                className="group relative border-b border-neutral-800/50 py-6 last:border-0 block"
+          <ul>
+            {websites.map((website) => (
+              <li
+                key={website.href}
+                className="border-b border-neutral-800/50 last:border-0"
               >
-                <div className="flex flex-col md:flex-row md:items-baseline justify-between gap-2 md:gap-6 relative z-10">
-                  <h3 className="text-base font-medium transition-colors text-neutral-200 group-hover:text-white">
-                    {prototype.title}
-                  </h3>
-                  <div className="flex gap-3 text-xs font-medium font-mono text-neutral-600">
-                    {prototype.disciplines.map((d) => (
-                      <span key={d}>{d}</span>
-                    ))}
-                  </div>
-                </div>
-                <p className="mt-2 text-sm text-neutral-500 max-w-md relative z-10 transition-colors group-hover:text-neutral-400">
-                  {prototype.description}
-                </p>
-              </Link>
+                <ProjectRow
+                  href={website.href}
+                  title={website.title}
+                  description={website.description}
+                  disciplines={website.disciplines}
+                  external
+                />
+              </li>
             ))}
+          </ul>
+        </section>
+
+        <section className="space-y-8">
+          <div className="flex items-end justify-between border-b border-neutral-800 pb-4">
+            <h2 className="text-sm font-medium tracking-tight text-neutral-500">
+              Lab
+            </h2>
+
+            <span className="font-mono text-sm text-neutral-600">2026</span>
           </div>
+
+          <ul>
+            {prototypes.map((prototype) => (
+              <li
+                key={prototype.slug}
+                className="border-b border-neutral-800/50 last:border-0"
+              >
+                <ProjectRow
+                  href={`/${prototype.slug}`}
+                  title={prototype.title}
+                  description={prototype.description}
+                  disciplines={prototype.disciplines}
+                />
+              </li>
+            ))}
+          </ul>
         </section>
 
         <section className="space-y-6">
-          <h2 className="text-sm font-medium tracking-tight text-neutral-500 border-b border-neutral-800 pb-4">
+          <h2 className="border-b border-neutral-800 pb-4 text-sm font-medium tracking-tight text-neutral-500">
             Toolkit
           </h2>
-          <ul className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-neutral-400 font-mono tracking-tight">
+
+          <ul className="flex flex-wrap gap-x-6 gap-y-2 font-mono text-sm tracking-tight text-neutral-400">
             {techStack.map((tech) => (
               <li key={tech}>{tech}</li>
             ))}
@@ -133,27 +279,28 @@ export default function Home() {
 
         <footer className="space-y-8 pt-12">
           <h2 className="text-sm font-medium tracking-tight text-neutral-500">
-            Let's talk
+            Let&apos;s talk
           </h2>
 
-          <div className="flex flex-col md:flex-row justify-between gap-6 pt-8 border-t border-neutral-800 text-sm font-medium">
+          <div className="flex flex-col justify-between gap-6 border-t border-neutral-800 pt-8 text-sm font-medium md:flex-row">
             <a
               href="mailto:uzochukwuokafor01@gmail.com"
-              className="text-neutral-400 hover:text-white transition-colors"
+              className="rounded-sm text-neutral-400 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-neutral-500 focus-visible:ring-offset-4 focus-visible:ring-offset-[#0a0a0a]"
             >
-              uzochukwuokafor01@gmail.com
+              Email
             </a>
 
-            <nav className="flex flex-wrap gap-6">
+            <nav aria-label="Social links" className="flex flex-wrap gap-6">
               {externalLinks.map((link) => (
                 <a
                   key={link.label}
                   href={link.href}
                   target="_blank"
-                  rel="noreferrer"
-                  className="text-neutral-400 hover:text-white transition-colors"
+                  rel="noopener noreferrer"
+                  className="rounded-sm text-neutral-400 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-neutral-500 focus-visible:ring-offset-4 focus-visible:ring-offset-[#0a0a0a]"
                 >
                   {link.label}
+                  <span className="sr-only"> opens in a new tab</span>
                 </a>
               ))}
             </nav>
