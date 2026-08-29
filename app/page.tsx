@@ -64,6 +64,13 @@ const prototypes = [
     disciplines: ["Product UI", "Fintech"],
   },
   {
+    slug: "reorder-queue",
+    title: "Reorder queue",
+    description:
+      "A tactile playlist queue with spring reordering, boundary feedback, and accessible keyboard controls.",
+    disciplines: ["Interaction", "Accessibility"],
+  },
+  {
     slug: "grid-to-detail",
     title: "Grid to detail",
     description:
