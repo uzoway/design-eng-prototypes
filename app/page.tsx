@@ -64,6 +64,13 @@ const prototypes = [
     disciplines: ["Product UI", "Fintech"],
   },
   {
+    slug: "morph-explorations",
+    title: "Icon morph explorations",
+    description:
+      "A crafted collection of responsive SVG icon morphs exploring path interpolation, spring motion, state transitions, and accessible interaction.",
+    disciplines: ["Interaction", "Motion", "Visual Design", "Accessibility"],
+  },
+  {
     slug: "reorder-queue",
     title: "Reorder queue",
     description:
