@@ -64,6 +64,13 @@ const prototypes = [
     disciplines: ["Product UI", "Fintech"],
   },
   {
+    slug: "cellular-status-morph",
+    title: "Cellular status morph",
+    description:
+      "A frame-tuned status icon animation that transforms cellular, Wi-Fi, and battery states through continuous SVG motion.",
+    disciplines: ["Interaction", "Motion", "Prototyping"],
+  },
+  {
     slug: "morph-explorations",
     title: "Icon morph explorations",
     description:
