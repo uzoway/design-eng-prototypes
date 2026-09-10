@@ -339,7 +339,12 @@ function StateTag({ label, reducedMotion }) {
       };
 
   return (
-    <span className="morph-tag" role="status" aria-live="polite" aria-atomic="true">
+    <span
+      className="morph-tag"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+    >
       <AnimatePresence mode="popLayout" initial={false}>
         <motion.span className="morph-tag-text" key={label} {...presence}>
           {label}
