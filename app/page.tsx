@@ -71,6 +71,13 @@ const prototypes = [
     disciplines: ["Interaction", "Motion", "Prototyping"],
   },
   {
+    slug: "unified-connection",
+    title: "Unified Connection",
+    description:
+      "A what-if exploration for iPhone Duo that unifies Wi-Fi, cellular, weak signal, and offline states through continuous SVG morphing.",
+    disciplines: ["Interaction", "Motion", "Prototyping"],
+  },
+  {
     slug: "morph-explorations",
     title: "Icon morph explorations",
     description:
