@@ -11,7 +11,6 @@ const WIFI_TRANSLATE_X = 66.496;
 const WIFI_TRANSLATE_Y = 34.44;
 
 const WIFI_STROKE_WIDTH = 9.05 * WIFI_SCALE;
-
 const CELLULAR_STROKE_WIDTH = 11;
 const BATTERY_STROKE_WIDTH = 8.5;
 
@@ -34,6 +33,10 @@ const STATES = [
   {
     id: "weak",
     label: "Weak",
+  },
+  {
+    id: "no-internet",
+    label: "No Internet",
   },
   {
     id: "offline",
@@ -388,6 +391,23 @@ const WIFI_MIDDLE_RADIUS = 24.32 * WIFI_SCALE;
 
 const WIFI_SEED = transformWifiPoint(311.5, 197);
 
+const WIFI_TERMINAL_CENTER = transformWifiPoint(311.5, 196.25);
+
+const NO_INTERNET_STEM_CENTER = {
+  x: WIFI_CENTER.x,
+  y: 193.3,
+};
+
+const NO_INTERNET_STEM_RADIUS = 2.35;
+
+const NO_INTERNET_STEM_SCALE_Y = 2;
+
+const NO_INTERNET_DOT = {
+  x: WIFI_CENTER.x,
+  y: 202.25,
+  r: 2.45,
+};
+
 const TERMINAL_SOURCE_POINTS = [
   [311.5, 190],
 
@@ -428,6 +448,12 @@ const TERMINAL_OFFLINE_POINTS = createCircleTargetPoints(
   CONNECTIVITY_CENTER.x,
   CONNECTIVITY_CENTER.y,
   0.01,
+);
+
+const TERMINAL_NO_INTERNET_POINTS = createCircleTargetPoints(
+  NO_INTERNET_STEM_CENTER.x,
+  NO_INTERNET_STEM_CENTER.y,
+  NO_INTERNET_STEM_RADIUS,
 );
 
 function createTerminalPath(progress) {
@@ -510,6 +536,27 @@ function setNumberAttribute(element, attribute, value) {
   element.setAttribute(attribute, value.toFixed(3));
 }
 
+function setTerminalScale(terminal, center, scaleY) {
+  if (Math.abs(scaleY - 1) < 0.001) {
+    terminal.removeAttribute("transform");
+
+    return;
+  }
+
+  terminal.setAttribute(
+    "transform",
+    [
+      `translate(${center.x.toFixed(3)} ${center.y.toFixed(3)})`,
+      `scale(1 ${scaleY.toFixed(4)})`,
+      `translate(${(-center.x).toFixed(3)} ${(-center.y).toFixed(3)})`,
+    ].join(" "),
+  );
+}
+
+function resetTerminalScale(terminal) {
+  terminal.removeAttribute("transform");
+}
+
 function getMorphElements(svg) {
   const outer = svg.querySelector('[data-morph="outer"]');
 
@@ -533,6 +580,8 @@ function getMorphElements(svg) {
 
 function renderWifiToCellular(elements, progress) {
   const { outer, middle, terminal, seed } = elements;
+
+  resetTerminalScale(terminal);
 
   const outerProgress = segmentProgress(progress, 0, 0.88);
 
@@ -638,6 +687,8 @@ function renderWifiToCellular(elements, progress) {
 function renderCellularToWeak(elements, progress) {
   const { outer, middle, terminal, seed } = elements;
 
+  resetTerminalScale(terminal);
+
   outer.setAttribute(
     "d",
     createArcPath(CELLULAR_DOTS[0].x, CELLULAR_DOTS[0].y, 0.01, 0, 0),
@@ -679,6 +730,8 @@ function renderDotsToOffline(
   seedStartOpacity,
 ) {
   const { outer, middle, terminal, seed } = elements;
+
+  resetTerminalScale(terminal);
 
   const outerConverge = segmentProgress(progress, 0, 0.62);
 
@@ -833,6 +886,8 @@ function renderWifiToWeak(elements, progress) {
 function renderWifiToOffline(elements, progress) {
   const { outer, middle, terminal, seed } = elements;
 
+  resetTerminalScale(terminal);
+
   const outerProgress = segmentProgress(progress, 0, 1);
 
   const middleProgress = segmentProgress(progress, 0.04, 0.83);
@@ -946,6 +1001,213 @@ function renderWifiToOffline(elements, progress) {
   seed.setAttribute("opacity", interpolate(1, 0, seedProgress).toFixed(3));
 }
 
+function renderWifiToNoInternet(elements, progress) {
+  const { terminal, seed } = elements;
+
+  renderWifiToCellular(elements, 0);
+
+  const terminalProgress = segmentProgress(progress, 0, 0.84);
+
+  const seedProgress = segmentProgress(progress, 0.14, 1);
+
+  terminal.setAttribute(
+    "d",
+    createClosedPath(
+      interpolatePathPoints(
+        TERMINAL_SOURCE_POINTS,
+        TERMINAL_NO_INTERNET_POINTS,
+        terminalProgress,
+      ),
+    ),
+  );
+
+  terminal.setAttribute("opacity", "1");
+
+  const terminalCenter = interpolatePoint(
+    WIFI_TERMINAL_CENTER,
+    NO_INTERNET_STEM_CENTER,
+    terminalProgress,
+  );
+
+  setTerminalScale(
+    terminal,
+    terminalCenter,
+    interpolate(1, NO_INTERNET_STEM_SCALE_Y, terminalProgress),
+  );
+
+  const seedPosition = cubicPoint(
+    WIFI_SEED,
+    {
+      x: WIFI_SEED.x,
+      y: 196.5,
+    },
+    {
+      x: NO_INTERNET_DOT.x,
+      y: 200.2,
+    },
+    NO_INTERNET_DOT,
+    seedProgress,
+  );
+
+  setNumberAttribute(seed, "cx", seedPosition.x);
+
+  setNumberAttribute(seed, "cy", seedPosition.y);
+
+  setNumberAttribute(
+    seed,
+    "r",
+    interpolate(0, NO_INTERNET_DOT.r, seedProgress),
+  );
+
+  seed.setAttribute("opacity", "1");
+}
+
+function renderDotsToNoInternet(elements, progress, startOpacity) {
+  const { terminal, seed } = elements;
+
+  renderWifiToCellular(elements, 1 - progress);
+
+  const terminalProgress = segmentProgress(progress, 0.04, 0.92);
+
+  const seedProgress = segmentProgress(progress, 0.02, 0.94);
+
+  const visibilityProgress = segmentProgress(progress, 0, 0.72);
+
+  terminal.setAttribute(
+    "d",
+    createClosedPath(
+      interpolatePathPoints(
+        TERMINAL_CELLULAR_POINTS,
+        TERMINAL_NO_INTERNET_POINTS,
+        terminalProgress,
+      ),
+    ),
+  );
+
+  const terminalCenter = interpolatePoint(
+    CELLULAR_DOTS[2],
+    NO_INTERNET_STEM_CENTER,
+    terminalProgress,
+  );
+
+  setTerminalScale(
+    terminal,
+    terminalCenter,
+    interpolate(1, NO_INTERNET_STEM_SCALE_Y, terminalProgress),
+  );
+
+  terminal.setAttribute(
+    "opacity",
+    interpolate(startOpacity, 1, visibilityProgress).toFixed(3),
+  );
+
+  const seedPosition = cubicPoint(
+    CELLULAR_DOTS[3],
+    {
+      x: 342,
+      y: 219,
+    },
+    {
+      x: 327,
+      y: 206,
+    },
+    NO_INTERNET_DOT,
+    seedProgress,
+  );
+
+  setNumberAttribute(seed, "cx", seedPosition.x);
+
+  setNumberAttribute(seed, "cy", seedPosition.y);
+
+  setNumberAttribute(
+    seed,
+    "r",
+    interpolate(5.5, NO_INTERNET_DOT.r, seedProgress),
+  );
+
+  seed.setAttribute(
+    "opacity",
+    interpolate(startOpacity, 1, visibilityProgress).toFixed(3),
+  );
+}
+
+function renderCellularToNoInternet(elements, progress) {
+  renderDotsToNoInternet(elements, progress, 1);
+}
+
+function renderWeakToNoInternet(elements, progress) {
+  renderDotsToNoInternet(elements, progress, 0.14);
+}
+
+function renderOfflineToNoInternet(elements, progress) {
+  const { terminal, seed } = elements;
+
+  renderWifiToOffline(elements, 1 - progress);
+
+  const terminalProgress = segmentProgress(progress, 0.08, 0.88);
+
+  const seedProgress = segmentProgress(progress, 0.16, 0.94);
+
+  const visibilityProgress = segmentProgress(progress, 0.08, 0.7);
+
+  terminal.setAttribute(
+    "d",
+    createClosedPath(
+      interpolatePathPoints(
+        TERMINAL_OFFLINE_POINTS,
+        TERMINAL_NO_INTERNET_POINTS,
+        terminalProgress,
+      ),
+    ),
+  );
+
+  const terminalCenter = interpolatePoint(
+    CONNECTIVITY_CENTER,
+    NO_INTERNET_STEM_CENTER,
+    terminalProgress,
+  );
+
+  setTerminalScale(
+    terminal,
+    terminalCenter,
+    interpolate(1, NO_INTERNET_STEM_SCALE_Y, terminalProgress),
+  );
+
+  terminal.setAttribute(
+    "opacity",
+    interpolate(0, 1, visibilityProgress).toFixed(3),
+  );
+
+  const seedPosition = cubicPoint(
+    CONNECTIVITY_CENTER,
+    {
+      x: 320,
+      y: 220,
+    },
+    {
+      x: 319.7,
+      y: 208,
+    },
+    NO_INTERNET_DOT,
+    seedProgress,
+  );
+
+  setNumberAttribute(seed, "cx", seedPosition.x);
+
+  setNumberAttribute(seed, "cy", seedPosition.y);
+
+  setNumberAttribute(
+    seed,
+    "r",
+    interpolate(0.01, NO_INTERNET_DOT.r, seedProgress),
+  );
+
+  seed.setAttribute(
+    "opacity",
+    interpolate(0, 1, visibilityProgress).toFixed(3),
+  );
+}
+
 function renderTransition(svg, fromState, toState, progress) {
   const elements = getMorphElements(svg);
 
@@ -1023,6 +1285,54 @@ function renderTransition(svg, fromState, toState, progress) {
 
   if (fromState === "offline" && toState === "wifi") {
     renderWifiToOffline(elements, 1 - t);
+
+    return;
+  }
+
+  if (fromState === "wifi" && toState === "no-internet") {
+    renderWifiToNoInternet(elements, t);
+
+    return;
+  }
+
+  if (fromState === "no-internet" && toState === "wifi") {
+    renderWifiToNoInternet(elements, 1 - t);
+
+    return;
+  }
+
+  if (fromState === "cellular" && toState === "no-internet") {
+    renderCellularToNoInternet(elements, t);
+
+    return;
+  }
+
+  if (fromState === "no-internet" && toState === "cellular") {
+    renderCellularToNoInternet(elements, 1 - t);
+
+    return;
+  }
+
+  if (fromState === "weak" && toState === "no-internet") {
+    renderWeakToNoInternet(elements, t);
+
+    return;
+  }
+
+  if (fromState === "no-internet" && toState === "weak") {
+    renderWeakToNoInternet(elements, 1 - t);
+
+    return;
+  }
+
+  if (fromState === "offline" && toState === "no-internet") {
+    renderOfflineToNoInternet(elements, t);
+
+    return;
+  }
+
+  if (fromState === "no-internet" && toState === "offline") {
+    renderOfflineToNoInternet(elements, 1 - t);
   }
 }
 
@@ -1051,10 +1361,21 @@ function renderCanonicalState(svg, state) {
     return;
   }
 
+  if (state === "no-internet") {
+    renderWifiToNoInternet(elements, 1);
+
+    return;
+  }
+
   renderWeakToOffline(elements, 1);
 }
 
 function StatusIcon({ state, svgRef }) {
+  const ariaLabel =
+    state === "no-internet"
+      ? "Wi-Fi connected, no internet"
+      : `${state} connection status`;
+
   return (
     <svg
       ref={svgRef}
@@ -1062,7 +1383,7 @@ function StatusIcon({ state, svgRef }) {
       viewBox={`0 0 ${VIEWBOX_WIDTH} ${VIEWBOX_HEIGHT}`}
       fill="none"
       role="img"
-      aria-label={`${state} connection status`}
+      aria-label={ariaLabel}
     >
       <BatteryArc />
 
@@ -1118,8 +1439,6 @@ export default function UnifiedConnectionPrototype() {
   const animationFrameRef = useRef(null);
 
   const currentStateRef = useRef("wifi");
-
-  const selectedStateRef = useRef("wifi");
 
   const activeTransitionRef = useRef(null);
 
@@ -1229,8 +1548,6 @@ export default function UnifiedConnectionPrototype() {
 
     if (active) {
       if (nextState === active.fromState) {
-        selectedStateRef.current = nextState;
-
         setState(nextState);
 
         animatePair(active.fromState, active.toState, active.progress, 0);
@@ -1239,8 +1556,6 @@ export default function UnifiedConnectionPrototype() {
       }
 
       if (nextState === active.toState) {
-        selectedStateRef.current = nextState;
-
         setState(nextState);
 
         animatePair(active.fromState, active.toState, active.progress, 1);
@@ -1256,8 +1571,6 @@ export default function UnifiedConnectionPrototype() {
     if (nextState === fromState) {
       return;
     }
-
-    selectedStateRef.current = nextState;
 
     setState(nextState);
 
@@ -1322,8 +1635,10 @@ export default function UnifiedConnectionPrototype() {
             "SF Pro Text",
             "Helvetica Neue",
             sans-serif;
-          -webkit-font-smoothing: antialiased;
-          -moz-osx-font-smoothing: grayscale;
+          -webkit-font-smoothing:
+            antialiased;
+          -moz-osx-font-smoothing:
+            grayscale;
         }
 
         [data-prototype="stage"] {
@@ -1376,7 +1691,7 @@ export default function UnifiedConnectionPrototype() {
           display: grid;
           grid-template-columns:
             repeat(
-              4,
+              5,
               var(
                 --segment-width
               )
@@ -1432,7 +1747,8 @@ export default function UnifiedConnectionPrototype() {
             translateX(-50%);
           isolation: isolate;
           user-select: none;
-          -webkit-user-select: none;
+          -webkit-user-select:
+            none;
         }
 
         [data-control="indicator"] {
@@ -1519,7 +1835,8 @@ export default function UnifiedConnectionPrototype() {
           letter-spacing:
             -0.01em;
           cursor: pointer;
-          touch-action: manipulation;
+          touch-action:
+            manipulation;
           -webkit-tap-highlight-color:
             transparent;
           transition:
@@ -1593,17 +1910,17 @@ export default function UnifiedConnectionPrototype() {
           [data-control="segments"] {
             --segment-width:
               min(
-                22vw,
+                18vw,
                 70px
               );
 
-            bottom:
-              10px;
+            bottom: 10px;
           }
 
           [data-control="segment"] {
             height: 29px;
-            font-size: 10px;
+            padding: 0 4px;
+            font-size: 9.5px;
           }
         }
 
