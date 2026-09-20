@@ -15,6 +15,7 @@ const CELLULAR_STROKE_WIDTH = 11;
 const BATTERY_STROKE_WIDTH = 8.5;
 
 const MORPH_DURATION = 0.98;
+const REDUCED_MOTION_DURATION = 0.17;
 
 const CONNECTIVITY_CENTER = {
   x: 319.43,
@@ -41,6 +42,21 @@ const STATES = [
   {
     id: "offline",
     label: "Offline",
+  },
+];
+
+const MOTION_MODES = [
+  {
+    id: "auto",
+    label: "Auto",
+  },
+  {
+    id: "full",
+    label: "Full",
+  },
+  {
+    id: "reduced",
+    label: "Reduced",
   },
 ];
 
@@ -123,6 +139,8 @@ function createCubicBezier(x1, y1, x2, y2) {
 }
 
 const easeMorph = createCubicBezier(0.22, 0.72, 0, 1);
+
+const easeReduced = createCubicBezier(0.25, 0.1, 0.25, 1);
 
 function segmentProgress(progress, start, end) {
   return clamp((progress - start) / (end - start));
@@ -557,14 +575,22 @@ function resetTerminalScale(terminal) {
   terminal.removeAttribute("transform");
 }
 
-function getMorphElements(svg) {
-  const outer = svg.querySelector('[data-morph="outer"]');
+function getMotionLayer(svg, layer) {
+  return svg.querySelector(`[data-motion-layer="${layer}"]`);
+}
 
-  const middle = svg.querySelector('[data-morph="middle"]');
+function getMorphElements(root) {
+  if (!root) {
+    return null;
+  }
 
-  const terminal = svg.querySelector('[data-morph="terminal"]');
+  const outer = root.querySelector('[data-morph="outer"]');
 
-  const seed = svg.querySelector('[data-morph="seed"]');
+  const middle = root.querySelector('[data-morph="middle"]');
+
+  const terminal = root.querySelector('[data-morph="terminal"]');
+
+  const seed = root.querySelector('[data-morph="seed"]');
 
   if (!outer || !middle || !terminal || !seed) {
     return null;
@@ -1209,7 +1235,9 @@ function renderOfflineToNoInternet(elements, progress) {
 }
 
 function renderTransition(svg, fromState, toState, progress) {
-  const elements = getMorphElements(svg);
+  const primary = getMotionLayer(svg, "primary");
+
+  const elements = getMorphElements(primary);
 
   if (!elements) {
     return;
@@ -1336,8 +1364,8 @@ function renderTransition(svg, fromState, toState, progress) {
   }
 }
 
-function renderCanonicalState(svg, state) {
-  const elements = getMorphElements(svg);
+function renderCanonicalState(root, state) {
+  const elements = getMorphElements(root);
 
   if (!elements) {
     return;
@@ -1370,6 +1398,24 @@ function renderCanonicalState(svg, state) {
   renderWeakToOffline(elements, 1);
 }
 
+function resetMotionLayers(svg, state) {
+  const primary = getMotionLayer(svg, "primary");
+
+  const secondary = getMotionLayer(svg, "secondary");
+
+  if (!primary || !secondary) {
+    return;
+  }
+
+  renderCanonicalState(primary, state);
+
+  renderCanonicalState(secondary, state);
+
+  primary.setAttribute("opacity", "1");
+
+  secondary.setAttribute("opacity", "0");
+}
+
 function StatusIcon({ state, svgRef }) {
   const ariaLabel =
     state === "no-internet"
@@ -1387,7 +1433,13 @@ function StatusIcon({ state, svgRef }) {
     >
       <BatteryArc />
 
-      <MorphableConnectivity />
+      <g data-motion-layer="primary">
+        <MorphableConnectivity />
+      </g>
+
+      <g data-motion-layer="secondary" opacity="0" aria-hidden="true">
+        <MorphableConnectivity />
+      </g>
     </svg>
   );
 }
@@ -1431,8 +1483,42 @@ function SegmentedControl({ value, onChange }) {
   );
 }
 
+function MotionControl({ value, onChange }) {
+  return (
+    <div
+      data-control="motion-tester"
+      role="radiogroup"
+      aria-label="Motion preview mode"
+    >
+      <span data-control="motion-label">Motion</span>
+
+      <div data-control="motion-options">
+        {MOTION_MODES.map(function renderMotionMode(mode) {
+          const active = mode.id === value;
+
+          return (
+            <button
+              key={mode.id}
+              data-control="motion-option"
+              data-active={active ? "true" : "false"}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              onClick={function selectMotionMode() {
+                onChange(mode.id);
+              }}
+            >
+              {mode.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function UnifiedConnectionPrototype() {
-  const reducedMotion = useReducedMotion();
+  const systemReducedMotion = useReducedMotion();
 
   const svgRef = useRef(null);
 
@@ -1440,11 +1526,19 @@ export default function UnifiedConnectionPrototype() {
 
   const currentStateRef = useRef("wifi");
 
+  const selectedStateRef = useRef("wifi");
+
   const activeTransitionRef = useRef(null);
 
   const [state, setState] = useState("wifi");
 
-  const cancelMorph = useCallback(function cancelMorph() {
+  const [motionMode, setMotionMode] = useState("auto");
+
+  const reducedMotion =
+    motionMode === "reduced" ||
+    (motionMode === "auto" && Boolean(systemReducedMotion));
+
+  const cancelAnimation = useCallback(function cancelAnimation() {
     if (animationFrameRef.current !== null) {
       cancelAnimationFrame(animationFrameRef.current);
 
@@ -1473,11 +1567,29 @@ export default function UnifiedConnectionPrototype() {
       startProgress = 0,
       targetProgress = 1,
     ) {
-      cancelMorph();
+      cancelAnimation();
+
+      const svg = svgRef.current;
+
+      if (!svg) {
+        return;
+      }
+
+      const primary = getMotionLayer(svg, "primary");
+
+      const secondary = getMotionLayer(svg, "secondary");
+
+      if (!primary || !secondary) {
+        return;
+      }
+
+      secondary.setAttribute("opacity", "0");
+
+      primary.setAttribute("opacity", "1");
 
       const distance = Math.abs(targetProgress - startProgress);
 
-      if (reducedMotion || distance === 0) {
+      if (distance === 0) {
         renderPairProgress(fromState, toState, targetProgress);
 
         currentStateRef.current = targetProgress === 1 ? toState : fromState;
@@ -1492,6 +1604,7 @@ export default function UnifiedConnectionPrototype() {
       let startTime = null;
 
       activeTransitionRef.current = {
+        type: "full",
         fromState,
         toState,
         progress: startProgress,
@@ -1540,25 +1653,148 @@ export default function UnifiedConnectionPrototype() {
 
       animationFrameRef.current = requestAnimationFrame(tick);
     },
-    [cancelMorph, reducedMotion, renderPairProgress],
+    [cancelAnimation, renderPairProgress],
+  );
+
+  const animateReduced = useCallback(
+    function animateReduced(
+      fromState,
+      toState,
+      startProgress = 0,
+      targetProgress = 1,
+    ) {
+      cancelAnimation();
+
+      const svg = svgRef.current;
+
+      if (!svg) {
+        return;
+      }
+
+      const primary = getMotionLayer(svg, "primary");
+
+      const secondary = getMotionLayer(svg, "secondary");
+
+      if (!primary || !secondary) {
+        return;
+      }
+
+      renderCanonicalState(primary, fromState);
+
+      renderCanonicalState(secondary, toState);
+
+      const distance = Math.abs(targetProgress - startProgress);
+
+      if (distance === 0) {
+        const settledState = targetProgress === 1 ? toState : fromState;
+
+        resetMotionLayers(svg, settledState);
+
+        currentStateRef.current = settledState;
+
+        activeTransitionRef.current = null;
+
+        return;
+      }
+
+      primary.setAttribute("opacity", (1 - startProgress).toFixed(3));
+
+      secondary.setAttribute("opacity", startProgress.toFixed(3));
+
+      const duration = REDUCED_MOTION_DURATION * distance * 1000;
+
+      let startTime = null;
+
+      activeTransitionRef.current = {
+        type: "reduced",
+        fromState,
+        toState,
+        progress: startProgress,
+        targetProgress,
+      };
+
+      function tick(now) {
+        if (startTime === null) {
+          startTime = now;
+        }
+
+        const elapsed = now - startTime;
+
+        const rawProgress = clamp(elapsed / duration);
+
+        const easedProgress = easeReduced(rawProgress);
+
+        const dissolveProgress = interpolate(
+          startProgress,
+          targetProgress,
+          easedProgress,
+        );
+
+        const active = activeTransitionRef.current;
+
+        if (active) {
+          active.progress = dissolveProgress;
+        }
+
+        primary.setAttribute("opacity", (1 - dissolveProgress).toFixed(3));
+
+        secondary.setAttribute("opacity", dissolveProgress.toFixed(3));
+
+        if (rawProgress < 1) {
+          animationFrameRef.current = requestAnimationFrame(tick);
+
+          return;
+        }
+
+        animationFrameRef.current = null;
+
+        const settledState = targetProgress === 1 ? toState : fromState;
+
+        resetMotionLayers(svg, settledState);
+
+        currentStateRef.current = settledState;
+
+        activeTransitionRef.current = null;
+      }
+
+      animationFrameRef.current = requestAnimationFrame(tick);
+    },
+    [cancelAnimation],
   );
 
   function selectState(nextState) {
     const active = activeTransitionRef.current;
 
     if (active) {
+      const animateActiveTransition =
+        active.type === "reduced" ? animateReduced : animatePair;
+
       if (nextState === active.fromState) {
+        selectedStateRef.current = nextState;
+
         setState(nextState);
 
-        animatePair(active.fromState, active.toState, active.progress, 0);
+        animateActiveTransition(
+          active.fromState,
+          active.toState,
+          active.progress,
+          0,
+        );
 
         return;
       }
 
       if (nextState === active.toState) {
+        selectedStateRef.current = nextState;
+
         setState(nextState);
 
-        animatePair(active.fromState, active.toState, active.progress, 1);
+        animateActiveTransition(
+          active.fromState,
+          active.toState,
+          active.progress,
+          1,
+        );
 
         return;
       }
@@ -1572,34 +1808,71 @@ export default function UnifiedConnectionPrototype() {
       return;
     }
 
+    selectedStateRef.current = nextState;
+
     setState(nextState);
+
+    if (reducedMotion) {
+      animateReduced(fromState, nextState, 0, 1);
+
+      return;
+    }
 
     animatePair(fromState, nextState, 0, 1);
   }
 
+  function selectMotionMode(nextMode) {
+    if (nextMode === motionMode) {
+      return;
+    }
+
+    setMotionMode(nextMode);
+  }
+
   useEffect(
-    function initialiseMorph() {
+    function synchroniseMotionMode() {
       const svg = svgRef.current;
 
-      if (svg) {
-        renderCanonicalState(svg, currentStateRef.current);
+      if (!svg) {
+        return;
       }
 
-      return function cleanupMorph() {
-        cancelMorph();
+      cancelAnimation();
+
+      activeTransitionRef.current = null;
+
+      const settledState = selectedStateRef.current;
+
+      currentStateRef.current = settledState;
+
+      resetMotionLayers(svg, settledState);
+    },
+    [reducedMotion, cancelAnimation],
+  );
+
+  useEffect(
+    function cleanupAnimation() {
+      return function cleanup() {
+        cancelAnimation();
       };
     },
-    [cancelMorph],
+    [cancelAnimation],
   );
 
   return (
-    <main data-prototype="page">
+    <main
+      data-prototype="page"
+      data-motion-mode={motionMode}
+      data-reduced-motion={reducedMotion ? "true" : "false"}
+    >
       <section data-prototype="stage" aria-label="Unified connection prototype">
         <div data-status="stage">
           <StatusIcon state={state} svgRef={svgRef} />
         </div>
 
         <SegmentedControl value={state} onChange={selectState} />
+
+        <MotionControl value={motionMode} onChange={selectMotionMode} />
       </section>
 
       <style>{`
@@ -1868,7 +2141,8 @@ export default function UnifiedConnectionPrototype() {
             scale(0.96);
         }
 
-        [data-control="segment"]:focus-visible {
+        [data-control="segment"]:focus-visible,
+        [data-control="motion-option"]:focus-visible {
           outline:
             2px solid
             rgba(
@@ -1893,6 +2167,154 @@ export default function UnifiedConnectionPrototype() {
                 0,
                 0.55
               );
+          }
+        }
+
+        [data-control="motion-tester"] {
+          position: absolute;
+          right: 0;
+          bottom:
+            clamp(
+              13px,
+              3.5vh,
+              33px
+            );
+          display: flex;
+          align-items: center;
+          gap: 7px;
+          color:
+            rgba(
+              0,
+              0,
+              0,
+              0.32
+            );
+          font-size: 9px;
+          font-weight: 540;
+          line-height: 1;
+          letter-spacing:
+            -0.01em;
+          user-select: none;
+          -webkit-user-select:
+            none;
+        }
+
+        [data-control="motion-label"] {
+          opacity: 0.7;
+        }
+
+        [data-control="motion-options"] {
+          display: flex;
+          align-items: center;
+          gap: 2px;
+          padding: 2px;
+          border:
+            1px solid
+            rgba(
+              0,
+              0,
+              0,
+              0.035
+            );
+          border-radius: 8px;
+          background:
+            rgba(
+              248,
+              248,
+              248,
+              0.38
+            );
+          box-shadow:
+            inset
+              0 1px 0
+              rgba(
+                255,
+                255,
+                255,
+                0.5
+              );
+          backdrop-filter:
+            blur(14px);
+          -webkit-backdrop-filter:
+            blur(14px);
+        }
+
+        [data-control="motion-option"] {
+          min-width: 40px;
+          height: 22px;
+          padding: 0 6px;
+          border: 0;
+          border-radius: 6px;
+          color:
+            rgba(
+              0,
+              0,
+              0,
+              0.32
+            );
+          background: transparent;
+          font-size: 9px;
+          font-weight: 560;
+          line-height: 1;
+          cursor: pointer;
+          touch-action:
+            manipulation;
+          -webkit-tap-highlight-color:
+            transparent;
+        }
+
+        [data-control="motion-option"][data-active="true"] {
+          color:
+            rgba(
+              0,
+              0,
+              0,
+              0.72
+            );
+          background:
+            rgba(
+              255,
+              255,
+              255,
+              0.72
+            );
+          box-shadow:
+            0 0 0 0.5px
+              rgba(
+                0,
+                0,
+                0,
+                0.04
+              ),
+            0 1px 2px
+              rgba(
+                0,
+                0,
+                0,
+                0.025
+              );
+        }
+
+        [data-prototype="page"][data-reduced-motion="true"]
+          [data-control="indicator"],
+        [data-prototype="page"][data-reduced-motion="true"]
+          [data-control="segment"] {
+          transition: none;
+        }
+
+        [data-prototype="page"][data-reduced-motion="true"]
+          [data-control="segment"]:active {
+          transform: none;
+        }
+
+        @media (
+          max-width: 760px
+        ) {
+          [data-control="motion-tester"] {
+            right: 50%;
+            bottom: 54px;
+            transform:
+              translateX(50%);
           }
         }
 
@@ -1922,6 +2344,14 @@ export default function UnifiedConnectionPrototype() {
             padding: 0 4px;
             font-size: 9.5px;
           }
+
+          [data-control="motion-tester"] {
+            bottom: 50px;
+          }
+
+          [data-control="motion-label"] {
+            display: none;
+          }
         }
 
         @media (
@@ -1940,15 +2370,9 @@ export default function UnifiedConnectionPrototype() {
           [data-control="segments"] {
             bottom: 8px;
           }
-        }
 
-        @media (
-          prefers-reduced-motion:
-            reduce
-        ) {
-          [data-control="indicator"],
-          [data-control="segment"] {
-            transition: none;
+          [data-control="motion-tester"] {
+            bottom: 48px;
           }
         }
 
@@ -1963,13 +2387,15 @@ export default function UnifiedConnectionPrototype() {
               Canvas;
           }
 
-          [data-control="segments"] {
+          [data-control="segments"],
+          [data-control="motion-options"] {
             border:
               1px solid
               ButtonText;
           }
 
-          [data-control="indicator"] {
+          [data-control="indicator"],
+          [data-control="motion-option"][data-active="true"] {
             border:
               1px solid
               ButtonText;
