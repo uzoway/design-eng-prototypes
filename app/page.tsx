@@ -120,6 +120,7 @@ const techStack = [
   "JavaScript",
   "HTML / CSS",
   "GSAP",
+  "Framer Motion",
   "Webflow",
   "Figma",
 ];
@@ -250,7 +251,7 @@ function ProjectImage({ slug, title }: ProjectImageProps) {
   const [failed, setFailed] = useState(false);
 
   return (
-    <div className="relative aspect-video overflow-hidden rounded-[18px] border border-black/[0.045] bg-[#e9e9e6] transition-[box-shadow,border-color] duration-300 group-hover:border-black/[0.08] group-hover:shadow-[0_12px_40px_-28px_rgba(0,0,0,.32)]">
+    <div className="relative aspect-video overflow-hidden rounded-[11px] sm:rounded-[18px] border border-black/[0.045] bg-[#e9e9e6] transition-[box-shadow,border-color] duration-300 group-hover:border-black/[0.08] group-hover:shadow-[0_12px_40px_-28px_rgba(0,0,0,.32)]">
       {!failed && (
         <img
           src={`/portfolio/work/${slug}/cover.webp`}
@@ -466,7 +467,7 @@ function WorkProject({ project, index }: WorkProjectProps) {
         href={project.href}
         target="_blank"
         rel="noopener noreferrer"
-        className="group block rounded-[18px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-5 focus-visible:ring-offset-[#f4f4f1]"
+        className="group block rounded-[10px] sm:rounded-[16px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-5 focus-visible:ring-offset-[#f4f4f1]"
       >
         <ProjectImage slug={project.slug} title={project.title} />
 
@@ -681,18 +682,20 @@ export default function Home() {
       <Header />
 
       <div className="mx-auto max-w-[1200px] px-5 pb-8 pt-[68px] sm:px-8">
-        <section className="flex min-h-[390px] max-w-[720px] flex-col justify-end pb-16 pt-20 sm:min-h-[450px] sm:pb-20">
+        <section className="flex min-h-[340px] max-w-[720px] flex-col justify-end pb-16 pt-20 sm:min-h-[430px] sm:pb-20">
           <p className="mb-5 text-[12px] font-medium tracking-[-0.01em] text-[#60605c]">
-            Web Design Engineer
+            Design Engineer
           </p>
 
           <h1 className="max-w-[680px] text-[clamp(2rem,4vw,3.25rem)] font-medium leading-[1.03] tracking-[-0.05em]">
-            I build websites and interface prototypes.
+            I design and build polished web interfaces, from interaction
+            prototypes to production.
           </h1>
 
-          <p className="mt-5 max-w-[560px] text-[14px] leading-[1.7] tracking-[-0.01em] text-[#5f5f5b]">
-            Mostly Webflow, React/Next.js and GSAP. I care a lot about
-            interaction, accessibility, and how things hold up in production.
+          <p className="mt-5 max-w-[580px] text-[14px] leading-[1.7] tracking-[-0.01em] text-[#5f5f5b]">
+            I work across frontend engineering, interaction and motion, with a
+            focus on responsive systems, accessibility, performance and the
+            details that make an interface feel finished.
           </p>
         </section>
 
@@ -842,16 +845,17 @@ export default function Home() {
               </h2>
 
               <p className="max-w-[530px] text-[19px] font-medium leading-[1.5] tracking-[-0.025em]">
-                I work between design and frontend engineering, turning visual
-                ideas into responsive, accessible interfaces.
+                I’m a design engineer working at the intersection of design and
+                frontend development.
               </p>
             </div>
 
             <div className="sm:pt-[37px]">
               <p className="max-w-[510px] text-[13.5px] leading-[1.75] text-[#5f5f5b]">
-                I care about responsive behaviour, interaction, accessibility,
-                performance, component structure, and the small implementation
-                details behind a good build.
+                I prototype interactions, build responsive interfaces, and turn
+                high-fidelity design into accessible, maintainable production
+                code. I care about typography, layout, motion, performance and
+                reusable systems.
               </p>
 
               <div className="mt-8 flex max-w-[500px] flex-wrap gap-x-5 gap-y-2 text-[12px] text-[#60605c]">
