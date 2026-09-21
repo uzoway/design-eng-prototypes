@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
+import type { ReactNode } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
+import { ThemeProvider } from "./components/theme-provider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -82,17 +84,56 @@ export const viewport: Viewport = {
   colorScheme: "light",
 };
 
+const themeInitializationScript = `
+  (() => {
+    try {
+      const storedTheme = localStorage.getItem("merchant-theme");
+
+      const theme =
+        storedTheme === "light" ||
+        storedTheme === "dark"
+          ? storedTheme
+          : window.matchMedia(
+              "(prefers-color-scheme: dark)"
+            ).matches
+            ? "dark"
+            : "light";
+
+      document.documentElement.dataset.theme =
+        theme;
+    } catch {
+      document.documentElement.dataset.theme =
+        window.matchMedia(
+          "(prefers-color-scheme: dark)"
+        ).matches
+          ? "dark"
+          : "light";
+    }
+  })();
+`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: ReactNode;
 }>) {
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full bg-[#f4f4f1] text-[#111]">{children}</body>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: themeInitializationScript,
+          }}
+        />
+      </head>
+
+      <body data-theme-animate className="min-h-full bg-[#f4f4f1] text-[#111]">
+        <ThemeProvider>{children}</ThemeProvider>
+      </body>
     </html>
   );
 }
