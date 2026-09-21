@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
+import { GoogleAnalytics } from "@next/third-parties/google";
 import { ThemeProvider } from "./components/theme-provider";
 import "./globals.css";
 
@@ -134,6 +135,7 @@ export default function RootLayout({
       <body data-theme-animate className="min-h-full bg-[#f4f4f1] text-[#111]">
         <ThemeProvider>{children}</ThemeProvider>
       </body>
+      <GoogleAnalytics gaId="G-B5TC8LLC20" />
     </html>
   );
 }
