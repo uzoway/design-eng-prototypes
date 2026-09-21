@@ -1,13 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import {
-  useEffect,
-  useRef,
-  useState,
-  type MouseEvent,
-  type ReactNode,
-} from "react";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
 import { useReducedMotion } from "framer-motion";
 
 const websites = [
@@ -16,7 +10,7 @@ const websites = [
     href: "https://inductive.bio/",
     title: "Inductive Bio",
     description:
-      "A science-led platform for an AI drug discovery company, bringing product, research, news, and technical content into one system.",
+      "A science-led website bringing product, research, news, and technical content into one clear system.",
     disciplines: ["Web development", "Biotech"],
   },
   {
@@ -24,7 +18,7 @@ const websites = [
     href: "https://www.hyperspectral.ai/",
     title: "HyperSpectral AI",
     description:
-      "A high-craft AI and life sciences site built around spectral intelligence, layered visual storytelling, and technical content.",
+      "A high-craft AI and life sciences site built around spectral intelligence, layered visuals, and technical storytelling.",
     disciplines: ["Interaction", "AI / Life sciences"],
   },
   {
@@ -32,7 +26,7 @@ const websites = [
     href: "https://www.genyro.com/",
     title: "Genyro",
     description:
-      "A biotech site using editorial layouts, diagrams, and restrained motion to explain programmable DNA construction.",
+      "A biotech site that explains programmable DNA construction through structured storytelling and restrained motion.",
     disciplines: ["Interaction", "Biotech"],
   },
   {
@@ -40,7 +34,7 @@ const websites = [
     href: "https://www.oun.homes/",
     title: "Oun Homes",
     description:
-      "A product marketing site for AI transaction coordination, using product UI and clear sequencing to explain a complex workflow.",
+      "A product marketing site for an AI real estate platform, turning a complex transaction workflow into a focused story.",
     disciplines: ["Product marketing", "Proptech"],
   },
   {
@@ -48,7 +42,7 @@ const websites = [
     href: "https://www.mailatafamilyfoundation.org/",
     title: "Mailata Family Foundation",
     description:
-      "A story-led nonprofit site built around photography, community, and creating pathways for young people.",
+      "A story-led nonprofit site bringing the foundation's mission, programmes, and community work together.",
     disciplines: ["Storytelling", "Nonprofit"],
   },
   {
@@ -56,7 +50,7 @@ const websites = [
     href: "https://dtiglobal.net/",
     title: "DTI Global",
     description:
-      "A large CMS-driven site for an automotive tooling company, organizing technical capabilities, facilities, and services across a complex web system.",
+      "A CMS-driven manufacturing site organizing dense technical content for automotive tooling customers.",
     disciplines: ["Web systems", "Automotive"],
   },
 ];
@@ -68,7 +62,6 @@ const prototypes = [
     description:
       "A what-if exploration for iPhone Duo that unifies Wi-Fi, cellular, weak signal, no-internet, and offline states through SVG geometry.",
     disciplines: ["Interaction", "Motion", "SVG"],
-    span: "wide",
   },
   {
     slug: "cellular-status-morph",
@@ -76,7 +69,6 @@ const prototypes = [
     description:
       "A frame-tuned status icon animation that transforms cellular, Wi-Fi, and battery states through continuous SVG motion.",
     disciplines: ["Interaction", "Motion", "SVG"],
-    span: "narrow",
   },
   {
     slug: "merchant-onboarding",
@@ -84,15 +76,13 @@ const prototypes = [
     description:
       "A verification review flow that keeps status, actions, and focus clear across mouse and keyboard interactions.",
     disciplines: ["Product UI", "Accessibility"],
-    span: "narrow",
   },
   {
     slug: "morph-explorations",
     title: "Icon morph explorations",
     description:
-      "A collection of responsive SVG icon morphs exploring path interpolation, spring motion, state transitions, and accessible interaction.",
+      "Responsive SVG icon morphs exploring path interpolation, spring motion, state transitions, and accessible interaction.",
     disciplines: ["Interaction", "Motion", "Accessibility"],
-    span: "wide",
   },
   {
     slug: "reorder-queue",
@@ -100,31 +90,27 @@ const prototypes = [
     description:
       "A tactile playlist queue with spring reordering, boundary feedback, and accessible keyboard controls.",
     disciplines: ["Interaction", "Accessibility"],
-    span: "wide",
   },
   {
     slug: "grid-to-detail",
     title: "Grid to detail",
     description:
-      "A fluid transition from a responsive image grid into a focused detail view, tuned around motion and layout continuity.",
+      "A fluid transition from a responsive image grid into a focused detail view, tuned around layout continuity.",
     disciplines: ["Prototyping", "Layout"],
-    span: "narrow",
   },
   {
     slug: "photo-pager",
     title: "Photo pager",
     description:
-      "A tactile photo browser with gesture-led navigation, predictable keyboard behaviour, and a clear sense of spatial position.",
+      "A tactile photo browser with gesture-led navigation, predictable keyboard behaviour, and clear spatial position.",
     disciplines: ["Interaction", "Motion"],
-    span: "narrow",
   },
   {
     slug: "currency-converter",
     title: "Currency converter",
     description:
-      "A conversion flow that makes rates, fees, and the final amount clear before commitment across screen sizes and input states.",
+      "A conversion flow that makes rates, fees, and the final amount clear before commitment.",
     disciplines: ["Product UI", "Fintech"],
-    span: "wide",
   },
 ];
 
@@ -157,74 +143,28 @@ const externalLinks = [
   },
 ];
 
-function StructuralGrid() {
-  return <div data-structural-grid aria-hidden="true" />;
-}
-
-type SectionHeadingProps = {
-  number: string;
-  title: string;
-  aside?: string;
+type MediaFallbackProps = {
+  label: string;
 };
 
-function SectionHeading({ number, title, aside }: SectionHeadingProps) {
+function MediaFallback({ label }: MediaFallbackProps) {
   return (
-    <header className="grid grid-cols-12 gap-x-4 border-t border-black/15 py-4 sm:gap-x-6">
-      <span className="col-span-2 font-mono text-[10px] tracking-[0.08em] text-black/32 sm:col-span-1">
-        {number}
-      </span>
-
-      <h2 className="col-span-6 text-[13px] font-medium tracking-[-0.015em] text-black/70 sm:col-span-5">
-        {title}
-      </h2>
-
-      {aside && (
-        <p className="col-span-4 text-right text-[11px] leading-5 text-black/34 sm:col-span-6">
-          {aside}
-        </p>
-      )}
-    </header>
-  );
-}
-
-type DisciplinesProps = {
-  disciplines: string[];
-};
-
-function Disciplines({ disciplines }: DisciplinesProps) {
-  return (
-    <div className="flex flex-wrap gap-x-3 gap-y-1 font-mono text-[9px] uppercase tracking-[0.055em] text-black/34 sm:text-[10px]">
-      {disciplines.map(function renderDiscipline(discipline) {
-        return <span key={discipline}>{discipline}</span>;
-      })}
+    <div className="absolute inset-0 grid place-items-center bg-[#e9e9e6]">
+      <span className="text-xs text-black/25">{label}</span>
     </div>
   );
 }
 
-type FallbackProps = {
-  children: ReactNode;
-};
-
-function MediaFallback({ children }: FallbackProps) {
-  return (
-    <div className="absolute inset-0 grid place-items-center bg-[#e8e8e2] p-6">
-      <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-black/28">
-        {children}
-      </span>
-    </div>
-  );
-}
-
-type WorkImageProps = {
+type ProjectImageProps = {
   slug: string;
   title: string;
 };
 
-function WorkImage({ slug, title }: WorkImageProps) {
+function ProjectImage({ slug, title }: ProjectImageProps) {
   const [failed, setFailed] = useState(false);
 
   return (
-    <div className="relative aspect-[16/10] overflow-hidden bg-[#e7e7e1]">
+    <div className="relative aspect-video overflow-hidden rounded-[18px] bg-[#e9e9e6]">
       {!failed && (
         <img
           src={`/portfolio/work/${slug}/cover.webp`}
@@ -234,54 +174,12 @@ function WorkImage({ slug, title }: WorkImageProps) {
           onError={function handleError() {
             setFailed(true);
           }}
-          className="h-full w-full object-cover transition-transform duration-700 ease-[cubic-bezier(.22,.72,0,1)] motion-reduce:transition-none group-hover:scale-[1.008]"
+          className="h-full w-full object-contain"
         />
       )}
 
-      {failed && <MediaFallback>{slug}/cover.webp</MediaFallback>}
+      {failed && <MediaFallback label={`${slug}/cover.webp`} />}
     </div>
-  );
-}
-
-type WorkProjectProps = {
-  project: (typeof websites)[number];
-  index: number;
-};
-
-function WorkProject({ project, index }: WorkProjectProps) {
-  const projectNumber = String(index + 1).padStart(2, "0");
-
-  return (
-    <article className="group border-t border-black/[0.075] py-8 first:border-t-0 sm:py-12">
-      <a
-        href={project.href}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="grid grid-cols-12 gap-x-4 gap-y-6 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-6 focus-visible:ring-offset-[#f3f3ed] sm:gap-x-6"
-      >
-        <div className="col-span-12 flex flex-col justify-between gap-8 sm:col-span-4 lg:col-span-3 lg:min-h-[280px]">
-          <div>
-            <span className="font-mono text-[9px] tracking-[0.1em] text-black/28">
-              W{projectNumber}
-            </span>
-
-            <h3 className="mt-4 max-w-[240px] text-[clamp(1.4rem,2.25vw,2rem)] font-medium leading-[1.05] tracking-[-0.045em] text-black">
-              {project.title}
-            </h3>
-
-            <p className="mt-4 max-w-[290px] text-[13px] leading-[1.7] tracking-[-0.01em] text-black/48">
-              {project.description}
-            </p>
-          </div>
-
-          <Disciplines disciplines={project.disciplines} />
-        </div>
-
-        <div className="col-span-12 sm:col-span-8 lg:col-span-9">
-          <WorkImage slug={project.slug} title={project.title} />
-        </div>
-      </a>
-    </article>
   );
 }
 
@@ -291,7 +189,7 @@ type PrototypeVideoProps = {
 };
 
 function PrototypeVideo({ slug, title }: PrototypeVideoProps) {
-  const shouldReduceMotion = useReducedMotion();
+  const reduceMotion = Boolean(useReducedMotion());
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -306,9 +204,9 @@ function PrototypeVideo({ slug, title }: PrototypeVideoProps) {
   const [failed, setFailed] = useState(false);
 
   useEffect(function observeVideo() {
-    const element = containerRef.current;
+    const container = containerRef.current;
 
-    if (!element) {
+    if (!container) {
       return;
     }
 
@@ -316,14 +214,14 @@ function PrototypeVideo({ slug, title }: PrototypeVideoProps) {
       function handleIntersection(entries) {
         const [entry] = entries;
 
-        setVisible(entry.isIntersecting && entry.intersectionRatio >= 0.45);
+        setVisible(entry.isIntersecting && entry.intersectionRatio >= 0.4);
       },
       {
-        threshold: [0, 0.45, 0.8],
+        threshold: [0, 0.4, 0.8],
       },
     );
 
-    observer.observe(element);
+    observer.observe(container);
 
     return function cleanup() {
       observer.disconnect();
@@ -338,17 +236,16 @@ function PrototypeVideo({ slug, title }: PrototypeVideoProps) {
         return;
       }
 
-      if (shouldReduceMotion || !visible || manualPauseRef.current) {
+      if (reduceMotion || !visible || manualPauseRef.current) {
         video.pause();
-
         return;
       }
 
-      video.play().catch(function ignoreAutoplayFailure() {
+      video.play().catch(function handleError() {
         setPlaying(false);
       });
     },
-    [failed, shouldReduceMotion, visible],
+    [failed, reduceMotion, visible],
   );
 
   function togglePlayback() {
@@ -361,7 +258,7 @@ function PrototypeVideo({ slug, title }: PrototypeVideoProps) {
     if (video.paused) {
       manualPauseRef.current = false;
 
-      video.play().catch(function ignorePlaybackFailure() {
+      video.play().catch(function handleError() {
         setPlaying(false);
       });
 
@@ -369,14 +266,13 @@ function PrototypeVideo({ slug, title }: PrototypeVideoProps) {
     }
 
     manualPauseRef.current = true;
-
     video.pause();
   }
 
   return (
     <div
       ref={containerRef}
-      className="relative aspect-[4/3] overflow-hidden bg-[#e7e7e1]"
+      className="relative aspect-video overflow-hidden rounded-[16px] bg-[#e9e9e6]"
     >
       {!failed && (
         <video
@@ -397,11 +293,11 @@ function PrototypeVideo({ slug, title }: PrototypeVideoProps) {
           onPause={function handlePause() {
             setPlaying(false);
           }}
-          className="h-full w-full object-cover"
+          className="h-full w-full object-contain"
         />
       )}
 
-      {failed && <MediaFallback>{slug}/preview.mp4</MediaFallback>}
+      {failed && <MediaFallback label={`${slug}/preview.mp4`} />}
 
       {!failed && (
         <button
@@ -410,60 +306,55 @@ function PrototypeVideo({ slug, title }: PrototypeVideoProps) {
           aria-label={
             playing ? `Pause ${title} preview` : `Play ${title} preview`
           }
-          className="absolute bottom-3 right-3 min-w-[44px] border border-black/10 bg-[#f7f7f2]/85 px-2.5 py-2 font-mono text-[9px] uppercase tracking-[0.055em] text-black/60 backdrop-blur-md transition-colors hover:bg-[#f7f7f2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black"
+          className="absolute bottom-3 right-3 grid size-8 place-items-center rounded-full border border-black/[0.06] bg-white/80 text-black/65 shadow-[0_1px_2px_rgba(0,0,0,.05),0_4px_16px_rgba(0,0,0,.05)] backdrop-blur-xl transition-[background,transform] duration-200 hover:bg-white active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/70"
         >
-          {playing ? "Pause" : "Play"}
+          {playing ? (
+            <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+              <rect
+                x="2"
+                y="1.5"
+                width="2"
+                height="7"
+                rx="0.7"
+                fill="currentColor"
+              />
+              <rect
+                x="6"
+                y="1.5"
+                width="2"
+                height="7"
+                rx="0.7"
+                fill="currentColor"
+              />
+            </svg>
+          ) : (
+            <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+              <path d="M2.5 1.7L8 5L2.5 8.3V1.7Z" fill="currentColor" />
+            </svg>
+          )}
         </button>
       )}
     </div>
   );
 }
 
-type LabProjectProps = {
-  prototype: (typeof prototypes)[number];
-  index: number;
+type MetadataProps = {
+  disciplines: string[];
 };
 
-function LabProject({ prototype, index }: LabProjectProps) {
-  const number = String(index + 1).padStart(2, "0");
-
-  const width = prototype.span === "wide" ? "lg:col-span-7" : "lg:col-span-5";
-
+function Metadata({ disciplines }: MetadataProps) {
   return (
-    <article className={`col-span-12 md:col-span-6 ${width}`}>
-      <PrototypeVideo slug={prototype.slug} title={prototype.title} />
-
-      <div className="grid grid-cols-[auto_1fr] gap-x-4 border-t border-black/10 pt-3">
-        <span className="pt-1 font-mono text-[9px] tracking-[0.08em] text-black/28">
-          L{number}
-        </span>
-
-        <div>
-          <Link
-            href={`/${prototype.slug}`}
-            className="rounded-sm text-[15px] font-medium tracking-[-0.025em] text-black transition-opacity hover:opacity-55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-4 focus-visible:ring-offset-[#f3f3ed]"
-          >
-            {prototype.title}
-          </Link>
-
-          <p className="mt-2 max-w-[470px] text-[12.5px] leading-[1.65] tracking-[-0.005em] text-black/44">
-            {prototype.description}
-          </p>
-
-          <div className="mt-3">
-            <Disciplines disciplines={prototype.disciplines} />
-          </div>
-        </div>
-      </div>
-    </article>
+    <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] font-medium text-black/35">
+      {disciplines.map(function renderDiscipline(discipline) {
+        return <span key={discipline}>{discipline}</span>;
+      })}
+    </div>
   );
 }
 
-type HeaderProps = {
-  reducedMotion: boolean;
-};
+function Header() {
+  const reduceMotion = Boolean(useReducedMotion());
 
-function Header({ reducedMotion }: HeaderProps) {
   function scrollToSection(
     event: MouseEvent<HTMLAnchorElement>,
     sectionId: string,
@@ -477,56 +368,56 @@ function Header({ reducedMotion }: HeaderProps) {
     }
 
     section.scrollIntoView({
-      behavior: reducedMotion ? "auto" : "smooth",
+      behavior: reduceMotion ? "auto" : "smooth",
       block: "start",
     });
-
-    window.history.replaceState(null, "", `#${sectionId}`);
   }
 
   return (
     <>
-      <div data-nav-blur aria-hidden="true" />
+      <div data-nav-backdrop aria-hidden="true" />
 
       <header className="fixed inset-x-0 top-0 z-50">
-        <div className="mx-auto grid h-[72px] max-w-[1280px] grid-cols-[1fr_auto] items-center gap-5 px-5 sm:grid-cols-[1fr_auto_1fr] sm:px-8 lg:px-10">
+        <div className="mx-auto flex h-[68px] max-w-[1200px] items-center justify-between px-5 sm:px-8">
           <Link
             href="/"
-            className="justify-self-start rounded-sm text-[13px] font-medium tracking-[-0.02em] text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black"
+            className="rounded-sm text-[13px] font-medium tracking-[-0.02em] text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black"
           >
             Uzo Okafor
           </Link>
 
-          <nav
-            aria-label="Portfolio sections"
-            className="hidden items-center gap-1 text-[11px] font-medium text-black/45 sm:flex"
-          >
-            {[
-              ["work", "Work"],
-              ["lab", "Lab"],
-              ["about", "About"],
-            ].map(function renderLink(item) {
-              return (
-                <a
-                  key={item[0]}
-                  href={`#${item[0]}`}
-                  onClick={function handleClick(event) {
-                    scrollToSection(event, item[0]);
-                  }}
-                  className="rounded-[8px] px-3 py-2 transition-colors hover:bg-black/[0.045] hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black"
-                >
-                  {item[1]}
-                </a>
-              );
-            })}
-          </nav>
+          <div className="flex items-center gap-2">
+            <nav
+              aria-label="Portfolio sections"
+              className="hidden items-center rounded-[11px] border border-black/[0.045] bg-white/55 p-[3px] text-[11px] font-medium text-black/45 shadow-[0_1px_2px_rgba(0,0,0,.025)] backdrop-blur-xl sm:flex"
+            >
+              {[
+                ["work", "Work"],
+                ["lab", "Lab"],
+                ["about", "About"],
+              ].map(function renderNavigation(item) {
+                return (
+                  <a
+                    key={item[0]}
+                    href={`#${item[0]}`}
+                    onClick={function handleClick(event) {
+                      scrollToSection(event, item[0]);
+                    }}
+                    className="rounded-[8px] px-3 py-2 transition-colors hover:bg-white/85 hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black"
+                  >
+                    {item[1]}
+                  </a>
+                );
+              })}
+            </nav>
 
-          <a
-            href="mailto:uzochukwuokafor01@gmail.com"
-            className="justify-self-end bg-black px-3.5 py-2 text-[10px] font-medium tracking-[-0.005em] text-white transition-opacity hover:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-3 focus-visible:ring-offset-[#f3f3ed]"
-          >
-            Email me
-          </a>
+            <a
+              href="mailto:uzochukwuokafor01@gmail.com"
+              className="rounded-[10px] bg-black px-3.5 py-[9px] text-[10.5px] font-medium text-white transition-opacity hover:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-3 focus-visible:ring-offset-[#f4f4f1]"
+            >
+              Email me
+            </a>
+          </div>
         </div>
       </header>
     </>
@@ -534,68 +425,77 @@ function Header({ reducedMotion }: HeaderProps) {
 }
 
 export default function Home() {
-  const shouldReduceMotion = Boolean(useReducedMotion());
-
   return (
-    <main className="relative min-h-screen overflow-clip bg-[#f3f3ed] text-[#11110f] selection:bg-[#11110f] selection:text-[#f3f3ed]">
-      <StructuralGrid />
+    <main className="min-h-screen bg-[#f4f4f1] text-[#111] selection:bg-black selection:text-white">
+      <Header />
 
-      <Header reducedMotion={shouldReduceMotion} />
+      <div className="mx-auto max-w-[1200px] px-5 pb-8 pt-[68px] sm:px-8">
+        <section className="flex min-h-[430px] max-w-[760px] flex-col justify-end pb-20 pt-20 sm:min-h-[500px] sm:pb-24">
+          <p className="mb-5 text-[12px] font-medium tracking-[-0.01em] text-black/40">
+            Web Design Engineer
+          </p>
 
-      <div className="relative z-10 mx-auto max-w-[1280px] px-5 pb-8 pt-[72px] sm:px-8 lg:px-10">
-        <section className="grid min-h-[58svh] grid-cols-12 content-end gap-x-4 border-b border-black/15 pb-10 pt-20 sm:gap-x-6 sm:pb-14 sm:pt-28 lg:min-h-[64svh]">
-          <div className="col-span-12 sm:col-span-8 lg:col-span-7">
-            <p className="mb-5 font-mono text-[9px] uppercase tracking-[0.09em] text-black/35">
-              Web Design Engineer
-            </p>
+          <h1 className="max-w-[700px] text-[clamp(2rem,4vw,3.4rem)] font-medium leading-[1.04] tracking-[-0.045em]">
+            I design and engineer interfaces for the web, with a focus on the
+            details that make them feel right in production.
+          </h1>
 
-            <h1 className="max-w-[760px] text-[clamp(2.25rem,5vw,4rem)] font-medium leading-[0.98] tracking-[-0.055em]">
-              I design and build interfaces that hold up in production.
-            </h1>
-          </div>
-
-          <div className="col-span-12 mt-10 sm:col-span-4 sm:mt-0 lg:col-start-9 lg:col-span-4">
-            <p className="max-w-[360px] text-[13.5px] leading-[1.75] tracking-[-0.012em] text-black/53">
-              I started in civil engineering, with a particular interest in
-              structures. These days I work between design and frontend
-              engineering, building websites, interaction systems, and
-              prototypes.
-            </p>
-
-            <div className="mt-8 flex items-center gap-3">
-              <span
-                aria-hidden="true"
-                className="block h-px w-10 bg-black/20"
-              />
-
-              <span className="font-mono text-[9px] uppercase tracking-[0.08em] text-black/30">
-                Structure → Interface
-              </span>
-            </div>
-          </div>
+          <p className="mt-6 max-w-[620px] text-[14px] leading-[1.7] tracking-[-0.01em] text-black/48">
+            My work sits between design and frontend engineering, from
+            responsive behaviour and interaction to accessibility, component
+            structure, performance, and the systems that keep a build useful
+            after launch.
+          </p>
         </section>
 
         <section
           id="work"
-          aria-labelledby="work-heading"
-          className="scroll-mt-24 py-24 sm:py-32"
+          className="scroll-mt-24 border-t border-black/10 pt-6"
         >
-          <div id="work-heading">
-            <SectionHeading
-              number="01"
-              title="Selected work"
-              aside="Production websites"
-            />
+          <div className="mb-12 flex items-center justify-between">
+            <h2 className="text-[13px] font-medium tracking-[-0.015em]">
+              Selected Work
+            </h2>
+
+            <span className="text-[11px] text-black/30">6 projects</span>
           </div>
 
-          <div className="mt-3">
-            {websites.map(function renderProject(project, index) {
+          <div>
+            {websites.map(function renderWebsite(project, index) {
               return (
-                <WorkProject
+                <article
                   key={project.slug}
-                  project={project}
-                  index={index}
-                />
+                  className="border-t border-black/[0.07] py-10 first:border-t-0 first:pt-0 sm:py-14"
+                >
+                  <a
+                    href={project.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group block rounded-[18px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-5 focus-visible:ring-offset-[#f4f4f1]"
+                  >
+                    <ProjectImage slug={project.slug} title={project.title} />
+
+                    <div className="mt-4 grid gap-4 sm:grid-cols-[1fr_auto] sm:items-start">
+                      <div>
+                        <div className="flex items-baseline gap-3">
+                          <span className="text-[10px] tabular-nums text-black/25">
+                            {String(index + 1).padStart(2, "0")}
+                          </span>
+
+                          <h3 className="text-[16px] font-medium tracking-[-0.025em]">
+                            {project.title}
+                          </h3>
+                        </div>
+
+                        <p className="ml-[29px] mt-2 max-w-[610px] text-[13px] leading-[1.65] text-black/43">
+                          {project.description}
+                        </p>
+                      </div>
+
+                      <Metadata disciplines={project.disciplines} />
+                    </div>
+                  </a>
+                </article>
               );
             })}
           </div>
@@ -603,25 +503,46 @@ export default function Home() {
 
         <section
           id="lab"
-          aria-labelledby="lab-heading"
-          className="scroll-mt-24 pb-24 sm:pb-32"
+          className="scroll-mt-24 border-t border-black/10 pb-28 pt-6"
         >
-          <div id="lab-heading">
-            <SectionHeading
-              number="02"
-              title="Lab"
-              aside="Interaction studies · 2026"
-            />
+          <div className="mb-12 flex items-center justify-between">
+            <h2 className="text-[13px] font-medium tracking-[-0.015em]">Lab</h2>
+
+            <span className="text-[11px] text-black/30">Prototypes · 2026</span>
           </div>
 
-          <div className="mt-10 grid grid-cols-12 gap-x-4 gap-y-14 sm:gap-x-6 sm:gap-y-20">
+          <div className="grid gap-x-6 gap-y-14 md:grid-cols-2">
             {prototypes.map(function renderPrototype(prototype, index) {
               return (
-                <LabProject
-                  key={prototype.slug}
-                  prototype={prototype}
-                  index={index}
-                />
+                <article key={prototype.slug}>
+                  <PrototypeVideo
+                    slug={prototype.slug}
+                    title={prototype.title}
+                  />
+
+                  <div className="mt-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-baseline gap-3">
+                        <span className="text-[10px] tabular-nums text-black/25">
+                          {String(index + 1).padStart(2, "0")}
+                        </span>
+
+                        <Link
+                          href={`/${prototype.slug}`}
+                          className="rounded-sm text-[15px] font-medium tracking-[-0.025em] transition-opacity hover:opacity-55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black"
+                        >
+                          {prototype.title}
+                        </Link>
+                      </div>
+
+                      <Metadata disciplines={prototype.disciplines} />
+                    </div>
+
+                    <p className="ml-[29px] mt-2 max-w-[470px] text-[12.5px] leading-[1.65] text-black/42">
+                      {prototype.description}
+                    </p>
+                  </div>
+                </article>
               );
             })}
           </div>
@@ -629,82 +550,55 @@ export default function Home() {
 
         <section
           id="about"
-          aria-labelledby="about-heading"
-          className="scroll-mt-24 pb-28"
+          className="scroll-mt-24 border-t border-black/10 py-20"
         >
-          <div id="about-heading">
-            <SectionHeading number="03" title="About" />
-          </div>
-
-          <div className="mt-10 grid grid-cols-12 gap-x-4 gap-y-12 sm:gap-x-6">
-            <div className="col-span-12 sm:col-span-7 lg:col-span-6">
-              <p className="max-w-[610px] text-[clamp(1.35rem,2.1vw,1.8rem)] font-medium leading-[1.35] tracking-[-0.035em]">
-                Before the web, I studied Civil Engineering and worked briefly
-                as a site engineer.
+          <div className="grid gap-12 sm:grid-cols-2 sm:gap-16">
+            <div>
+              <p className="mb-5 text-[12px] font-medium text-black/35">
+                About
               </p>
 
-              <div className="mt-6 max-w-[600px] space-y-4 text-[13.5px] leading-[1.75] tracking-[-0.01em] text-black/50">
-                <p>
-                  Structural engineering was the part I was most drawn to:
-                  understanding how individual pieces work together, where
-                  things carry load, and why small decisions can affect the
-                  whole system.
-                </p>
-
-                <p>
-                  I think about the web in a similar way now. The visual layer
-                  matters, but so do the systems underneath it: responsive
-                  behaviour, accessibility, performance, interaction, and code
-                  that stays useful after launch.
-                </p>
-              </div>
+              <p className="max-w-[530px] text-[19px] font-medium leading-[1.5] tracking-[-0.025em]">
+                I work between design and frontend engineering, turning visual
+                ideas into responsive, accessible interfaces that hold up in
+                production.
+              </p>
             </div>
 
-            <div className="col-span-12 sm:col-start-9 sm:col-span-4 lg:col-start-9">
-              <p className="font-mono text-[9px] uppercase tracking-[0.08em] text-black/30">
-                Tools I work with
+            <div className="sm:pt-[37px]">
+              <p className="max-w-[510px] text-[13.5px] leading-[1.75] text-black/47">
+                I care about responsive behaviour, interaction, accessibility,
+                performance, component structure, and the small implementation
+                details that shape how a product feels.
               </p>
 
-              <ul className="mt-5 border-t border-black/10">
-                {techStack.map(function renderTech(tech, index) {
-                  return (
-                    <li
-                      key={tech}
-                      className="grid grid-cols-[32px_1fr] border-b border-black/[0.075] py-2.5 text-[12px]"
-                    >
-                      <span className="font-mono text-[9px] text-black/22">
-                        {String(index + 1).padStart(2, "0")}
-                      </span>
-
-                      <span className="text-black/55">{tech}</span>
-                    </li>
-                  );
+              <div className="mt-8 flex max-w-[500px] flex-wrap gap-x-5 gap-y-2 text-[12px] text-black/40">
+                {techStack.map(function renderTech(tech) {
+                  return <span key={tech}>{tech}</span>;
                 })}
-              </ul>
+              </div>
             </div>
           </div>
         </section>
 
-        <footer className="border-t border-black/15 py-7">
-          <div className="grid grid-cols-12 items-end gap-x-4 gap-y-8 sm:gap-x-6">
-            <div className="col-span-12 sm:col-span-6">
-              <p className="font-mono text-[9px] uppercase tracking-[0.08em] text-black/30">
-                Have something in mind?
-              </p>
+        <footer className="border-t border-black/10 py-8">
+          <div className="flex flex-col justify-between gap-10 sm:flex-row sm:items-end">
+            <div>
+              <p className="text-[11px] text-black/32">Get in touch</p>
 
               <a
                 href="mailto:uzochukwuokafor01@gmail.com"
-                className="mt-3 inline-block rounded-sm text-[18px] font-medium tracking-[-0.03em] transition-opacity hover:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-4 focus-visible:ring-offset-[#f3f3ed]"
+                className="mt-2 inline-block rounded-sm text-[15px] font-medium tracking-[-0.02em] transition-opacity hover:opacity-55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black"
               >
-                uzokafor01@gmail.com
+                uzochukwuokafor01@gmail.com
               </a>
             </div>
 
             <nav
               aria-label="Social links"
-              className="col-span-12 flex flex-wrap gap-x-5 gap-y-2 text-[11px] font-medium text-black/42 sm:col-span-6 sm:justify-end"
+              className="flex flex-wrap gap-x-5 gap-y-2 text-[12px] font-medium text-black/40"
             >
-              {externalLinks.map(function renderExternalLink(link) {
+              {externalLinks.map(function renderLink(link) {
                 return (
                   <a
                     key={link.label}
@@ -726,104 +620,59 @@ export default function Home() {
 
       <style>{`
         html {
-          scroll-padding-top: 96px;
+          scroll-padding-top: 88px;
         }
 
-        [data-structural-grid] {
-          position: fixed;
-          z-index: 0;
-          top: 0;
-          bottom: 0;
-          left: 50%;
-          width: min(
-            calc(100% - 40px),
-            1280px
-          );
-          pointer-events: none;
-          transform: translateX(-50%);
-          background-image:
-            linear-gradient(
-              to right,
-              rgba(17, 17, 15, 0.032) 1px,
-              transparent 1px
-            );
-          background-size:
-            calc(100% / 12)
-            100%;
-          border-right:
-            1px solid
-            rgba(17, 17, 15, 0.032);
-          -webkit-mask-image:
-            linear-gradient(
-              to bottom,
-              transparent 0,
-              black 9rem,
-              black calc(100% - 9rem),
-              transparent 100%
-            );
-          mask-image:
-            linear-gradient(
-              to bottom,
-              transparent 0,
-              black 9rem,
-              black calc(100% - 9rem),
-              transparent 100%
-            );
-        }
-
-        [data-nav-blur] {
+        [data-nav-backdrop] {
           position: fixed;
           z-index: 40;
-          top: 0;
-          left: 0;
-          right: 0;
-          height: 116px;
+          inset: 0 0 auto;
+          height: 110px;
           pointer-events: none;
+
           background:
             linear-gradient(
               to bottom,
-              rgba(243, 243, 237, 0.76) 0%,
-              rgba(243, 243, 237, 0.38) 48%,
-              rgba(243, 243, 237, 0) 100%
+              rgba(244, 244, 241, 0.86) 0%,
+              rgba(244, 244, 241, 0.56) 42%,
+              rgba(244, 244, 241, 0.18) 70%,
+              rgba(244, 244, 241, 0) 100%
             );
-          backdrop-filter: blur(18px);
+
+          backdrop-filter:
+            blur(18px);
           -webkit-backdrop-filter:
             blur(18px);
-          -webkit-mask-image:
-            linear-gradient(
-              to bottom,
-              black 0%,
-              black 42%,
-              rgba(0, 0, 0, 0.72) 62%,
-              transparent 100%
-            );
+
           mask-image:
             linear-gradient(
               to bottom,
-              black 0%,
-              black 42%,
-              rgba(0, 0, 0, 0.72) 62%,
+              #000 0%,
+              #000 38%,
+              rgba(0, 0, 0, 0.72) 58%,
+              rgba(0, 0, 0, 0.22) 82%,
               transparent 100%
             );
-        }
 
-        @media (
-          max-width: 639px
-        ) {
-          [data-structural-grid] {
-            width:
-              calc(100% - 40px);
-            background-size:
-              25% 100%;
-          }
+          -webkit-mask-image:
+            linear-gradient(
+              to bottom,
+              #000 0%,
+              #000 38%,
+              rgba(0, 0, 0, 0.72) 58%,
+              rgba(0, 0, 0, 0.22) 82%,
+              transparent 100%
+            );
         }
 
         @media (
           prefers-reduced-motion:
             reduce
         ) {
-          html {
-            scroll-behavior: auto;
+          *,
+          *::before,
+          *::after {
+            scroll-behavior: auto !important;
           }
         }
 
@@ -831,8 +680,7 @@ export default function Home() {
           forced-colors:
             active
         ) {
-          [data-structural-grid],
-          [data-nav-blur] {
+          [data-nav-backdrop] {
             display: none;
           }
         }
