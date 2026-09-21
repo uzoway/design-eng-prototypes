@@ -1,90 +1,90 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type MouseEvent,
+  type ReactNode,
+} from "react";
 import { useReducedMotion } from "framer-motion";
 
 const websites = [
   {
-    href: "https://www.oun.homes/",
-    title: "Oun Homes",
+    slug: "inductive-bio",
+    href: "https://inductive.bio/",
+    title: "Inductive Bio",
     description:
-      "A product marketing site for an AI real estate platform, turning a complex transaction workflow into a clear, focused story.",
-    disciplines: ["Product marketing", "Proptech"],
-    image: "/portfolio/work/oun-homes.webp",
-    featured: true,
+      "A science-led platform for an AI drug discovery company, bringing product, research, news, and technical content into one system.",
+    disciplines: ["Web development", "Biotech"],
   },
   {
+    slug: "hyperspectral-ai",
     href: "https://www.hyperspectral.ai/",
     title: "HyperSpectral AI",
     description:
-      "A high-craft AI and life sciences site that turns complex spectral intelligence into a clear story through layered visuals, motion, and technical content.",
+      "A high-craft AI and life sciences site built around spectral intelligence, layered visual storytelling, and technical content.",
     disciplines: ["Interaction", "AI / Life sciences"],
-    image: "/portfolio/work/hyperspectral-ai.webp",
-    featured: true,
   },
   {
-    href: "https://www.mailatafamilyfoundation.org/",
-    title: "Mailata Family Foundation",
-    description:
-      "A story-led nonprofit site that brings the foundation's mission, programmes, and community work together in a responsive, media-rich experience.",
-    disciplines: ["Storytelling", "Nonprofit"],
-    image: "/portfolio/work/mailata-family-foundation.webp",
-  },
-  {
-    href: "https://dtiglobal.net/",
-    title: "DTI Global",
-    description:
-      "A CMS-driven B2B manufacturing site that organizes dense technical content into a clear, responsive experience for automotive tooling customers.",
-    disciplines: ["Web systems", "Automotive"],
-    image: "/portfolio/work/dti-global.webp",
-  },
-  {
-    href: "https://www.thaliatx.com/",
-    title: "Thalia Therapeutics",
-    description:
-      "A responsive biotech site that presents RNA therapeutics, delivery technology, and pipeline information clearly for scientific and investor audiences.",
-    disciplines: ["Web development", "Biotech"],
-    image: "/portfolio/work/thalia-therapeutics.webp",
-  },
-  {
+    slug: "genyro",
     href: "https://www.genyro.com/",
     title: "Genyro",
     description:
-      "A biotech site that explains programmable DNA construction through structured storytelling, restrained motion, and a clear visual hierarchy.",
+      "A biotech site using editorial layouts, diagrams, and restrained motion to explain programmable DNA construction.",
     disciplines: ["Interaction", "Biotech"],
-    image: "/portfolio/work/genyro.webp",
+  },
+  {
+    slug: "oun-homes",
+    href: "https://www.oun.homes/",
+    title: "Oun Homes",
+    description:
+      "A product marketing site for AI transaction coordination, using product UI and clear sequencing to explain a complex workflow.",
+    disciplines: ["Product marketing", "Proptech"],
+  },
+  {
+    slug: "mailata-family-foundation",
+    href: "https://www.mailatafamilyfoundation.org/",
+    title: "Mailata Family Foundation",
+    description:
+      "A story-led nonprofit site built around photography, community, and creating pathways for young people.",
+    disciplines: ["Storytelling", "Nonprofit"],
+  },
+  {
+    slug: "dti-global",
+    href: "https://dtiglobal.net/",
+    title: "DTI Global",
+    description:
+      "A large CMS-driven site for an automotive tooling company, organizing technical capabilities, facilities, and services across a complex web system.",
+    disciplines: ["Web systems", "Automotive"],
   },
 ];
 
 const prototypes = [
   {
-    slug: "merchant-onboarding",
-    title: "Merchant onboarding",
+    slug: "unified-connection",
+    title: "Unified Connection",
     description:
-      "A verification review flow that keeps status, actions, and focus clear across mouse and keyboard interactions.",
-    disciplines: ["Product UI", "Accessibility"],
-  },
-  {
-    slug: "currency-converter",
-    title: "Currency converter",
-    description:
-      "A conversion flow that makes rates, fees, and the final amount clear before commitment, across screen sizes and input states.",
-    disciplines: ["Product UI", "Fintech"],
+      "A what-if exploration for iPhone Duo that unifies Wi-Fi, cellular, weak signal, no-internet, and offline states through SVG geometry.",
+    disciplines: ["Interaction", "Motion", "SVG"],
+    span: "wide",
   },
   {
     slug: "cellular-status-morph",
     title: "Cellular status morph",
     description:
       "A frame-tuned status icon animation that transforms cellular, Wi-Fi, and battery states through continuous SVG motion.",
-    disciplines: ["Interaction", "Motion", "Prototyping"],
+    disciplines: ["Interaction", "Motion", "SVG"],
+    span: "narrow",
   },
   {
-    slug: "unified-connection",
-    title: "Unified Connection",
+    slug: "merchant-onboarding",
+    title: "Merchant onboarding",
     description:
-      "A what-if exploration for iPhone Duo that unifies Wi-Fi, cellular, weak signal, no-internet, and offline states through SVG geometry.",
-    disciplines: ["Interaction", "Motion", "Prototyping"],
+      "A verification review flow that keeps status, actions, and focus clear across mouse and keyboard interactions.",
+    disciplines: ["Product UI", "Accessibility"],
+    span: "narrow",
   },
   {
     slug: "morph-explorations",
@@ -92,6 +92,7 @@ const prototypes = [
     description:
       "A collection of responsive SVG icon morphs exploring path interpolation, spring motion, state transitions, and accessible interaction.",
     disciplines: ["Interaction", "Motion", "Accessibility"],
+    span: "wide",
   },
   {
     slug: "reorder-queue",
@@ -99,6 +100,7 @@ const prototypes = [
     description:
       "A tactile playlist queue with spring reordering, boundary feedback, and accessible keyboard controls.",
     disciplines: ["Interaction", "Accessibility"],
+    span: "wide",
   },
   {
     slug: "grid-to-detail",
@@ -106,6 +108,7 @@ const prototypes = [
     description:
       "A fluid transition from a responsive image grid into a focused detail view, tuned around motion and layout continuity.",
     disciplines: ["Prototyping", "Layout"],
+    span: "narrow",
   },
   {
     slug: "photo-pager",
@@ -113,6 +116,15 @@ const prototypes = [
     description:
       "A tactile photo browser with gesture-led navigation, predictable keyboard behaviour, and a clear sense of spatial position.",
     disciplines: ["Interaction", "Motion"],
+    span: "narrow",
+  },
+  {
+    slug: "currency-converter",
+    title: "Currency converter",
+    description:
+      "A conversion flow that makes rates, fees, and the final amount clear before commitment across screen sizes and input states.",
+    disciplines: ["Product UI", "Fintech"],
+    span: "wide",
   },
 ];
 
@@ -121,9 +133,7 @@ const techStack = [
   "React / Next.js",
   "JavaScript",
   "HTML / CSS",
-  "Framer Motion",
   "GSAP",
-  "Tailwind CSS",
   "Webflow",
   "Figma",
 ];
@@ -147,30 +157,43 @@ const externalLinks = [
   },
 ];
 
-type SectionHeaderProps = {
-  label: string;
+function StructuralGrid() {
+  return <div data-structural-grid aria-hidden="true" />;
+}
+
+type SectionHeadingProps = {
+  number: string;
+  title: string;
   aside?: string;
 };
 
-function SectionHeader({ label, aside }: SectionHeaderProps) {
+function SectionHeading({ number, title, aside }: SectionHeadingProps) {
   return (
-    <div className="flex items-end justify-between border-b border-black/10 pb-4">
-      <h2 className="text-[13px] font-medium tracking-[-0.01em] text-black/48">
-        {label}
+    <header className="grid grid-cols-12 gap-x-4 border-t border-black/15 py-4 sm:gap-x-6">
+      <span className="col-span-2 font-mono text-[10px] tracking-[0.08em] text-black/32 sm:col-span-1">
+        {number}
+      </span>
+
+      <h2 className="col-span-6 text-[13px] font-medium tracking-[-0.015em] text-black/70 sm:col-span-5">
+        {title}
       </h2>
 
-      {aside && <span className="text-[12px] text-black/32">{aside}</span>}
-    </div>
+      {aside && (
+        <p className="col-span-4 text-right text-[11px] leading-5 text-black/34 sm:col-span-6">
+          {aside}
+        </p>
+      )}
+    </header>
   );
 }
 
-type DisciplineListProps = {
+type DisciplinesProps = {
   disciplines: string[];
 };
 
-function DisciplineList({ disciplines }: DisciplineListProps) {
+function Disciplines({ disciplines }: DisciplinesProps) {
   return (
-    <div className="flex flex-wrap gap-x-3 gap-y-1 text-[12px] font-medium text-black/38">
+    <div className="flex flex-wrap gap-x-3 gap-y-1 font-mono text-[9px] uppercase tracking-[0.055em] text-black/34 sm:text-[10px]">
       {disciplines.map(function renderDiscipline(discipline) {
         return <span key={discipline}>{discipline}</span>;
       })}
@@ -178,96 +201,84 @@ function DisciplineList({ disciplines }: DisciplineListProps) {
   );
 }
 
-type MediaFallbackProps = {
+type FallbackProps = {
   children: ReactNode;
 };
 
-function MediaFallback({ children }: MediaFallbackProps) {
+function MediaFallback({ children }: FallbackProps) {
   return (
-    <div className="absolute inset-0 grid place-items-center bg-[#e9e9e5] px-6 text-center text-sm font-medium text-black/28">
-      {children}
+    <div className="absolute inset-0 grid place-items-center bg-[#e8e8e2] p-6">
+      <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-black/28">
+        {children}
+      </span>
     </div>
   );
 }
 
-type WorkPreviewProps = {
-  src: string;
-  alt: string;
+type WorkImageProps = {
+  slug: string;
+  title: string;
 };
 
-function WorkPreview({ src, alt }: WorkPreviewProps) {
+function WorkImage({ slug, title }: WorkImageProps) {
   const [failed, setFailed] = useState(false);
 
   return (
-    <div className="relative aspect-[16/10] overflow-hidden rounded-[20px] bg-[#e9e9e5]">
+    <div className="relative aspect-[16/10] overflow-hidden bg-[#e7e7e1]">
       {!failed && (
         <img
-          src={src}
-          alt={alt}
+          src={`/portfolio/work/${slug}/cover.webp`}
+          alt={`${title} website preview`}
           loading="lazy"
           decoding="async"
-          onError={function handleImageError() {
+          onError={function handleError() {
             setFailed(true);
           }}
-          className="h-full w-full object-cover transition-transform duration-700 ease-[cubic-bezier(.22,.72,0,1)] motion-reduce:transition-none group-hover:scale-[1.012]"
+          className="h-full w-full object-cover transition-transform duration-700 ease-[cubic-bezier(.22,.72,0,1)] motion-reduce:transition-none group-hover:scale-[1.008]"
         />
       )}
 
-      {failed && <MediaFallback>Preview coming soon</MediaFallback>}
+      {failed && <MediaFallback>{slug}/cover.webp</MediaFallback>}
     </div>
   );
 }
 
-type WorkCardProps = {
-  href: string;
-  title: string;
-  description: string;
-  disciplines: string[];
-  image: string;
-  featured?: boolean;
+type WorkProjectProps = {
+  project: (typeof websites)[number];
+  index: number;
 };
 
-function WorkCard({
-  href,
-  title,
-  description,
-  disciplines,
-  image,
-  featured = false,
-}: WorkCardProps) {
+function WorkProject({ project, index }: WorkProjectProps) {
+  const projectNumber = String(index + 1).padStart(2, "0");
+
   return (
-    <article className={featured ? "group lg:col-span-2" : "group"}>
+    <article className="group border-t border-black/[0.075] py-8 first:border-t-0 sm:py-12">
       <a
-        href={href}
+        href={project.href}
         target="_blank"
         rel="noopener noreferrer"
-        className="block rounded-[22px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/70 focus-visible:ring-offset-4 focus-visible:ring-offset-[#f3f3f0]"
+        className="grid grid-cols-12 gap-x-4 gap-y-6 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-6 focus-visible:ring-offset-[#f3f3ed] sm:gap-x-6"
       >
-        <WorkPreview src={image} alt={`${title} website preview`} />
-
-        <div className="mt-5 grid gap-3 md:grid-cols-[1fr_auto] md:items-start md:gap-8">
+        <div className="col-span-12 flex flex-col justify-between gap-8 sm:col-span-4 lg:col-span-3 lg:min-h-[280px]">
           <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-[17px] font-medium tracking-[-0.025em] text-black">
-                {title}
-              </h3>
+            <span className="font-mono text-[9px] tracking-[0.1em] text-black/28">
+              W{projectNumber}
+            </span>
 
-              <span
-                aria-hidden="true"
-                className="text-[14px] text-black/35 transition-transform duration-300 ease-out motion-reduce:transition-none group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
-              >
-                ↗
-              </span>
+            <h3 className="mt-4 max-w-[240px] text-[clamp(1.4rem,2.25vw,2rem)] font-medium leading-[1.05] tracking-[-0.045em] text-black">
+              {project.title}
+            </h3>
 
-              <span className="sr-only">opens in a new tab</span>
-            </div>
-
-            <p className="mt-2 max-w-xl text-[14px] leading-6 tracking-[-0.01em] text-black/48">
-              {description}
+            <p className="mt-4 max-w-[290px] text-[13px] leading-[1.7] tracking-[-0.01em] text-black/48">
+              {project.description}
             </p>
           </div>
 
-          <DisciplineList disciplines={disciplines} />
+          <Disciplines disciplines={project.disciplines} />
+        </div>
+
+        <div className="col-span-12 sm:col-span-8 lg:col-span-9">
+          <WorkImage slug={project.slug} title={project.title} />
         </div>
       </a>
     </article>
@@ -275,30 +286,29 @@ function WorkCard({
 }
 
 type PrototypeVideoProps = {
-  src: string;
-  poster: string;
+  slug: string;
   title: string;
 };
 
-function PrototypeVideo({ src, poster, title }: PrototypeVideoProps) {
+function PrototypeVideo({ slug, title }: PrototypeVideoProps) {
   const shouldReduceMotion = useReducedMotion();
 
-  const wrapperRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  const [isVisible, setIsVisible] = useState(false);
+  const manualPauseRef = useRef(false);
 
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [visible, setVisible] = useState(false);
+
+  const [playing, setPlaying] = useState(false);
 
   const [failed, setFailed] = useState(false);
 
-  const manualPauseRef = useRef(false);
+  useEffect(function observeVideo() {
+    const element = containerRef.current;
 
-  useEffect(function observePreview() {
-    const wrapper = wrapperRef.current;
-
-    if (!wrapper) {
+    if (!element) {
       return;
     }
 
@@ -306,48 +316,39 @@ function PrototypeVideo({ src, poster, title }: PrototypeVideoProps) {
       function handleIntersection(entries) {
         const [entry] = entries;
 
-        setIsVisible(entry.isIntersecting && entry.intersectionRatio >= 0.45);
+        setVisible(entry.isIntersecting && entry.intersectionRatio >= 0.45);
       },
       {
-        threshold: [0, 0.45, 0.75],
+        threshold: [0, 0.45, 0.8],
       },
     );
 
-    observer.observe(wrapper);
+    observer.observe(element);
 
-    return function disconnectObserver() {
+    return function cleanup() {
       observer.disconnect();
     };
   }, []);
 
   useEffect(
-    function synchronisePlayback() {
+    function syncPlayback() {
       const video = videoRef.current;
 
       if (!video || failed) {
         return;
       }
 
-      if (shouldReduceMotion || !isVisible || manualPauseRef.current) {
+      if (shouldReduceMotion || !visible || manualPauseRef.current) {
         video.pause();
-        setIsPlaying(false);
 
         return;
       }
 
-      const playPromise = video.play();
-
-      if (playPromise) {
-        playPromise
-          .then(function handlePlayback() {
-            setIsPlaying(true);
-          })
-          .catch(function handlePlaybackError() {
-            setIsPlaying(false);
-          });
-      }
+      video.play().catch(function ignoreAutoplayFailure() {
+        setPlaying(false);
+      });
     },
-    [failed, isVisible, shouldReduceMotion],
+    [failed, shouldReduceMotion, visible],
   );
 
   function togglePlayback() {
@@ -360,14 +361,9 @@ function PrototypeVideo({ src, poster, title }: PrototypeVideoProps) {
     if (video.paused) {
       manualPauseRef.current = false;
 
-      video
-        .play()
-        .then(function handlePlayback() {
-          setIsPlaying(true);
-        })
-        .catch(function handlePlaybackError() {
-          setIsPlaying(false);
-        });
+      video.play().catch(function ignorePlaybackFailure() {
+        setPlaying(false);
+      });
 
       return;
     }
@@ -375,258 +371,338 @@ function PrototypeVideo({ src, poster, title }: PrototypeVideoProps) {
     manualPauseRef.current = true;
 
     video.pause();
-    setIsPlaying(false);
   }
 
   return (
     <div
-      ref={wrapperRef}
-      className="relative aspect-[4/3] overflow-hidden rounded-[18px] bg-[#e6e6e2]"
+      ref={containerRef}
+      className="relative aspect-[4/3] overflow-hidden bg-[#e7e7e1]"
     >
       {!failed && (
         <video
           ref={videoRef}
-          src={src}
-          poster={poster}
+          src={`/portfolio/lab/${slug}/preview.mp4`}
+          poster={`/portfolio/lab/${slug}/poster.webp`}
           muted
           loop
           playsInline
           preload="metadata"
           aria-label={`${title} prototype preview`}
-          onError={function handleVideoError() {
+          onError={function handleError() {
             setFailed(true);
           }}
           onPlay={function handlePlay() {
-            setIsPlaying(true);
+            setPlaying(true);
           }}
           onPause={function handlePause() {
-            setIsPlaying(false);
+            setPlaying(false);
           }}
           className="h-full w-full object-cover"
         />
       )}
 
-      {failed && <MediaFallback>Add the prototype recording</MediaFallback>}
+      {failed && <MediaFallback>{slug}/preview.mp4</MediaFallback>}
 
       {!failed && (
         <button
           type="button"
           onClick={togglePlayback}
           aria-label={
-            isPlaying ? `Pause ${title} preview` : `Play ${title} preview`
+            playing ? `Pause ${title} preview` : `Play ${title} preview`
           }
-          className="absolute bottom-3 right-3 grid h-8 min-w-8 place-items-center rounded-full border border-black/[0.06] bg-white/80 px-2 text-[10px] font-medium text-black/58 shadow-[0_1px_2px_rgba(0,0,0,0.05),0_5px_18px_rgba(0,0,0,0.06)] backdrop-blur-xl transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/70 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+          className="absolute bottom-3 right-3 min-w-[44px] border border-black/10 bg-[#f7f7f2]/85 px-2.5 py-2 font-mono text-[9px] uppercase tracking-[0.055em] text-black/60 backdrop-blur-md transition-colors hover:bg-[#f7f7f2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black"
         >
-          {isPlaying ? "Pause" : "Play"}
+          {playing ? "Pause" : "Play"}
         </button>
       )}
     </div>
   );
 }
 
-type LabCardProps = {
-  slug: string;
-  title: string;
-  description: string;
-  disciplines: string[];
+type LabProjectProps = {
+  prototype: (typeof prototypes)[number];
+  index: number;
 };
 
-function LabCard({ slug, title, description, disciplines }: LabCardProps) {
-  const video = `/portfolio/lab/${slug}.mp4`;
+function LabProject({ prototype, index }: LabProjectProps) {
+  const number = String(index + 1).padStart(2, "0");
 
-  const poster = `/portfolio/lab/${slug}.webp`;
+  const width = prototype.span === "wide" ? "lg:col-span-7" : "lg:col-span-5";
 
   return (
-    <article className="group">
-      <PrototypeVideo src={video} poster={poster} title={title} />
+    <article className={`col-span-12 md:col-span-6 ${width}`}>
+      <PrototypeVideo slug={prototype.slug} title={prototype.title} />
 
-      <div className="mt-4">
-        <div className="flex items-center justify-between gap-4">
+      <div className="grid grid-cols-[auto_1fr] gap-x-4 border-t border-black/10 pt-3">
+        <span className="pt-1 font-mono text-[9px] tracking-[0.08em] text-black/28">
+          L{number}
+        </span>
+
+        <div>
           <Link
-            href={`/${slug}`}
-            className="inline-flex items-center gap-2 rounded-sm text-[15px] font-medium tracking-[-0.02em] text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/70 focus-visible:ring-offset-4 focus-visible:ring-offset-[#f3f3f0]"
+            href={`/${prototype.slug}`}
+            className="rounded-sm text-[15px] font-medium tracking-[-0.025em] text-black transition-opacity hover:opacity-55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-4 focus-visible:ring-offset-[#f3f3ed]"
           >
-            {title}
-
-            <span
-              aria-hidden="true"
-              className="text-black/32 transition-transform duration-300 ease-out motion-reduce:transition-none group-hover:translate-x-0.5"
-            >
-              →
-            </span>
+            {prototype.title}
           </Link>
 
-          <DisciplineList disciplines={disciplines.slice(0, 2)} />
-        </div>
+          <p className="mt-2 max-w-[470px] text-[12.5px] leading-[1.65] tracking-[-0.005em] text-black/44">
+            {prototype.description}
+          </p>
 
-        <p className="mt-2 max-w-md text-[13px] leading-[1.65] tracking-[-0.005em] text-black/45">
-          {description}
-        </p>
+          <div className="mt-3">
+            <Disciplines disciplines={prototype.disciplines} />
+          </div>
+        </div>
       </div>
     </article>
   );
 }
 
-function Header() {
+type HeaderProps = {
+  reducedMotion: boolean;
+};
+
+function Header({ reducedMotion }: HeaderProps) {
+  function scrollToSection(
+    event: MouseEvent<HTMLAnchorElement>,
+    sectionId: string,
+  ) {
+    event.preventDefault();
+
+    const section = document.getElementById(sectionId);
+
+    if (!section) {
+      return;
+    }
+
+    section.scrollIntoView({
+      behavior: reducedMotion ? "auto" : "smooth",
+      block: "start",
+    });
+
+    window.history.replaceState(null, "", `#${sectionId}`);
+  }
+
   return (
-    <header className="sticky top-0 z-50">
-      <div className="mx-auto flex max-w-[1280px] items-center justify-between gap-4 px-5 py-4 sm:px-8 lg:px-10">
-        <Link
-          href="/"
-          className="rounded-sm text-[14px] font-medium tracking-[-0.02em] text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/70 focus-visible:ring-offset-4 focus-visible:ring-offset-[#f3f3f0]"
-        >
-          Uzo Okafor
-        </Link>
+    <>
+      <div data-nav-blur aria-hidden="true" />
 
-        <nav
-          aria-label="Portfolio sections"
-          className="flex items-center rounded-[12px] border border-black/[0.05] bg-white/70 p-1 text-[12px] font-medium text-black/46 shadow-[0_1px_2px_rgba(0,0,0,0.025),0_6px_20px_rgba(0,0,0,0.035)] backdrop-blur-xl"
-        >
-          <a
-            href="#work"
-            className="rounded-[9px] px-3 py-2 transition-colors hover:bg-white hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/70"
+      <header className="fixed inset-x-0 top-0 z-50">
+        <div className="mx-auto grid h-[72px] max-w-[1280px] grid-cols-[1fr_auto] items-center gap-5 px-5 sm:grid-cols-[1fr_auto_1fr] sm:px-8 lg:px-10">
+          <Link
+            href="/"
+            className="justify-self-start rounded-sm text-[13px] font-medium tracking-[-0.02em] text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black"
           >
-            Work
-          </a>
+            Uzo Okafor
+          </Link>
+
+          <nav
+            aria-label="Portfolio sections"
+            className="hidden items-center gap-1 text-[11px] font-medium text-black/45 sm:flex"
+          >
+            {[
+              ["work", "Work"],
+              ["lab", "Lab"],
+              ["about", "About"],
+            ].map(function renderLink(item) {
+              return (
+                <a
+                  key={item[0]}
+                  href={`#${item[0]}`}
+                  onClick={function handleClick(event) {
+                    scrollToSection(event, item[0]);
+                  }}
+                  className="rounded-[8px] px-3 py-2 transition-colors hover:bg-black/[0.045] hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black"
+                >
+                  {item[1]}
+                </a>
+              );
+            })}
+          </nav>
 
           <a
-            href="#lab"
-            className="rounded-[9px] px-3 py-2 transition-colors hover:bg-white hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/70"
+            href="mailto:uzochukwuokafor01@gmail.com"
+            className="justify-self-end bg-black px-3.5 py-2 text-[10px] font-medium tracking-[-0.005em] text-white transition-opacity hover:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-3 focus-visible:ring-offset-[#f3f3ed]"
           >
-            Lab
+            Email me
           </a>
-
-          <a
-            href="#about"
-            className="rounded-[9px] px-3 py-2 transition-colors hover:bg-white hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/70"
-          >
-            About
-          </a>
-        </nav>
-      </div>
-    </header>
+        </div>
+      </header>
+    </>
   );
 }
 
 export default function Home() {
-  return (
-    <main className="min-h-screen bg-[#f3f3f0] text-black selection:bg-black selection:text-white">
-      <Header />
+  const shouldReduceMotion = Boolean(useReducedMotion());
 
-      <div className="mx-auto max-w-[1280px] px-5 pb-10 pt-16 sm:px-8 sm:pt-24 lg:px-10 lg:pt-28">
-        <section
-          aria-labelledby="intro-title"
-          className="pb-32 sm:pb-40 lg:pb-48"
-        >
-          <div className="max-w-[820px]">
-            <p className="mb-6 text-[13px] font-medium tracking-[-0.01em] text-black/42">
+  return (
+    <main className="relative min-h-screen overflow-clip bg-[#f3f3ed] text-[#11110f] selection:bg-[#11110f] selection:text-[#f3f3ed]">
+      <StructuralGrid />
+
+      <Header reducedMotion={shouldReduceMotion} />
+
+      <div className="relative z-10 mx-auto max-w-[1280px] px-5 pb-8 pt-[72px] sm:px-8 lg:px-10">
+        <section className="grid min-h-[58svh] grid-cols-12 content-end gap-x-4 border-b border-black/15 pb-10 pt-20 sm:gap-x-6 sm:pb-14 sm:pt-28 lg:min-h-[64svh]">
+          <div className="col-span-12 sm:col-span-8 lg:col-span-7">
+            <p className="mb-5 font-mono text-[9px] uppercase tracking-[0.09em] text-black/35">
               Web Design Engineer
             </p>
 
-            <h1
-              id="intro-title"
-              className="text-[clamp(2.5rem,6vw,5.4rem)] font-medium leading-[0.98] tracking-[-0.055em]"
-            >
-              I design and engineer interfaces for the web, with a focus on the
-              details that make them feel right in production.
+            <h1 className="max-w-[760px] text-[clamp(2.25rem,5vw,4rem)] font-medium leading-[0.98] tracking-[-0.055em]">
+              I design and build interfaces that hold up in production.
             </h1>
+          </div>
 
-            <p className="mt-8 max-w-xl text-[16px] leading-7 tracking-[-0.015em] text-black/48">
-              Interaction, frontend engineering, accessibility, motion, and the
-              systems behind polished digital experiences.
+          <div className="col-span-12 mt-10 sm:col-span-4 sm:mt-0 lg:col-start-9 lg:col-span-4">
+            <p className="max-w-[360px] text-[13.5px] leading-[1.75] tracking-[-0.012em] text-black/53">
+              I started in civil engineering, with a particular interest in
+              structures. These days I work between design and frontend
+              engineering, building websites, interaction systems, and
+              prototypes.
             </p>
+
+            <div className="mt-8 flex items-center gap-3">
+              <span
+                aria-hidden="true"
+                className="block h-px w-10 bg-black/20"
+              />
+
+              <span className="font-mono text-[9px] uppercase tracking-[0.08em] text-black/30">
+                Structure → Interface
+              </span>
+            </div>
           </div>
         </section>
 
         <section
           id="work"
-          aria-labelledby="work-title"
-          className="scroll-mt-24 pb-32 sm:pb-40"
+          aria-labelledby="work-heading"
+          className="scroll-mt-24 py-24 sm:py-32"
         >
-          <div className="mb-10">
-            <SectionHeader label="Selected Work" aside="Shipped work" />
+          <div id="work-heading">
+            <SectionHeading
+              number="01"
+              title="Selected work"
+              aside="Production websites"
+            />
           </div>
 
-          <div className="grid grid-cols-1 gap-x-7 gap-y-16 lg:grid-cols-2 lg:gap-y-20">
-            {websites.map(function renderWebsite(website) {
-              return <WorkCard key={website.href} {...website} />;
+          <div className="mt-3">
+            {websites.map(function renderProject(project, index) {
+              return (
+                <WorkProject
+                  key={project.slug}
+                  project={project}
+                  index={index}
+                />
+              );
             })}
           </div>
         </section>
 
         <section
           id="lab"
-          aria-labelledby="lab-title"
-          className="scroll-mt-24 pb-32 sm:pb-40"
+          aria-labelledby="lab-heading"
+          className="scroll-mt-24 pb-24 sm:pb-32"
         >
-          <div className="mb-10">
-            <SectionHeader label="Lab" aside="Interaction studies · 2026" />
+          <div id="lab-heading">
+            <SectionHeading
+              number="02"
+              title="Lab"
+              aside="Interaction studies · 2026"
+            />
           </div>
 
-          <div className="grid grid-cols-1 gap-x-7 gap-y-14 md:grid-cols-2 lg:gap-y-16">
-            {prototypes.map(function renderPrototype(prototype) {
-              return <LabCard key={prototype.slug} {...prototype} />;
+          <div className="mt-10 grid grid-cols-12 gap-x-4 gap-y-14 sm:gap-x-6 sm:gap-y-20">
+            {prototypes.map(function renderPrototype(prototype, index) {
+              return (
+                <LabProject
+                  key={prototype.slug}
+                  prototype={prototype}
+                  index={index}
+                />
+              );
             })}
           </div>
         </section>
 
         <section
           id="about"
-          aria-labelledby="about-title"
+          aria-labelledby="about-heading"
           className="scroll-mt-24 pb-28"
         >
-          <div className="mb-10">
-            <SectionHeader label="About" />
+          <div id="about-heading">
+            <SectionHeading number="03" title="About" />
           </div>
 
-          <div className="grid gap-12 lg:grid-cols-[minmax(0,1.25fr)_minmax(280px,.75fr)] lg:gap-24">
-            <div className="max-w-2xl space-y-6 text-[18px] leading-[1.65] tracking-[-0.02em] text-black/68">
-              <p>
-                I work between design and frontend engineering, turning visual
-                ideas into responsive, accessible interfaces that hold up in
-                production.
+          <div className="mt-10 grid grid-cols-12 gap-x-4 gap-y-12 sm:gap-x-6">
+            <div className="col-span-12 sm:col-span-7 lg:col-span-6">
+              <p className="max-w-[610px] text-[clamp(1.35rem,2.1vw,1.8rem)] font-medium leading-[1.35] tracking-[-0.035em]">
+                Before the web, I studied Civil Engineering and worked briefly
+                as a site engineer.
               </p>
 
-              <p className="text-black/42">
-                I care about the parts people notice when they are right and
-                immediately feel when they are not: interaction, motion,
-                hierarchy, performance, accessibility, and the small
-                implementation decisions behind them.
-              </p>
+              <div className="mt-6 max-w-[600px] space-y-4 text-[13.5px] leading-[1.75] tracking-[-0.01em] text-black/50">
+                <p>
+                  Structural engineering was the part I was most drawn to:
+                  understanding how individual pieces work together, where
+                  things carry load, and why small decisions can affect the
+                  whole system.
+                </p>
+
+                <p>
+                  I think about the web in a similar way now. The visual layer
+                  matters, but so do the systems underneath it: responsive
+                  behaviour, accessibility, performance, interaction, and code
+                  that stays useful after launch.
+                </p>
+              </div>
             </div>
 
-            <div>
-              <p className="mb-5 text-[12px] font-medium text-black/35">
-                Working with
+            <div className="col-span-12 sm:col-start-9 sm:col-span-4 lg:col-start-9">
+              <p className="font-mono text-[9px] uppercase tracking-[0.08em] text-black/30">
+                Tools I work with
               </p>
 
-              <ul className="flex flex-wrap gap-x-5 gap-y-2 text-[14px] leading-6 text-black/58">
-                {techStack.map(function renderTech(tech) {
-                  return <li key={tech}>{tech}</li>;
+              <ul className="mt-5 border-t border-black/10">
+                {techStack.map(function renderTech(tech, index) {
+                  return (
+                    <li
+                      key={tech}
+                      className="grid grid-cols-[32px_1fr] border-b border-black/[0.075] py-2.5 text-[12px]"
+                    >
+                      <span className="font-mono text-[9px] text-black/22">
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+
+                      <span className="text-black/55">{tech}</span>
+                    </li>
+                  );
                 })}
               </ul>
             </div>
           </div>
         </section>
 
-        <footer className="border-t border-black/10 py-8">
-          <div className="flex flex-col justify-between gap-8 sm:flex-row sm:items-end">
-            <div>
-              <p className="text-[12px] font-medium text-black/35">
-                Get in touch
+        <footer className="border-t border-black/15 py-7">
+          <div className="grid grid-cols-12 items-end gap-x-4 gap-y-8 sm:gap-x-6">
+            <div className="col-span-12 sm:col-span-6">
+              <p className="font-mono text-[9px] uppercase tracking-[0.08em] text-black/30">
+                Have something in mind?
               </p>
 
               <a
                 href="mailto:uzochukwuokafor01@gmail.com"
-                className="mt-2 inline-block rounded-sm text-[16px] font-medium tracking-[-0.02em] text-black transition-opacity hover:opacity-55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/70 focus-visible:ring-offset-4 focus-visible:ring-offset-[#f3f3f0]"
+                className="mt-3 inline-block rounded-sm text-[18px] font-medium tracking-[-0.03em] transition-opacity hover:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-4 focus-visible:ring-offset-[#f3f3ed]"
               >
-                Email me
+                uzokafor01@gmail.com
               </a>
             </div>
 
             <nav
               aria-label="Social links"
-              className="flex flex-wrap gap-x-6 gap-y-2 text-[13px] font-medium text-black/45"
+              className="col-span-12 flex flex-wrap gap-x-5 gap-y-2 text-[11px] font-medium text-black/42 sm:col-span-6 sm:justify-end"
             >
               {externalLinks.map(function renderExternalLink(link) {
                 return (
@@ -635,7 +711,7 @@ export default function Home() {
                     href={link.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="rounded-sm transition-colors hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/70 focus-visible:ring-offset-4 focus-visible:ring-offset-[#f3f3f0]"
+                    className="rounded-sm transition-colors hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black"
                   >
                     {link.label}
 
@@ -647,6 +723,120 @@ export default function Home() {
           </div>
         </footer>
       </div>
+
+      <style>{`
+        html {
+          scroll-padding-top: 96px;
+        }
+
+        [data-structural-grid] {
+          position: fixed;
+          z-index: 0;
+          top: 0;
+          bottom: 0;
+          left: 50%;
+          width: min(
+            calc(100% - 40px),
+            1280px
+          );
+          pointer-events: none;
+          transform: translateX(-50%);
+          background-image:
+            linear-gradient(
+              to right,
+              rgba(17, 17, 15, 0.032) 1px,
+              transparent 1px
+            );
+          background-size:
+            calc(100% / 12)
+            100%;
+          border-right:
+            1px solid
+            rgba(17, 17, 15, 0.032);
+          -webkit-mask-image:
+            linear-gradient(
+              to bottom,
+              transparent 0,
+              black 9rem,
+              black calc(100% - 9rem),
+              transparent 100%
+            );
+          mask-image:
+            linear-gradient(
+              to bottom,
+              transparent 0,
+              black 9rem,
+              black calc(100% - 9rem),
+              transparent 100%
+            );
+        }
+
+        [data-nav-blur] {
+          position: fixed;
+          z-index: 40;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 116px;
+          pointer-events: none;
+          background:
+            linear-gradient(
+              to bottom,
+              rgba(243, 243, 237, 0.76) 0%,
+              rgba(243, 243, 237, 0.38) 48%,
+              rgba(243, 243, 237, 0) 100%
+            );
+          backdrop-filter: blur(18px);
+          -webkit-backdrop-filter:
+            blur(18px);
+          -webkit-mask-image:
+            linear-gradient(
+              to bottom,
+              black 0%,
+              black 42%,
+              rgba(0, 0, 0, 0.72) 62%,
+              transparent 100%
+            );
+          mask-image:
+            linear-gradient(
+              to bottom,
+              black 0%,
+              black 42%,
+              rgba(0, 0, 0, 0.72) 62%,
+              transparent 100%
+            );
+        }
+
+        @media (
+          max-width: 639px
+        ) {
+          [data-structural-grid] {
+            width:
+              calc(100% - 40px);
+            background-size:
+              25% 100%;
+          }
+        }
+
+        @media (
+          prefers-reduced-motion:
+            reduce
+        ) {
+          html {
+            scroll-behavior: auto;
+          }
+        }
+
+        @media (
+          forced-colors:
+            active
+        ) {
+          [data-structural-grid],
+          [data-nav-blur] {
+            display: none;
+          }
+        }
+      `}</style>
     </main>
   );
 }
