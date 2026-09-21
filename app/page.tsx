@@ -14,6 +14,14 @@ const websites = [
     disciplines: ["Web development", "Biotech"],
   },
   {
+    slug: "oun-homes",
+    href: "https://www.oun.homes/",
+    title: "Oun Homes",
+    description:
+      "A product marketing site for an AI real estate platform, turning a complex transaction workflow into a focused story.",
+    disciplines: ["Product marketing", "Proptech"],
+  },
+  {
     slug: "hyperspectral-ai",
     href: "https://www.hyperspectral.ai/",
     title: "HyperSpectral AI",
@@ -28,14 +36,6 @@ const websites = [
     description:
       "A biotech site that explains programmable DNA construction through structured storytelling and restrained motion.",
     disciplines: ["Interaction", "Biotech"],
-  },
-  {
-    slug: "oun-homes",
-    href: "https://www.oun.homes/",
-    title: "Oun Homes",
-    description:
-      "A product marketing site for an AI real estate platform, turning a complex transaction workflow into a focused story.",
-    disciplines: ["Product marketing", "Proptech"],
   },
   {
     slug: "mailata-family-foundation",
