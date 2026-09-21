@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, type MouseEvent } from "react";
-import { useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
 const websites = [
   {
@@ -18,7 +18,7 @@ const websites = [
     href: "https://www.hyperspectral.ai/",
     title: "HyperSpectral AI",
     description:
-      "A high-craft AI and life sciences site built around spectral intelligence, layered visuals, and technical storytelling.",
+      "An AI and life sciences site built around spectral intelligence, layered visuals, and technical storytelling.",
     disciplines: ["Interaction", "AI / Life sciences"],
   },
   {
@@ -143,6 +143,78 @@ const externalLinks = [
   },
 ];
 
+const NAV_ITEMS = [
+  {
+    id: "work",
+    label: "Work",
+  },
+  {
+    id: "lab",
+    label: "Lab",
+  },
+  {
+    id: "about",
+    label: "About",
+  },
+];
+
+const PLAY_LINES = [
+  {
+    x1: 6,
+    y1: 4,
+    x2: 6,
+    y2: 16,
+  },
+  {
+    x1: 6,
+    y1: 4,
+    x2: 15.5,
+    y2: 10,
+  },
+  {
+    x1: 15.5,
+    y1: 10,
+    x2: 6,
+    y2: 16,
+  },
+  {
+    x1: 10,
+    y1: 10,
+    x2: 10,
+    y2: 10,
+    opacity: 0,
+  },
+];
+
+const PAUSE_LINES = [
+  {
+    x1: 7,
+    y1: 5,
+    x2: 7,
+    y2: 15,
+  },
+  {
+    x1: 13,
+    y1: 5,
+    x2: 13,
+    y2: 15,
+  },
+  {
+    x1: 10,
+    y1: 10,
+    x2: 10,
+    y2: 10,
+    opacity: 0,
+  },
+  {
+    x1: 10,
+    y1: 10,
+    x2: 10,
+    y2: 10,
+    opacity: 0,
+  },
+];
+
 type MediaFallbackProps = {
   label: string;
 };
@@ -150,7 +222,21 @@ type MediaFallbackProps = {
 function MediaFallback({ label }: MediaFallbackProps) {
   return (
     <div className="absolute inset-0 grid place-items-center bg-[#e9e9e6]">
-      <span className="text-xs text-black/25">{label}</span>
+      <span className="text-xs text-[#666663]">{label}</span>
+    </div>
+  );
+}
+
+type MetadataProps = {
+  disciplines: string[];
+};
+
+function Metadata({ disciplines }: MetadataProps) {
+  return (
+    <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] font-medium text-[#686864]">
+      {disciplines.map(function renderDiscipline(discipline) {
+        return <span key={discipline}>{discipline}</span>;
+      })}
     </div>
   );
 }
@@ -164,7 +250,7 @@ function ProjectImage({ slug, title }: ProjectImageProps) {
   const [failed, setFailed] = useState(false);
 
   return (
-    <div className="relative aspect-video overflow-hidden rounded-[18px] bg-[#e9e9e6]">
+    <div className="relative aspect-video overflow-hidden rounded-[18px] border border-black/[0.045] bg-[#e9e9e6] transition-[box-shadow,border-color] duration-300 group-hover:border-black/[0.08] group-hover:shadow-[0_12px_40px_-28px_rgba(0,0,0,.32)]">
       {!failed && (
         <img
           src={`/portfolio/work/${slug}/cover.webp`}
@@ -174,12 +260,62 @@ function ProjectImage({ slug, title }: ProjectImageProps) {
           onError={function handleError() {
             setFailed(true);
           }}
-          className="h-full w-full object-contain"
+          className="block h-full w-full object-cover"
         />
       )}
 
       {failed && <MediaFallback label={`${slug}/cover.webp`} />}
     </div>
+  );
+}
+
+type MorphPlayPauseProps = {
+  playing: boolean;
+  reducedMotion: boolean;
+};
+
+function MorphPlayPause({ playing, reducedMotion }: MorphPlayPauseProps) {
+  const lines = playing ? PAUSE_LINES : PLAY_LINES;
+
+  const transition = reducedMotion
+    ? {
+        duration: 0,
+      }
+    : {
+        type: "spring" as const,
+        duration: 0.34,
+        bounce: 0,
+      };
+
+  return (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 20 20"
+      fill="none"
+      aria-hidden="true"
+    >
+      {lines.map(function renderLine(line, index) {
+        return (
+          <motion.line
+            key={index}
+            initial={false}
+            animate={{
+              x1: line.x1,
+              y1: line.y1,
+              x2: line.x2,
+              y2: line.y2,
+              opacity: line.opacity ?? 1,
+            }}
+            transition={transition}
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        );
+      })}
+    </svg>
   );
 }
 
@@ -189,7 +325,7 @@ type PrototypeVideoProps = {
 };
 
 function PrototypeVideo({ slug, title }: PrototypeVideoProps) {
-  const reduceMotion = Boolean(useReducedMotion());
+  const reducedMotion = Boolean(useReducedMotion());
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -214,10 +350,10 @@ function PrototypeVideo({ slug, title }: PrototypeVideoProps) {
       function handleIntersection(entries) {
         const [entry] = entries;
 
-        setVisible(entry.isIntersecting && entry.intersectionRatio >= 0.4);
+        setVisible(entry.isIntersecting && entry.intersectionRatio >= 0.45);
       },
       {
-        threshold: [0, 0.4, 0.8],
+        threshold: [0, 0.45, 0.8],
       },
     );
 
@@ -236,8 +372,9 @@ function PrototypeVideo({ slug, title }: PrototypeVideoProps) {
         return;
       }
 
-      if (reduceMotion || !visible || manualPauseRef.current) {
+      if (reducedMotion || !visible || manualPauseRef.current) {
         video.pause();
+
         return;
       }
 
@@ -245,7 +382,7 @@ function PrototypeVideo({ slug, title }: PrototypeVideoProps) {
         setPlaying(false);
       });
     },
-    [failed, reduceMotion, visible],
+    [failed, reducedMotion, visible],
   );
 
   function togglePlayback() {
@@ -266,13 +403,14 @@ function PrototypeVideo({ slug, title }: PrototypeVideoProps) {
     }
 
     manualPauseRef.current = true;
+
     video.pause();
   }
 
   return (
     <div
       ref={containerRef}
-      className="relative aspect-video overflow-hidden rounded-[16px] bg-[#e9e9e6]"
+      className="group/video relative aspect-video overflow-hidden rounded-[16px] border border-black/[0.045] bg-[#e9e9e6] transition-[box-shadow,border-color] duration-300 hover:border-black/[0.08] hover:shadow-[0_12px_40px_-28px_rgba(0,0,0,.32)]"
     >
       {!failed && (
         <video
@@ -283,7 +421,8 @@ function PrototypeVideo({ slug, title }: PrototypeVideoProps) {
           loop
           playsInline
           preload="metadata"
-          aria-label={`${title} prototype preview`}
+          aria-hidden="true"
+          tabIndex={-1}
           onError={function handleError() {
             setFailed(true);
           }}
@@ -293,7 +432,7 @@ function PrototypeVideo({ slug, title }: PrototypeVideoProps) {
           onPause={function handlePause() {
             setPlaying(false);
           }}
-          className="h-full w-full object-contain"
+          className="block h-full w-full object-cover"
         />
       )}
 
@@ -306,54 +445,143 @@ function PrototypeVideo({ slug, title }: PrototypeVideoProps) {
           aria-label={
             playing ? `Pause ${title} preview` : `Play ${title} preview`
           }
-          className="absolute bottom-3 right-3 grid size-8 place-items-center rounded-full border border-black/[0.06] bg-white/80 text-black/65 shadow-[0_1px_2px_rgba(0,0,0,.05),0_4px_16px_rgba(0,0,0,.05)] backdrop-blur-xl transition-[background,transform] duration-200 hover:bg-white active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/70"
+          className="absolute bottom-3 right-3 grid size-11 cursor-pointer place-items-center rounded-full border border-black/[0.07] bg-white/82 text-black/65 shadow-[0_2px_5px_rgba(0,0,0,.06),0_8px_24px_rgba(0,0,0,.08)] backdrop-blur-xl transition-[background-color,box-shadow,transform] duration-200 hover:bg-white hover:shadow-[0_3px_8px_rgba(0,0,0,.08),0_10px_28px_rgba(0,0,0,.1)] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 focus-visible:ring-offset-[#e9e9e6] motion-reduce:transition-none motion-reduce:active:scale-100"
         >
-          {playing ? (
-            <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
-              <rect
-                x="2"
-                y="1.5"
-                width="2"
-                height="7"
-                rx="0.7"
-                fill="currentColor"
-              />
-              <rect
-                x="6"
-                y="1.5"
-                width="2"
-                height="7"
-                rx="0.7"
-                fill="currentColor"
-              />
-            </svg>
-          ) : (
-            <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
-              <path d="M2.5 1.7L8 5L2.5 8.3V1.7Z" fill="currentColor" />
-            </svg>
-          )}
+          <MorphPlayPause playing={playing} reducedMotion={reducedMotion} />
         </button>
       )}
     </div>
   );
 }
 
-type MetadataProps = {
-  disciplines: string[];
+type WorkProjectProps = {
+  project: (typeof websites)[number];
+  index: number;
 };
 
-function Metadata({ disciplines }: MetadataProps) {
+function WorkProject({ project, index }: WorkProjectProps) {
   return (
-    <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] font-medium text-black/35">
-      {disciplines.map(function renderDiscipline(discipline) {
-        return <span key={discipline}>{discipline}</span>;
-      })}
-    </div>
+    <article className="border-t border-black/[0.07] py-10 first:border-t-0 first:pt-0 sm:py-14">
+      <a
+        href={project.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="group block rounded-[18px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-5 focus-visible:ring-offset-[#f4f4f1]"
+      >
+        <ProjectImage slug={project.slug} title={project.title} />
+
+        <div className="mt-4 grid gap-4 sm:grid-cols-[1fr_auto] sm:items-start">
+          <div>
+            <div className="flex items-baseline gap-3">
+              <span
+                aria-hidden="true"
+                className="text-[10px] tabular-nums text-[#747470]"
+              >
+                {String(index + 1).padStart(2, "0")}
+              </span>
+
+              <h3 className="text-[16px] font-medium tracking-[-0.025em] text-[#111]">
+                {project.title}
+              </h3>
+            </div>
+
+            <p className="ml-[29px] mt-2 max-w-[610px] text-[13px] leading-[1.65] text-[#5f5f5b]">
+              {project.description}
+            </p>
+          </div>
+
+          <Metadata disciplines={project.disciplines} />
+        </div>
+      </a>
+    </article>
+  );
+}
+
+type LabProjectProps = {
+  prototype: (typeof prototypes)[number];
+  index: number;
+};
+
+function LabProject({ prototype, index }: LabProjectProps) {
+  return (
+    <article>
+      <PrototypeVideo slug={prototype.slug} title={prototype.title} />
+
+      <div className="mt-4">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-baseline gap-3">
+            <span
+              aria-hidden="true"
+              className="text-[10px] tabular-nums text-[#747470]"
+            >
+              {String(index + 1).padStart(2, "0")}
+            </span>
+
+            <Link
+              href={`/${prototype.slug}`}
+              className="rounded-sm text-[15px] font-medium tracking-[-0.025em] text-[#111] transition-opacity hover:opacity-55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-3 focus-visible:ring-offset-[#f4f4f1]"
+            >
+              {prototype.title}
+            </Link>
+          </div>
+
+          <Metadata disciplines={prototype.disciplines} />
+        </div>
+
+        <p className="ml-[29px] mt-2 max-w-[470px] text-[12.5px] leading-[1.65] text-[#5f5f5b]">
+          {prototype.description}
+        </p>
+      </div>
+    </article>
   );
 }
 
 function Header() {
-  const reduceMotion = Boolean(useReducedMotion());
+  const reducedMotion = Boolean(useReducedMotion());
+
+  const [activeSection, setActiveSection] = useState("work");
+
+  const activeIndex = NAV_ITEMS.findIndex(function findActive(item) {
+    return item.id === activeSection;
+  });
+
+  useEffect(function observeSections() {
+    const sections = NAV_ITEMS.map(function getSection(item) {
+      return document.getElementById(item.id);
+    }).filter(Boolean) as HTMLElement[];
+
+    if (sections.length === 0) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      function handleIntersection(entries) {
+        const visible = entries
+          .filter(function filterEntry(entry) {
+            return entry.isIntersecting;
+          })
+          .sort(function sortEntries(first, second) {
+            return second.intersectionRatio - first.intersectionRatio;
+          });
+
+        if (visible.length > 0) {
+          setActiveSection(visible[0].target.id);
+        }
+      },
+      {
+        rootMargin: "-20% 0px -55% 0px",
+        threshold: [0, 0.25, 0.5, 0.75],
+      },
+    );
+
+    sections.forEach(function observeSection(section) {
+      observer.observe(section);
+    });
+
+    return function cleanup() {
+      observer.disconnect();
+    };
+  }, []);
 
   function scrollToSection(
     event: MouseEvent<HTMLAnchorElement>,
@@ -367,10 +595,14 @@ function Header() {
       return;
     }
 
+    setActiveSection(sectionId);
+
     section.scrollIntoView({
-      behavior: reduceMotion ? "auto" : "smooth",
+      behavior: reducedMotion ? "auto" : "smooth",
       block: "start",
     });
+
+    window.history.replaceState(null, "", `#${sectionId}`);
   }
 
   return (
@@ -381,7 +613,7 @@ function Header() {
         <div className="mx-auto flex h-[68px] max-w-[1200px] items-center justify-between px-5 sm:px-8">
           <Link
             href="/"
-            className="rounded-sm text-[13px] font-medium tracking-[-0.02em] text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black"
+            className="rounded-sm text-[13px] font-medium tracking-[-0.02em] text-[#111] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black"
           >
             Uzo Okafor
           </Link>
@@ -389,23 +621,34 @@ function Header() {
           <div className="flex items-center gap-2">
             <nav
               aria-label="Portfolio sections"
-              className="hidden items-center rounded-[11px] border border-black/[0.045] bg-white/55 p-[3px] text-[11px] font-medium text-black/45 shadow-[0_1px_2px_rgba(0,0,0,.025)] backdrop-blur-xl sm:flex"
+              className="relative hidden grid-cols-3 items-center rounded-[11px] border border-black/[0.055] bg-white/58 p-[3px] text-[11px] font-medium text-[#646460] shadow-[0_1px_2px_rgba(0,0,0,.025)] backdrop-blur-xl sm:grid"
             >
-              {[
-                ["work", "Work"],
-                ["lab", "Lab"],
-                ["about", "About"],
-              ].map(function renderNavigation(item) {
+              <span
+                aria-hidden="true"
+                className="absolute bottom-[3px] left-[3px] top-[3px] w-[56px] rounded-[8px] bg-white shadow-[0_1px_2px_rgba(0,0,0,.055),0_3px_9px_rgba(0,0,0,.025)] transition-transform duration-[420ms] ease-[cubic-bezier(.22,.72,0,1)] motion-reduce:transition-none"
+                style={{
+                  transform: `translateX(${activeIndex * 56}px)`,
+                }}
+              />
+
+              {NAV_ITEMS.map(function renderNavigation(item) {
+                const active = activeSection === item.id;
+
                 return (
                   <a
-                    key={item[0]}
-                    href={`#${item[0]}`}
+                    key={item.id}
+                    href={`#${item.id}`}
+                    aria-current={active ? "location" : undefined}
                     onClick={function handleClick(event) {
-                      scrollToSection(event, item[0]);
+                      scrollToSection(event, item.id);
                     }}
-                    className="rounded-[8px] px-3 py-2 transition-colors hover:bg-white/85 hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black"
+                    className={`relative z-10 grid h-8 w-14 place-items-center rounded-[8px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black ${
+                      active
+                        ? "text-[#111]"
+                        : "text-[#646460] hover:text-[#111]"
+                    }`}
                   >
-                    {item[1]}
+                    {item.label}
                   </a>
                 );
               })}
@@ -413,7 +656,7 @@ function Header() {
 
             <a
               href="mailto:uzochukwuokafor01@gmail.com"
-              className="rounded-[10px] bg-black px-3.5 py-[9px] text-[10.5px] font-medium text-white transition-opacity hover:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-3 focus-visible:ring-offset-[#f4f4f1]"
+              className="grid min-h-9 place-items-center rounded-[10px] bg-[#111] px-3.5 text-[10.5px] font-medium text-white transition-[opacity,transform] duration-200 hover:opacity-75 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-3 focus-visible:ring-offset-[#f4f4f1] motion-reduce:transition-none motion-reduce:active:scale-100"
             >
               Email me
             </a>
@@ -425,124 +668,160 @@ function Header() {
 }
 
 export default function Home() {
+  const reducedMotion = Boolean(useReducedMotion());
+
+  const [showAllWork, setShowAllWork] = useState(false);
+
+  const primaryWork = websites.slice(0, 3);
+
+  const additionalWork = websites.slice(3);
+
   return (
     <main className="min-h-screen bg-[#f4f4f1] text-[#111] selection:bg-black selection:text-white">
       <Header />
 
       <div className="mx-auto max-w-[1200px] px-5 pb-8 pt-[68px] sm:px-8">
-        <section className="flex min-h-[430px] max-w-[760px] flex-col justify-end pb-20 pt-20 sm:min-h-[500px] sm:pb-24">
-          <p className="mb-5 text-[12px] font-medium tracking-[-0.01em] text-black/40">
+        <section className="flex min-h-[390px] max-w-[720px] flex-col justify-end pb-16 pt-20 sm:min-h-[450px] sm:pb-20">
+          <p className="mb-5 text-[12px] font-medium tracking-[-0.01em] text-[#60605c]">
             Web Design Engineer
           </p>
 
-          <h1 className="max-w-[700px] text-[clamp(2rem,4vw,3.4rem)] font-medium leading-[1.04] tracking-[-0.045em]">
-            I design and engineer interfaces for the web, with a focus on the
-            details that make them feel right in production.
+          <h1 className="max-w-[680px] text-[clamp(2rem,4vw,3.25rem)] font-medium leading-[1.03] tracking-[-0.05em]">
+            I build websites and interface prototypes.
           </h1>
 
-          <p className="mt-6 max-w-[620px] text-[14px] leading-[1.7] tracking-[-0.01em] text-black/48">
-            My work sits between design and frontend engineering, from
-            responsive behaviour and interaction to accessibility, component
-            structure, performance, and the systems that keep a build useful
-            after launch.
+          <p className="mt-5 max-w-[560px] text-[14px] leading-[1.7] tracking-[-0.01em] text-[#5f5f5b]">
+            Mostly Webflow, React/Next.js and GSAP. I care a lot about
+            interaction, accessibility, and how things hold up in production.
           </p>
         </section>
 
         <section
           id="work"
+          aria-labelledby="work-title"
           className="scroll-mt-24 border-t border-black/10 pt-6"
         >
           <div className="mb-12 flex items-center justify-between">
-            <h2 className="text-[13px] font-medium tracking-[-0.015em]">
+            <h2
+              id="work-title"
+              className="text-[13px] font-medium tracking-[-0.015em]"
+            >
               Selected Work
             </h2>
 
-            <span className="text-[11px] text-black/30">6 projects</span>
+            <span className="text-[11px] text-[#686864]">6 projects</span>
           </div>
 
           <div>
-            {websites.map(function renderWebsite(project, index) {
+            {primaryWork.map(function renderWebsite(project, index) {
               return (
-                <article
+                <WorkProject
                   key={project.slug}
-                  className="border-t border-black/[0.07] py-10 first:border-t-0 first:pt-0 sm:py-14"
-                >
-                  <a
-                    href={project.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group block rounded-[18px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-5 focus-visible:ring-offset-[#f4f4f1]"
-                  >
-                    <ProjectImage slug={project.slug} title={project.title} />
-
-                    <div className="mt-4 grid gap-4 sm:grid-cols-[1fr_auto] sm:items-start">
-                      <div>
-                        <div className="flex items-baseline gap-3">
-                          <span className="text-[10px] tabular-nums text-black/25">
-                            {String(index + 1).padStart(2, "0")}
-                          </span>
-
-                          <h3 className="text-[16px] font-medium tracking-[-0.025em]">
-                            {project.title}
-                          </h3>
-                        </div>
-
-                        <p className="ml-[29px] mt-2 max-w-[610px] text-[13px] leading-[1.65] text-black/43">
-                          {project.description}
-                        </p>
-                      </div>
-
-                      <Metadata disciplines={project.disciplines} />
-                    </div>
-                  </a>
-                </article>
+                  project={project}
+                  index={index}
+                />
               );
             })}
+
+            <AnimatePresence initial={false}>
+              {showAllWork && (
+                <motion.div
+                  id="additional-work"
+                  initial={
+                    reducedMotion
+                      ? false
+                      : {
+                          height: 0,
+                          opacity: 0,
+                        }
+                  }
+                  animate={{
+                    height: "auto",
+                    opacity: 1,
+                  }}
+                  exit={
+                    reducedMotion
+                      ? undefined
+                      : {
+                          height: 0,
+                          opacity: 0,
+                        }
+                  }
+                  transition={
+                    reducedMotion
+                      ? {
+                          duration: 0,
+                        }
+                      : {
+                          height: {
+                            duration: 0.6,
+                            ease: [0.22, 0.72, 0, 1],
+                          },
+                          opacity: {
+                            duration: 0.28,
+                            delay: 0.08,
+                          },
+                        }
+                  }
+                  className="overflow-hidden"
+                >
+                  {additionalWork.map(function renderWebsite(project, index) {
+                    return (
+                      <WorkProject
+                        key={project.slug}
+                        project={project}
+                        index={index + 3}
+                      />
+                    );
+                  })}
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <div className="flex justify-center border-t border-black/[0.07] py-8 sm:py-10">
+              <button
+                type="button"
+                aria-expanded={showAllWork}
+                aria-controls="additional-work"
+                onClick={function toggleWork() {
+                  setShowAllWork(function toggle(current) {
+                    return !current;
+                  });
+                }}
+                className="min-h-10 cursor-pointer rounded-[11px] border border-black/[0.065] bg-white/65 px-4 text-[11px] font-medium text-[#444440] shadow-[0_1px_2px_rgba(0,0,0,.025),0_4px_14px_rgba(0,0,0,.025)] backdrop-blur-xl transition-[background-color,box-shadow,transform] duration-200 hover:bg-white hover:shadow-[0_1px_2px_rgba(0,0,0,.04),0_6px_20px_rgba(0,0,0,.04)] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-3 focus-visible:ring-offset-[#f4f4f1] motion-reduce:transition-none motion-reduce:active:scale-100"
+              >
+                {showAllWork ? "Show less" : "Show 3 more projects"}
+              </button>
+            </div>
           </div>
         </section>
 
         <section
           id="lab"
+          aria-labelledby="lab-title"
           className="scroll-mt-24 border-t border-black/10 pb-28 pt-6"
         >
           <div className="mb-12 flex items-center justify-between">
-            <h2 className="text-[13px] font-medium tracking-[-0.015em]">Lab</h2>
+            <h2
+              id="lab-title"
+              className="text-[13px] font-medium tracking-[-0.015em]"
+            >
+              Lab
+            </h2>
 
-            <span className="text-[11px] text-black/30">Prototypes · 2026</span>
+            <span className="text-[11px] text-[#686864]">
+              Prototypes · 2026
+            </span>
           </div>
 
           <div className="grid gap-x-6 gap-y-14 md:grid-cols-2">
             {prototypes.map(function renderPrototype(prototype, index) {
               return (
-                <article key={prototype.slug}>
-                  <PrototypeVideo
-                    slug={prototype.slug}
-                    title={prototype.title}
-                  />
-
-                  <div className="mt-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex items-baseline gap-3">
-                        <span className="text-[10px] tabular-nums text-black/25">
-                          {String(index + 1).padStart(2, "0")}
-                        </span>
-
-                        <Link
-                          href={`/${prototype.slug}`}
-                          className="rounded-sm text-[15px] font-medium tracking-[-0.025em] transition-opacity hover:opacity-55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black"
-                        >
-                          {prototype.title}
-                        </Link>
-                      </div>
-
-                      <Metadata disciplines={prototype.disciplines} />
-                    </div>
-
-                    <p className="ml-[29px] mt-2 max-w-[470px] text-[12.5px] leading-[1.65] text-black/42">
-                      {prototype.description}
-                    </p>
-                  </div>
-                </article>
+                <LabProject
+                  key={prototype.slug}
+                  prototype={prototype}
+                  index={index}
+                />
               );
             })}
           </div>
@@ -550,29 +829,32 @@ export default function Home() {
 
         <section
           id="about"
+          aria-labelledby="about-title"
           className="scroll-mt-24 border-t border-black/10 py-20"
         >
           <div className="grid gap-12 sm:grid-cols-2 sm:gap-16">
             <div>
-              <p className="mb-5 text-[12px] font-medium text-black/35">
+              <h2
+                id="about-title"
+                className="mb-5 text-[12px] font-medium text-[#666662]"
+              >
                 About
-              </p>
+              </h2>
 
               <p className="max-w-[530px] text-[19px] font-medium leading-[1.5] tracking-[-0.025em]">
                 I work between design and frontend engineering, turning visual
-                ideas into responsive, accessible interfaces that hold up in
-                production.
+                ideas into responsive, accessible interfaces.
               </p>
             </div>
 
             <div className="sm:pt-[37px]">
-              <p className="max-w-[510px] text-[13.5px] leading-[1.75] text-black/47">
+              <p className="max-w-[510px] text-[13.5px] leading-[1.75] text-[#5f5f5b]">
                 I care about responsive behaviour, interaction, accessibility,
                 performance, component structure, and the small implementation
-                details that shape how a product feels.
+                details behind a good build.
               </p>
 
-              <div className="mt-8 flex max-w-[500px] flex-wrap gap-x-5 gap-y-2 text-[12px] text-black/40">
+              <div className="mt-8 flex max-w-[500px] flex-wrap gap-x-5 gap-y-2 text-[12px] text-[#60605c]">
                 {techStack.map(function renderTech(tech) {
                   return <span key={tech}>{tech}</span>;
                 })}
@@ -584,11 +866,11 @@ export default function Home() {
         <footer className="border-t border-black/10 py-8">
           <div className="flex flex-col justify-between gap-10 sm:flex-row sm:items-end">
             <div>
-              <p className="text-[11px] text-black/32">Get in touch</p>
+              <p className="text-[11px] text-[#686864]">Get in touch</p>
 
               <a
                 href="mailto:uzochukwuokafor01@gmail.com"
-                className="mt-2 inline-block rounded-sm text-[15px] font-medium tracking-[-0.02em] transition-opacity hover:opacity-55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black"
+                className="mt-2 inline-block rounded-sm text-[15px] font-medium tracking-[-0.02em] transition-opacity hover:opacity-55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-3 focus-visible:ring-offset-[#f4f4f1]"
               >
                 uzochukwuokafor01@gmail.com
               </a>
@@ -596,7 +878,7 @@ export default function Home() {
 
             <nav
               aria-label="Social links"
-              className="flex flex-wrap gap-x-5 gap-y-2 text-[12px] font-medium text-black/40"
+              className="flex flex-wrap gap-x-5 gap-y-2 text-[12px] font-medium text-[#5f5f5b]"
             >
               {externalLinks.map(function renderLink(link) {
                 return (
@@ -633,8 +915,8 @@ export default function Home() {
           background:
             linear-gradient(
               to bottom,
-              rgba(244, 244, 241, 0.86) 0%,
-              rgba(244, 244, 241, 0.56) 42%,
+              rgba(244, 244, 241, 0.88) 0%,
+              rgba(244, 244, 241, 0.58) 42%,
               rgba(244, 244, 241, 0.18) 70%,
               rgba(244, 244, 241, 0) 100%
             );
@@ -665,21 +947,13 @@ export default function Home() {
             );
         }
 
-        @media (
-          prefers-reduced-motion:
-            reduce
-        ) {
-          *,
-          *::before,
-          *::after {
-            scroll-behavior: auto !important;
+        @media (prefers-reduced-motion: reduce) {
+          html {
+            scroll-behavior: auto;
           }
         }
 
-        @media (
-          forced-colors:
-            active
-        ) {
+        @media (forced-colors: active) {
           [data-nav-backdrop] {
             display: none;
           }
