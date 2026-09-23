@@ -1,6 +1,11 @@
 "use client";
 
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import {
+  AnimatePresence,
+  motion,
+  useAnimate,
+  useReducedMotion,
+} from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export type NetworkMode = "normal" | "slow" | "offline";
@@ -26,6 +31,8 @@ type UploadItem = {
   processingEndsAt?: number;
   errorTitle?: string;
   errorMessage?: string;
+  // Entrance stagger, assigned when a batch of >1 lands at once.
+  enterDelay?: number;
 };
 
 type BatchNotice = {
@@ -49,6 +56,42 @@ const MAX_CONCURRENT_UPLOADS = 3;
 const ACCEPTED_EXTENSIONS = new Set(["pdf", "docx", "png", "jpg", "jpeg"]);
 
 const ACCEPT_ATTRIBUTE = [".pdf", ".docx", ".png", ".jpg", ".jpeg"].join(",");
+
+// Custom easing — the built-in CSS eases lack punch. EASE_OUT is a strong
+// ease-out for entrances/feedback; EASE_IN_OUT for on-screen morphing.
+const EASE_OUT = [0.23, 1, 0.32, 1] as const;
+
+// Apple-style spring: reason in duration + bounce rather than stiffness.
+const MORPH_SPRING = { type: "spring" as const, duration: 0.34, bounce: 0 };
+
+// Every block that occupies vertical space animates its OWN height collapse.
+// The container height is then just the live sum of its children — so the card
+// resizes in perfect sync with its content, with no separate height animator
+// to lag behind. This is the single spring all collapses share.
+const COLLAPSE_SPRING = { type: "spring" as const, duration: 0.36, bounce: 0 };
+
+// Height-collapsing wrapper. IMPORTANT: keep all padding / borders / margins on
+// the CHILD, never on this wrapper — height:0 only fully closes when the
+// wrapper itself has no box spacing of its own.
+function Collapse({
+  children,
+  reducedMotion,
+}: {
+  children: React.ReactNode;
+  reducedMotion: boolean;
+}) {
+  return (
+    <motion.div
+      initial={reducedMotion ? { opacity: 0 } : { height: 0, opacity: 0 }}
+      animate={{ height: reducedMotion ? undefined : "auto", opacity: 1 }}
+      exit={reducedMotion ? { opacity: 0 } : { height: 0, opacity: 0 }}
+      transition={reducedMotion ? { duration: 0.12 } : COLLAPSE_SPRING}
+      style={{ overflow: "hidden" }}
+    >
+      {children}
+    </motion.div>
+  );
+}
 
 function createId() {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -137,19 +180,21 @@ function isValidSlotStatus(status: UploadStatus) {
   return status !== "rejected";
 }
 
-function getStatusText(item: UploadItem) {
+// The visible label — deliberately WITHOUT the live percentage, so the label
+// element only re-animates on real state changes, not on every progress tick.
+function getStatusLabel(item: UploadItem) {
   switch (item.status) {
     case "queued":
       return "Waiting";
 
     case "uploading":
-      return `Uploading · ${Math.round(item.progress)}%`;
+      return "Uploading";
 
     case "paused":
-      return `Paused · ${Math.round(item.progress)}%`;
+      return "Paused";
 
     case "processing":
-      return "Processing…";
+      return "Processing";
 
     case "ready":
       return "Ready";
@@ -298,23 +343,23 @@ function StatusGlyph({ status, progress, reducedMotion }: StatusGlyphProps) {
 
   const processing = status === "processing";
 
+  const isReady = status === "ready";
+
   const lineTransition = reducedMotion
     ? {
         duration: 0,
       }
-    : {
-        type: "spring" as const,
-        duration: 0.34,
-        bounce: 0,
-      };
+    : MORPH_SPRING;
 
   const progressTransition = reducedMotion
     ? {
         duration: 0,
       }
     : {
-        duration: 0.14,
-        ease: "easeOut" as const,
+        // Spring-follow the fill so the ring feels physical, not mechanical.
+        type: "spring" as const,
+        duration: 0.35,
+        bounce: 0,
       };
 
   let lineA = {
@@ -359,24 +404,6 @@ function StatusGlyph({ status, progress, reducedMotion }: StatusGlyphProps) {
       y1: 7,
       x2: 12.3,
       y2: 13,
-      opacity: 1,
-    };
-  }
-
-  if (status === "ready") {
-    lineA = {
-      x1: 4.8,
-      y1: 10.4,
-      x2: 8.3,
-      y2: 13.9,
-      opacity: 1,
-    };
-
-    lineB = {
-      x1: 8.3,
-      y1: 13.9,
-      x2: 15.3,
-      y2: 6.7,
       opacity: 1,
     };
   }
@@ -462,6 +489,31 @@ function StatusGlyph({ status, progress, reducedMotion }: StatusGlyphProps) {
         />
       </motion.g>
 
+      {/* Ready: draw the check on rather than fade it in — a stroke that
+          traces itself reads as a completed action, not an appearance. */}
+      <motion.path
+        initial={false}
+        animate={{
+          pathLength: isReady ? 1 : 0,
+          opacity: isReady ? 1 : 0,
+        }}
+        transition={
+          reducedMotion
+            ? { duration: 0 }
+            : isReady
+              ? {
+                  pathLength: { type: "spring", duration: 0.5, bounce: 0 },
+                  opacity: { duration: 0.08 },
+                }
+              : { duration: 0.1 }
+        }
+        d="M 4.7 10.4 L 8.4 13.9 L 15.4 6.6"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+
       <motion.line
         initial={false}
         animate={lineA}
@@ -522,6 +574,7 @@ type FileRowProps = {
   item: UploadItem;
   highlighted: boolean;
   reducedMotion: boolean;
+  enterDelay: number;
   onCancel: (id: string) => void;
   onRetry: (id: string) => void;
   onRemove: (id: string) => void;
@@ -532,153 +585,172 @@ function FileRow({
   item,
   highlighted,
   reducedMotion,
+  enterDelay,
   onCancel,
   onRetry,
   onRemove,
   registerRow,
 }: FileRowProps) {
-  const statusText = getStatusText(item);
+  const label = getStatusLabel(item);
 
   const uploading = item.status === "uploading" || item.status === "paused";
 
+  const showPercent = uploading;
+
   const error = item.status === "failed" || item.status === "rejected";
 
-  const layoutTransition = reducedMotion
-    ? {
-        duration: 0,
+  // Track the moment a file lands on "ready" so the icon can give a small,
+  // earned pop. This is a rare event per file, so a little delight is allowed.
+  // Driven imperatively (not via state) so it's a clean out-and-back keyframe.
+  const [iconScope, animateIcon] = useAnimate();
+
+  const prevStatusRef = useRef(item.status);
+
+  useEffect(
+    function detectReady() {
+      if (
+        prevStatusRef.current !== "ready" &&
+        item.status === "ready" &&
+        !reducedMotion &&
+        iconScope.current
+      ) {
+        animateIcon(
+          iconScope.current,
+          { scale: [1, 1.16, 1] },
+          { duration: 0.44, ease: EASE_OUT },
+        );
       }
-    : {
-        type: "spring" as const,
-        duration: 0.42,
-        bounce: 0,
-      };
+
+      prevStatusRef.current = item.status;
+    },
+    [item.status, reducedMotion, animateIcon, iconScope],
+  );
 
   return (
     <motion.li
       ref={function setRef(element) {
         registerRow(item.id, element);
       }}
-      layout={!reducedMotion}
-      initial={
-        reducedMotion
-          ? {
-              opacity: 0,
-            }
-          : {
-              opacity: 0,
-              y: 6,
-            }
-      }
-      animate={{
-        opacity: 1,
-        y: 0,
-        backgroundColor: highlighted
-          ? "rgba(32,32,30,.055)"
-          : "rgba(32,32,30,0)",
-      }}
+      // The row owns its own height: it grows in and collapses out. Siblings
+      // and the card follow for free through normal flow — one synchronized
+      // layout pass, so there's never a gap or an overlap mid-transition.
+      initial={reducedMotion ? { opacity: 0 } : { height: 0, opacity: 0 }}
+      animate={{ height: reducedMotion ? undefined : "auto", opacity: 1 }}
       exit={
         reducedMotion
-          ? {
-              opacity: 0,
-            }
+          ? { opacity: 0 }
           : {
+              // Exit carries its OWN transition (no enter stagger delay) so a
+              // removed row starts collapsing instantly — crisp, never hesitant.
+              height: 0,
               opacity: 0,
-              y: -4,
+              filter: "blur(2px)",
+              transition: {
+                height: COLLAPSE_SPRING,
+                opacity: { duration: 0.2, ease: EASE_OUT },
+                filter: { duration: 0.2, ease: EASE_OUT },
+              },
             }
       }
-      transition={{
-        ...layoutTransition,
-        backgroundColor: {
-          duration: 0.22,
-        },
-      }}
-      data-file-row
-      data-error={error ? "true" : "false"}
+      transition={
+        reducedMotion
+          ? { duration: 0.12 }
+          : { ...COLLAPSE_SPRING, delay: enterDelay }
+      }
+      style={{ overflow: "hidden" }}
+      data-file-row-wrap
     >
-      <div data-file-icon>
-        <StatusGlyph
-          status={item.status}
-          progress={item.progress}
-          reducedMotion={reducedMotion}
-        />
-      </div>
-
-      <div data-file-content>
-        <div data-file-heading>
-          <FileName name={item.file.name} />
-
-          <span data-file-size>{formatBytes(item.file.size)}</span>
+      <motion.div
+        data-file-row
+        data-state={item.status}
+        data-error={error ? "true" : "false"}
+        initial={false}
+        animate={{
+          backgroundColor: highlighted
+            ? "rgba(32,32,30,.055)"
+            : "rgba(32,32,30,0)",
+        }}
+        transition={{ backgroundColor: { duration: 0.22 } }}
+      >
+        <div data-file-icon ref={iconScope}>
+          <StatusGlyph
+            status={item.status}
+            progress={item.progress}
+            reducedMotion={reducedMotion}
+          />
         </div>
 
-        <div data-file-status-row>
-          <AnimatePresence initial={false} mode="popLayout">
-            <motion.span
-              key={statusText}
-              data-file-status
-              initial={
-                reducedMotion
-                  ? {
-                      opacity: 0,
-                    }
-                  : {
-                      opacity: 0,
-                      y: 2,
-                    }
-              }
-              animate={{
-                opacity: 1,
-                y: 0,
-              }}
-              exit={
-                reducedMotion
-                  ? {
-                      opacity: 0,
-                    }
-                  : {
-                      opacity: 0,
-                      y: -2,
-                    }
-              }
-              transition={{
-                duration: reducedMotion ? 0.1 : 0.18,
-                ease: "easeOut",
-              }}
-            >
-              {statusText}
-            </motion.span>
-          </AnimatePresence>
+        <div data-file-content>
+          <div data-file-heading>
+            <FileName name={item.file.name} />
 
-          <div data-file-actions>
-            {(item.status === "uploading" || item.status === "paused") && (
-              <FileAction
-                onClick={function handleCancel() {
-                  onCancel(item.id);
-                }}
-              >
-                Cancel
-              </FileAction>
-            )}
+            <span data-file-size>{formatBytes(item.file.size)}</span>
+          </div>
 
-            {item.status === "queued" && (
-              <FileAction
-                onClick={function handleRemove() {
-                  onRemove(item.id);
-                }}
-              >
-                Remove
-              </FileAction>
-            )}
-
-            {(item.status === "failed" || item.status === "canceled") && (
-              <>
-                <FileAction
-                  onClick={function handleRetry() {
-                    onRetry(item.id);
+          <div data-file-status-row>
+            <div data-file-status>
+              <AnimatePresence initial={false} mode="popLayout">
+                <motion.span
+                  key={label}
+                  data-status-label
+                  initial={
+                    reducedMotion
+                      ? {
+                          opacity: 0,
+                        }
+                      : {
+                          opacity: 0,
+                          y: 3,
+                          filter: "blur(2px)",
+                        }
+                  }
+                  animate={{
+                    opacity: 1,
+                    y: 0,
+                    filter: "blur(0px)",
+                  }}
+                  exit={
+                    reducedMotion
+                      ? {
+                          opacity: 0,
+                        }
+                      : {
+                          opacity: 0,
+                          y: -3,
+                          filter: "blur(2px)",
+                        }
+                  }
+                  transition={{
+                    duration: reducedMotion ? 0.1 : 0.2,
+                    ease: EASE_OUT,
                   }}
                 >
-                  Retry
-                </FileAction>
+                  {label}
+                </motion.span>
+              </AnimatePresence>
 
+              {/* Percentage lives OUTSIDE the AnimatePresence so it updates in
+                  place every tick without ever remounting or re-animating. */}
+              {showPercent && (
+                <span data-status-percent aria-hidden="true">
+                  <span data-status-sep>·</span>
+                  <span data-status-value>{Math.round(item.progress)}%</span>
+                </span>
+              )}
+            </div>
+
+            <div data-file-actions>
+              {(item.status === "uploading" || item.status === "paused") && (
+                <FileAction
+                  onClick={function handleCancel() {
+                    onCancel(item.id);
+                  }}
+                >
+                  Cancel
+                </FileAction>
+              )}
+
+              {item.status === "queued" && (
                 <FileAction
                   onClick={function handleRemove() {
                     onRemove(item.id);
@@ -686,55 +758,82 @@ function FileRow({
                 >
                   Remove
                 </FileAction>
-              </>
+              )}
+
+              {(item.status === "failed" || item.status === "canceled") && (
+                <>
+                  <FileAction
+                    onClick={function handleRetry() {
+                      onRetry(item.id);
+                    }}
+                  >
+                    Retry
+                  </FileAction>
+
+                  <FileAction
+                    onClick={function handleRemove() {
+                      onRemove(item.id);
+                    }}
+                  >
+                    Remove
+                  </FileAction>
+                </>
+              )}
+
+              {(item.status === "ready" || item.status === "rejected") && (
+                <FileAction
+                  onClick={function handleRemove() {
+                    onRemove(item.id);
+                  }}
+                >
+                  Remove
+                </FileAction>
+              )}
+            </div>
+          </div>
+
+          <AnimatePresence initial={false}>
+            {uploading && (
+              <Collapse key="progress" reducedMotion={reducedMotion}>
+                <div data-progress-inner>
+                  <div
+                    data-progress
+                    role="progressbar"
+                    aria-label={`${item.file.name} upload progress`}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={Math.round(item.progress)}
+                  >
+                    <motion.span
+                      initial={false}
+                      animate={{
+                        scaleX: item.progress / 100,
+                      }}
+                      transition={
+                        reducedMotion
+                          ? {
+                              duration: 0,
+                            }
+                          : {
+                              type: "spring",
+                              duration: 0.35,
+                              bounce: 0,
+                            }
+                      }
+                    />
+                  </div>
+                </div>
+              </Collapse>
             )}
 
-            {(item.status === "ready" || item.status === "rejected") && (
-              <FileAction
-                onClick={function handleRemove() {
-                  onRemove(item.id);
-                }}
-              >
-                Remove
-              </FileAction>
+            {error && item.errorMessage && (
+              <Collapse key="error" reducedMotion={reducedMotion}>
+                <p data-error-message>{item.errorMessage}</p>
+              </Collapse>
             )}
-          </div>
+          </AnimatePresence>
         </div>
-
-        {uploading && (
-          <div
-            data-progress
-            role="progressbar"
-            aria-label={`${item.file.name} upload progress`}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={Math.round(item.progress)}
-          >
-            <motion.span
-              initial={false}
-              animate={{
-                scaleX: item.progress / 100,
-              }}
-              transition={
-                reducedMotion
-                  ? {
-                      duration: 0,
-                    }
-                  : {
-                      duration: 0.14,
-                      ease: "easeOut",
-                    }
-              }
-            />
-          </div>
-        )}
-
-        {error && item.errorMessage && (
-          <motion.p layout={!reducedMotion} data-error-message>
-            {item.errorMessage}
-          </motion.p>
-        )}
-      </div>
+      </motion.div>
     </motion.li>
   );
 }
@@ -796,6 +895,13 @@ export function ReliableUpload({
 
   const atLimit = validCount >= MAX_FILES;
 
+  // Every real file has landed on "ready" — earns a small completion flourish.
+  const allReady =
+    validCount > 0 &&
+    items.every(function isDone(item) {
+      return !isValidSlotStatus(item.status) || item.status === "ready";
+    });
+
   const openPicker = useCallback(function openPicker() {
     inputRef.current?.click();
   }, []);
@@ -840,6 +946,8 @@ export function ReliableUpload({
         let overflow = 0;
         let hiddenRejected = 0;
         let visibleRejected = 0;
+
+        const acceptedItems: UploadItem[] = [];
 
         const next = [...current];
 
@@ -897,10 +1005,20 @@ export function ReliableUpload({
 
           next.push(item);
 
+          acceptedItems.push(item);
+
           existingKeys.set(key, item);
 
           availableSlots -= 1;
           accepted += 1;
+        }
+
+        // Stagger entrances only when more than one file lands at once — a
+        // single add should appear instantly; a batch should cascade in.
+        if (acceptedItems.length > 1) {
+          acceptedItems.forEach(function assignDelay(item, index) {
+            item.enterDelay = Math.min(index, 5) * 0.05;
+          });
         }
 
         const notAdded = overflow + hiddenRejected;
@@ -1355,22 +1473,11 @@ export function ReliableUpload({
     };
   }, []);
 
-  const layoutTransition = reducedMotion
-    ? {
-        duration: 0,
-      }
-    : {
-        type: "spring" as const,
-        duration: 0.46,
-        bounce: 0,
-      };
-
   return (
     <>
-      <motion.section
-        layout={!reducedMotion}
-        transition={layoutTransition}
+      <section
         data-upload
+        data-drag={dragActive ? "true" : "false"}
         onDragEnter={handleDragEnter}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -1408,243 +1515,227 @@ export function ReliableUpload({
           )}
         </header>
 
-        <AnimatePresence initial={false} mode="popLayout">
+        <AnimatePresence initial={false}>
           {!hasItems && (
             <motion.div
               key="empty"
-              layout={!reducedMotion}
               initial={
-                reducedMotion
-                  ? {
-                      opacity: 0,
-                    }
-                  : {
-                      opacity: 0,
-                      y: 4,
-                    }
+                reducedMotion ? { opacity: 0 } : { height: 0, opacity: 0 }
               }
-              animate={{
-                opacity: 1,
-                y: 0,
-              }}
-              exit={
-                reducedMotion
-                  ? {
-                      opacity: 0,
-                    }
-                  : {
-                      opacity: 0,
-                      y: -4,
-                    }
-              }
+              animate={{ height: reducedMotion ? undefined : "auto", opacity: 1 }}
+              exit={reducedMotion ? { opacity: 0 } : { height: 0, opacity: 0 }}
               transition={
                 reducedMotion
-                  ? {
-                      duration: 0.1,
-                    }
+                  ? { duration: 0.12 }
                   : {
-                      duration: 0.24,
-                      ease: "easeOut",
+                      // Height morphs on the spring; opacity resolves faster so
+                      // the two states cross-fade cleanly instead of co-existing.
+                      height: COLLAPSE_SPRING,
+                      opacity: { duration: 0.18, ease: EASE_OUT },
                     }
               }
-              data-empty-state
+              style={{ overflow: "hidden" }}
             >
-              <EmptyUploadGlyph
-                active={dragActive}
-                reducedMotion={reducedMotion}
-              />
-
-              <AnimatePresence initial={false} mode="wait">
+              <div data-empty-state>
                 <motion.div
-                  key={dragActive ? "drag" : "idle"}
-                  data-empty-copy
-                  initial={{
-                    opacity: 0,
-                  }}
+                  data-empty-glyph-wrap
+                  initial={false}
                   animate={{
-                    opacity: 1,
+                    y: dragActive && !reducedMotion ? -3 : 0,
+                    scale: dragActive && !reducedMotion ? 1.06 : 1,
                   }}
-                  exit={{
-                    opacity: 0,
-                  }}
-                  transition={{
-                    duration: reducedMotion ? 0.1 : 0.16,
-                  }}
+                  transition={
+                    reducedMotion
+                      ? { duration: 0 }
+                      : { type: "spring", duration: 0.42, bounce: 0.2 }
+                  }
                 >
-                  <p data-empty-title>
-                    {dragActive ? "Release to add files" : "Drop files here"}
-                  </p>
-
-                  {!dragActive && (
-                    <p data-empty-secondary>
-                      or{" "}
-                      <button
-                        ref={addButtonRef}
-                        type="button"
-                        data-choose-files
-                        onClick={openPicker}
-                      >
-                        choose from your device
-                      </button>
-                    </p>
-                  )}
+                  <EmptyUploadGlyph
+                    active={dragActive}
+                    reducedMotion={reducedMotion}
+                  />
                 </motion.div>
-              </AnimatePresence>
 
-              <p id="upload-constraints" data-upload-constraints>
-                PDF, DOCX, PNG or JPG
-                <span aria-hidden="true"> · </span>
-                25 MB max
-                <span aria-hidden="true"> · </span>5 files
-              </p>
+                <AnimatePresence initial={false} mode="wait">
+                  <motion.div
+                    key={dragActive ? "drag" : "idle"}
+                    data-empty-copy
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: reducedMotion ? 0.1 : 0.16 }}
+                  >
+                    <p data-empty-title>
+                      {dragActive ? "Release to add files" : "Drop files here"}
+                    </p>
+
+                    {!dragActive && (
+                      <p data-empty-secondary>
+                        or{" "}
+                        <button
+                          ref={addButtonRef}
+                          type="button"
+                          data-choose-files
+                          onClick={openPicker}
+                        >
+                          choose from your device
+                        </button>
+                      </p>
+                    )}
+                  </motion.div>
+                </AnimatePresence>
+
+                <p id="upload-constraints" data-upload-constraints>
+                  PDF, DOCX, PNG or JPG
+                  <span aria-hidden="true"> · </span>
+                  25 MB max
+                  <span aria-hidden="true"> · </span>5 files
+                </p>
+              </div>
             </motion.div>
           )}
 
           {hasItems && (
             <motion.div
               key="queue"
-              layout={!reducedMotion}
               initial={
-                reducedMotion
-                  ? {
-                      opacity: 0,
-                    }
-                  : {
-                      opacity: 0,
-                      y: 5,
-                    }
+                reducedMotion ? { opacity: 0 } : { height: 0, opacity: 0 }
               }
-              animate={{
-                opacity: 1,
-                y: 0,
-              }}
+              animate={{ height: reducedMotion ? undefined : "auto", opacity: 1 }}
+              exit={reducedMotion ? { opacity: 0 } : { height: 0, opacity: 0 }}
               transition={
                 reducedMotion
-                  ? {
-                      duration: 0.1,
-                    }
+                  ? { duration: 0.12 }
                   : {
-                      duration: 0.28,
-                      ease: "easeOut",
+                      height: COLLAPSE_SPRING,
+                      opacity: { duration: 0.18, ease: EASE_OUT },
                     }
               }
-              data-upload-queue
+              style={{ overflow: "hidden" }}
             >
-              <AnimatePresence initial={false}>
-                {networkMode === "offline" && (
-                  <motion.div
-                    key="offline"
-                    data-global-message
-                    role="status"
-                    initial={{
-                      opacity: 0,
-                      height: 0,
-                    }}
-                    animate={{
-                      opacity: 1,
-                      height: "auto",
-                    }}
-                    exit={{
-                      opacity: 0,
-                      height: 0,
-                    }}
-                    transition={
-                      reducedMotion
-                        ? {
-                            duration: 0.1,
-                          }
-                        : {
-                            duration: 0.28,
-                            ease: [0.22, 0.72, 0, 1],
-                          }
-                    }
-                  >
-                    You're offline. Uploads will resume when you're connected.
-                  </motion.div>
-                )}
+              <div data-upload-queue>
+                <AnimatePresence initial={false}>
+                  {networkMode === "offline" && (
+                    <Collapse key="offline" reducedMotion={reducedMotion}>
+                      <div data-global-message role="status">
+                        You&rsquo;re offline. Uploads will resume when
+                        you&rsquo;re connected.
+                      </div>
+                    </Collapse>
+                  )}
 
-                {networkMode !== "offline" && connectionMessage && (
-                  <motion.div
-                    key="online"
-                    data-global-message
-                    role="status"
-                    initial={{
-                      opacity: 0,
-                      height: 0,
-                    }}
-                    animate={{
-                      opacity: 1,
-                      height: "auto",
-                    }}
-                    exit={{
-                      opacity: 0,
-                      height: 0,
-                    }}
-                  >
-                    {connectionMessage}
-                  </motion.div>
-                )}
+                  {networkMode !== "offline" && connectionMessage && (
+                    <Collapse key="online" reducedMotion={reducedMotion}>
+                      <div
+                        data-global-message
+                        data-tone="positive"
+                        role="status"
+                      >
+                        {connectionMessage}
+                      </div>
+                    </Collapse>
+                  )}
 
-                {batchNotice && (
-                  <motion.div
-                    key={batchNotice.id}
-                    data-global-message
-                    role="status"
-                    initial={{
-                      opacity: 0,
-                      height: 0,
-                    }}
-                    animate={{
-                      opacity: 1,
-                      height: "auto",
-                    }}
-                    exit={{
-                      opacity: 0,
-                      height: 0,
-                    }}
-                  >
-                    <span>{batchNotice.message}</span>
+                  {batchNotice && (
+                    <Collapse key={batchNotice.id} reducedMotion={reducedMotion}>
+                      <div data-global-message role="status">
+                        <span>{batchNotice.message}</span>
 
-                    <button
-                      type="button"
-                      data-dismiss-notice
-                      onClick={function dismissNotice() {
-                        setBatchNotice(null);
-                      }}
-                      aria-label="Dismiss message"
-                    >
-                      ×
-                    </button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              <ul data-file-list>
-                <AnimatePresence initial={false} mode="popLayout">
-                  {items.map(function renderItem(item) {
-                    return (
-                      <FileRow
-                        key={item.id}
-                        item={item}
-                        highlighted={highlightedId === item.id}
-                        reducedMotion={reducedMotion}
-                        onCancel={cancelItem}
-                        onRetry={retryItem}
-                        onRemove={removeItem}
-                        registerRow={registerRow}
-                      />
-                    );
-                  })}
+                        <button
+                          type="button"
+                          data-dismiss-notice
+                          onClick={function dismissNotice() {
+                            setBatchNotice(null);
+                          }}
+                          aria-label="Dismiss message"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </Collapse>
+                  )}
                 </AnimatePresence>
-              </ul>
 
-              <footer data-upload-footer>
-                <span data-summary>{summary}</span>
+                <ul data-file-list>
+                  <AnimatePresence initial={false}>
+                    {items.map(function renderItem(item) {
+                      return (
+                        <FileRow
+                          key={item.id}
+                          item={item}
+                          highlighted={highlightedId === item.id}
+                          reducedMotion={reducedMotion}
+                          enterDelay={item.enterDelay ?? 0}
+                          onCancel={cancelItem}
+                          onRetry={retryItem}
+                          onRemove={removeItem}
+                          registerRow={registerRow}
+                        />
+                      );
+                    })}
+                  </AnimatePresence>
+                </ul>
 
-                <span id="upload-constraints" data-footer-constraints>
-                  PDF, DOCX, PNG or JPG · 25 MB max
-                </span>
-              </footer>
+                <footer data-upload-footer>
+                  <span
+                    data-summary
+                    data-complete={allReady ? "true" : "false"}
+                  >
+                    <AnimatePresence initial={false} mode="popLayout">
+                      {allReady && (
+                        <motion.span
+                          key="done"
+                          data-summary-check
+                          initial={
+                            reducedMotion
+                              ? { opacity: 0 }
+                              : { opacity: 0, scale: 0.6 }
+                          }
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={
+                            reducedMotion
+                              ? { opacity: 0 }
+                              : { opacity: 0, scale: 0.6 }
+                          }
+                          transition={
+                            reducedMotion
+                              ? { duration: 0.1 }
+                              : { type: "spring", duration: 0.4, bounce: 0.4 }
+                          }
+                          aria-hidden="true"
+                        >
+                          <svg viewBox="0 0 12 12" fill="none">
+                            <motion.path
+                              initial={reducedMotion ? false : { pathLength: 0 }}
+                              animate={{ pathLength: 1 }}
+                              transition={
+                                reducedMotion
+                                  ? { duration: 0 }
+                                  : {
+                                      type: "spring",
+                                      duration: 0.45,
+                                      bounce: 0,
+                                      delay: 0.05,
+                                    }
+                              }
+                              d="M 2.5 6.2 L 5 8.6 L 9.5 3.6"
+                              stroke="currentColor"
+                              strokeWidth="1.6"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
+                    {summary}
+                  </span>
+
+                  <span id="upload-constraints" data-footer-constraints>
+                    PDF, DOCX, PNG or JPG · 25 MB max
+                  </span>
+                </footer>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -1667,9 +1758,25 @@ export function ReliableUpload({
               }}
               aria-hidden="true"
             >
-              <EmptyUploadGlyph active reducedMotion={reducedMotion} />
+              <motion.div
+                data-drop-overlay-inner
+                initial={
+                  reducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.96 }
+                }
+                animate={{ opacity: 1, scale: 1 }}
+                exit={
+                  reducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.98 }
+                }
+                transition={
+                  reducedMotion
+                    ? { duration: 0.1 }
+                    : { type: "spring", duration: 0.34, bounce: 0.18 }
+                }
+              >
+                <EmptyUploadGlyph active reducedMotion={reducedMotion} />
 
-              <span>Release to add files</span>
+                <span>Release to add files</span>
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -1677,47 +1784,43 @@ export function ReliableUpload({
         <div className="sr-only" aria-live="polite" aria-atomic="true">
           {liveMessage}
         </div>
-      </motion.section>
+      </section>
 
       <style>{`
         [data-upload] {
+          --ink: #20201e;
+          --success: #3d7a54;
+          --success-wash: rgba(61, 122, 84, 0.1);
+          --danger: #9b332d;
+          --danger-wash: rgba(155, 51, 45, 0.08);
           position: relative;
           width: 100%;
           overflow: hidden;
-          border:
-            1px solid
-            rgba(
-              32,
-              32,
-              30,
-              0.065
-            );
+          border: 1px solid rgba(32, 32, 30, 0.065);
           border-radius: 22px;
-          color: #20201e;
+          color: var(--ink);
           background: #f7f7f5;
           box-shadow:
-            inset
-              0 1px 0
-              rgba(
-                255,
-                255,
-                255,
-                0.85
-              ),
-            0 1px 2px
-              rgba(
-                0,
-                0,
-                0,
-                0.025
-              ),
-            0 18px 54px -42px
-              rgba(
-                0,
-                0,
-                0,
-                0.32
-              );
+            inset 0 1px 0 rgba(255, 255, 255, 0.85),
+            0 1px 2px rgba(0, 0, 0, 0.025),
+            0 18px 54px -42px rgba(0, 0, 0, 0.32);
+          transition:
+            box-shadow 300ms cubic-bezier(0.23, 1, 0.32, 1),
+            transform 300ms cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        [data-upload][data-drag="true"] {
+          transform: translateY(-2px);
+          box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.9),
+            0 0 0 1px rgba(32, 32, 30, 0.16),
+            0 30px 70px -38px rgba(0, 0, 0, 0.45);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          [data-upload][data-drag="true"] {
+            transform: none;
+          }
         }
 
         [data-file-input] {
@@ -1727,12 +1830,7 @@ export function ReliableUpload({
           padding: 0;
           margin: -1px;
           overflow: hidden;
-          clip: rect(
-            0,
-            0,
-            0,
-            0
-          );
+          clip: rect(0, 0, 0, 0);
           white-space: nowrap;
           border: 0;
         }
@@ -1744,24 +1842,16 @@ export function ReliableUpload({
           justify-content: space-between;
           gap: 16px;
           padding: 14px 18px;
-          border-bottom:
-            1px solid
-            rgba(
-              32,
-              32,
-              30,
-              0.06
-            );
+          border-bottom: 1px solid rgba(32, 32, 30, 0.06);
         }
 
         [data-upload-title] {
           margin: 0;
-          color: #20201e;
+          color: var(--ink);
           font-size: 14px;
           font-weight: 570;
           line-height: 1;
-          letter-spacing:
-            -0.015em;
+          letter-spacing: -0.015em;
         }
 
         [data-add-files] {
@@ -1771,69 +1861,37 @@ export function ReliableUpload({
           gap: 6px;
           margin: 0;
           padding: 0 10px;
-          border:
-            1px solid
-            rgba(
-              32,
-              32,
-              30,
-              0.07
-            );
+          border: 1px solid rgba(32, 32, 30, 0.07);
           border-radius: 9px;
           color: #4f4f4b;
-          background:
-            rgba(
-              255,
-              255,
-              255,
-              0.64
-            );
-          box-shadow:
-            0 1px 2px
-              rgba(
-                0,
-                0,
-                0,
-                0.025
-              );
+          background: rgba(255, 255, 255, 0.64);
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.025);
           font-size: 11px;
           font-weight: 560;
           line-height: 1;
           cursor: pointer;
-          touch-action:
-            manipulation;
+          touch-action: manipulation;
           transition:
             color 160ms ease,
-            background-color
-              160ms ease,
-            transform 160ms
-              cubic-bezier(
-                0.2,
-                0,
-                0,
-                1
-              );
+            background-color 160ms ease,
+            transform 200ms cubic-bezier(0.23, 1, 0.32, 1);
         }
 
-        [data-add-files]
-          span {
+        [data-add-files] span {
           margin-top: -1px;
           font-size: 14px;
           font-weight: 430;
         }
 
-        [data-add-files]:hover:not(
-            :disabled
-          ) {
-          color: #20201e;
-          background: #ffffff;
+        @media (hover: hover) and (pointer: fine) {
+          [data-add-files]:hover:not(:disabled) {
+            color: var(--ink);
+            background: #ffffff;
+          }
         }
 
-        [data-add-files]:active:not(
-            :disabled
-          ) {
-          transform:
-            scale(0.97);
+        [data-add-files]:active:not(:disabled) {
+          transform: scale(0.97);
         }
 
         [data-add-files]:disabled {
@@ -1846,9 +1904,7 @@ export function ReliableUpload({
         [data-choose-files]:focus-visible,
         [data-file-action]:focus-visible,
         [data-dismiss-notice]:focus-visible {
-          outline:
-            2px solid
-            #20201e;
+          outline: 2px solid var(--ink);
           outline-offset: 2px;
         }
 
@@ -1860,6 +1916,10 @@ export function ReliableUpload({
           justify-content: center;
           padding: 40px 24px 38px;
           text-align: center;
+        }
+
+        [data-empty-glyph-wrap] {
+          display: flex;
         }
 
         [data-empty-glyph] {
@@ -1878,8 +1938,7 @@ export function ReliableUpload({
           color: #2b2b29;
           font-size: 15px;
           font-weight: 570;
-          letter-spacing:
-            -0.02em;
+          letter-spacing: -0.02em;
         }
 
         [data-empty-secondary] {
@@ -1897,23 +1956,15 @@ export function ReliableUpload({
           background: transparent;
           font: inherit;
           font-weight: 560;
-          text-decoration-line:
-            underline;
-          text-decoration-color:
-            rgba(
-              59,
-              59,
-              56,
-              0.28
-            );
-          text-underline-offset:
-            3px;
+          text-decoration-line: underline;
+          text-decoration-color: rgba(59, 59, 56, 0.28);
+          text-underline-offset: 3px;
           cursor: pointer;
+          transition: text-decoration-color 160ms ease;
         }
 
         [data-choose-files]:hover {
-          text-decoration-color:
-            currentColor;
+          text-decoration-color: currentColor;
         }
 
         [data-upload-constraints] {
@@ -1937,24 +1988,16 @@ export function ReliableUpload({
           gap: 16px;
           overflow: hidden;
           padding: 10px 18px;
-          border-bottom:
-            1px solid
-            rgba(
-              32,
-              32,
-              30,
-              0.055
-            );
+          border-bottom: 1px solid rgba(32, 32, 30, 0.055);
           color: #60605c;
-          background:
-            rgba(
-              32,
-              32,
-              30,
-              0.025
-            );
+          background: rgba(32, 32, 30, 0.025);
           font-size: 11px;
           line-height: 1.5;
+        }
+
+        [data-global-message][data-tone="positive"] {
+          color: var(--success);
+          background: var(--success-wash);
         }
 
         [data-dismiss-notice] {
@@ -1972,47 +2015,40 @@ export function ReliableUpload({
           font-size: 16px;
           line-height: 1;
           cursor: pointer;
+          transition:
+            color 150ms ease,
+            background-color 150ms ease;
         }
 
         [data-dismiss-notice]:hover {
-          color: #20201e;
-          background:
-            rgba(
-              32,
-              32,
-              30,
-              0.04
-            );
+          color: var(--ink);
+          background: rgba(32, 32, 30, 0.04);
         }
 
         [data-file-list] {
           margin: 0;
-          padding: 0 18px;
+          padding: 0 12px;
+          list-style: none;
+        }
+
+        /* The wrapper owns nothing but the height collapse — no box spacing,
+           so a removed row closes to exactly zero with no residual gap. */
+        [data-file-row-wrap] {
+          margin: 0;
+          padding: 0;
           list-style: none;
         }
 
         [data-file-row] {
           display: grid;
-          grid-template-columns:
-            28px minmax(
-              0,
-              1fr
-            );
+          grid-template-columns: 28px minmax(0, 1fr);
           gap: 12px;
-          margin: 0 -6px;
           padding: 18px 6px;
-          border-bottom:
-            1px solid
-            rgba(
-              32,
-              32,
-              30,
-              0.055
-            );
+          border-bottom: 1px solid rgba(32, 32, 30, 0.055);
           border-radius: 8px;
         }
 
-        [data-file-row]:last-child {
+        [data-file-row-wrap]:last-child [data-file-row] {
           border-bottom: 0;
         }
 
@@ -2021,14 +2057,30 @@ export function ReliableUpload({
           height: 28px;
           display: grid;
           place-items: center;
+          border-radius: 9px;
           color: #4e4e4a;
+          background: rgba(32, 32, 30, 0);
+          transition:
+            color 240ms cubic-bezier(0.23, 1, 0.32, 1),
+            background-color 240ms cubic-bezier(0.23, 1, 0.32, 1);
         }
 
-        [data-file-row][data-error="true"]
-          [data-file-icon],
-        [data-file-row][data-error="true"]
-          [data-file-status] {
-          color: #9b332d;
+        [data-file-row][data-state="ready"] [data-file-icon] {
+          color: var(--success);
+          background: var(--success-wash);
+        }
+
+        [data-file-row][data-state="ready"] [data-status-label] {
+          color: var(--success);
+        }
+
+        [data-file-row][data-error="true"] [data-file-icon] {
+          color: var(--danger);
+          background: var(--danger-wash);
+        }
+
+        [data-file-row][data-error="true"] [data-status-label] {
+          color: var(--danger);
         }
 
         [data-status-glyph] {
@@ -2057,15 +2109,13 @@ export function ReliableUpload({
           font-size: 13.5px;
           font-weight: 570;
           line-height: 1.35;
-          letter-spacing:
-            -0.012em;
+          letter-spacing: -0.012em;
         }
 
         [data-file-stem] {
           min-width: 0;
           overflow: hidden;
-          text-overflow:
-            ellipsis;
+          text-overflow: ellipsis;
           white-space: nowrap;
         }
 
@@ -2080,6 +2130,7 @@ export function ReliableUpload({
           font-weight: 450;
           line-height: 1;
           white-space: nowrap;
+          font-variant-numeric: tabular-nums;
         }
 
         [data-file-status-row] {
@@ -2092,10 +2143,38 @@ export function ReliableUpload({
         }
 
         [data-file-status] {
-          color: #74746f;
+          display: flex;
+          align-items: baseline;
+          gap: 4px;
+          min-width: 0;
+          color: #6c6c67;
           font-size: 11px;
           font-weight: 470;
           line-height: 1.4;
+        }
+
+        [data-status-label] {
+          display: inline-block;
+          transition: color 240ms cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        [data-status-percent] {
+          display: inline-flex;
+          align-items: baseline;
+          gap: 4px;
+          color: #8f8f89;
+          font-variant-numeric: tabular-nums;
+          font-feature-settings: "tnum";
+        }
+
+        [data-status-sep] {
+          color: #c2c2bc;
+        }
+
+        [data-status-value] {
+          display: inline-block;
+          min-width: 3.4ch;
+          text-align: right;
         }
 
         [data-file-actions] {
@@ -2119,59 +2198,50 @@ export function ReliableUpload({
           font-weight: 550;
           line-height: 1;
           cursor: pointer;
-          touch-action:
-            manipulation;
+          touch-action: manipulation;
           transition:
             color 150ms ease,
-            background-color
-              150ms ease;
+            background-color 150ms ease,
+            transform 180ms cubic-bezier(0.23, 1, 0.32, 1);
         }
 
-        [data-file-action]:hover {
-          color: #20201e;
-          background:
-            rgba(
-              32,
-              32,
-              30,
-              0.04
-            );
+        @media (hover: hover) and (pointer: fine) {
+          [data-file-action]:hover {
+            color: var(--ink);
+            background: rgba(32, 32, 30, 0.04);
+          }
+        }
+
+        [data-file-action]:active {
+          transform: scale(0.96);
+        }
+
+        /* Spacing lives on the inner element (padding, not margin) so the
+           collapse wrapper closes to a true zero when the bar unmounts. */
+        [data-progress-inner] {
+          padding-top: 8px;
         }
 
         [data-progress] {
           position: relative;
           height: 3px;
-          margin-top: 4px;
           overflow: hidden;
           border-radius: 999px;
-          background:
-            rgba(
-              32,
-              32,
-              30,
-              0.075
-            );
+          background: rgba(32, 32, 30, 0.075);
         }
 
-        [data-progress]
-          span {
+        [data-progress] span {
           position: absolute;
           inset: 0;
           border-radius: inherit;
-          background:
-            rgba(
-              32,
-              32,
-              30,
-              0.76
-            );
-          transform-origin:
-            left center;
+          background: rgba(32, 32, 30, 0.76);
+          transform-origin: left center;
         }
 
         [data-error-message] {
           max-width: 390px;
-          margin: 5px 0 0;
+          margin: 0;
+          padding: 6px 0 0;
           color: #74746f;
           font-size: 10.75px;
           line-height: 1.55;
@@ -2184,20 +2254,34 @@ export function ReliableUpload({
           justify-content: space-between;
           gap: 16px;
           padding: 11px 18px;
-          border-top:
-            1px solid
-            rgba(
-              32,
-              32,
-              30,
-              0.055
-            );
+          border-top: 1px solid rgba(32, 32, 30, 0.055);
         }
 
         [data-summary] {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
           color: #5f5f5b;
           font-size: 10.5px;
           font-weight: 540;
+          font-variant-numeric: tabular-nums;
+          transition: color 260ms cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        [data-summary][data-complete="true"] {
+          color: var(--success);
+        }
+
+        [data-summary-check] {
+          display: inline-flex;
+          width: 12px;
+          height: 12px;
+        }
+
+        [data-summary-check] svg {
+          width: 12px;
+          height: 12px;
+          color: var(--success);
         }
 
         [data-footer-constraints] {
@@ -2216,25 +2300,22 @@ export function ReliableUpload({
           justify-content: center;
           gap: 12px;
           color: #3e3e3a;
-          background:
-            rgba(
-              247,
-              247,
-              245,
-              0.93
-            );
-          backdrop-filter:
-            blur(8px);
-          -webkit-backdrop-filter:
-            blur(8px);
+          background: rgba(247, 247, 245, 0.9);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
           font-size: 13px;
           font-weight: 560;
-          letter-spacing:
-            -0.01em;
+          letter-spacing: -0.01em;
         }
 
-        [data-drop-overlay]
-          [data-empty-glyph] {
+        [data-drop-overlay-inner] {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 12px;
+        }
+
+        [data-drop-overlay] [data-empty-glyph] {
           width: 42px;
           height: 42px;
         }
@@ -2246,19 +2327,12 @@ export function ReliableUpload({
           padding: 0;
           margin: -1px;
           overflow: hidden;
-          clip: rect(
-            0,
-            0,
-            0,
-            0
-          );
+          clip: rect(0, 0, 0, 0);
           white-space: nowrap;
           border: 0;
         }
 
-        @media (
-          max-width: 520px
-        ) {
+        @media (max-width: 520px) {
           [data-upload] {
             border-radius: 16px;
           }
@@ -2277,12 +2351,7 @@ export function ReliableUpload({
           }
 
           [data-file-row] {
-            grid-template-columns:
-              26px
-              minmax(
-                0,
-                1fr
-              );
+            grid-template-columns: 26px minmax(0, 1fr);
             gap: 10px;
             padding-block: 16px;
           }
@@ -2312,15 +2381,12 @@ export function ReliableUpload({
           }
         }
 
-        @media (
-          prefers-reduced-motion:
-            reduce
-        ) {
-          [data-add-files] {
-            transition:
-              color 160ms ease,
-              background-color
-                160ms ease;
+        @media (prefers-reduced-motion: reduce) {
+          [data-upload],
+          [data-add-files],
+          [data-file-icon],
+          [data-status-label] {
+            transition-duration: 0.01ms;
           }
 
           [data-add-files]:active {
@@ -2328,27 +2394,18 @@ export function ReliableUpload({
           }
         }
 
-        @media (
-          forced-colors:
-            active
-        ) {
+        @media (forced-colors: active) {
           [data-upload],
           [data-add-files] {
-            border:
-              1px solid
-              ButtonText;
+            border: 1px solid ButtonText;
           }
 
           [data-progress] {
-            border:
-              1px solid
-              ButtonText;
+            border: 1px solid ButtonText;
           }
 
-          [data-progress]
-            span {
-            background:
-              Highlight;
+          [data-progress] span {
+            background: Highlight;
           }
         }
       `}</style>

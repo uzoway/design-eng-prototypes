@@ -1,11 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import {
-  ReliableUpload,
-  type MotionMode,
-  type NetworkMode,
-} from "./reliable-upload";
+import { ReliableUpload, type NetworkMode } from "./reliable-upload";
 
 const NETWORK_MODES: {
   id: NetworkMode;
@@ -25,44 +21,20 @@ const NETWORK_MODES: {
   },
 ];
 
-const MOTION_MODES: {
-  id: MotionMode;
-  label: string;
-}[] = [
-  {
-    id: "auto",
-    label: "Auto",
-  },
-  {
-    id: "full",
-    label: "Full",
-  },
-  {
-    id: "reduced",
-    label: "Reduced",
-  },
-];
-
 function PrototypeControls({
   networkMode,
-  motionMode,
   failNextArmed,
   onNetworkChange,
-  onMotionChange,
   onFailNext,
 }: {
   networkMode: NetworkMode;
-  motionMode: MotionMode;
   failNextArmed: boolean;
   onNetworkChange: (mode: NetworkMode) => void;
-  onMotionChange: (mode: MotionMode) => void;
   onFailNext: () => void;
 }) {
   return (
     <div data-prototype-controls aria-label="Prototype controls">
       <div data-control-row role="radiogroup" aria-label="Network condition">
-        <span data-control-label>Network</span>
-
         <div data-control-options>
           {NETWORK_MODES.map(function renderMode(mode) {
             const active = networkMode === mode.id;
@@ -83,6 +55,8 @@ function PrototypeControls({
             );
           })}
 
+          <span data-control-divider aria-hidden="true" />
+
           <button
             type="button"
             data-active={failNextArmed ? "true" : "false"}
@@ -93,39 +67,12 @@ function PrototypeControls({
           </button>
         </div>
       </div>
-
-      <div data-control-row role="radiogroup" aria-label="Motion preference">
-        <span data-control-label>Motion</span>
-
-        <div data-control-options>
-          {MOTION_MODES.map(function renderMode(mode) {
-            const active = motionMode === mode.id;
-
-            return (
-              <button
-                key={mode.id}
-                type="button"
-                role="radio"
-                aria-checked={active}
-                data-active={active ? "true" : "false"}
-                onClick={function handleClick() {
-                  onMotionChange(mode.id);
-                }}
-              >
-                {mode.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
     </div>
   );
 }
 
 export default function ReliableUploadPrototype() {
   const [networkMode, setNetworkMode] = useState<NetworkMode>("normal");
-
-  const [motionMode, setMotionMode] = useState<MotionMode>("auto");
 
   const [failNextArmed, setFailNextArmed] = useState(false);
 
@@ -140,17 +87,14 @@ export default function ReliableUploadPrototype() {
       <div data-prototype-stage>
         <ReliableUpload
           networkMode={networkMode}
-          motionMode={motionMode}
           failNextArmed={failNextArmed}
           onFailNextConsumed={consumeFailNext}
         />
 
         <PrototypeControls
           networkMode={networkMode}
-          motionMode={motionMode}
           failNextArmed={failNextArmed}
           onNetworkChange={setNetworkMode}
-          onMotionChange={setMotionMode}
           onFailNext={function handleFailNext() {
             setFailNextArmed(true);
           }}
@@ -230,12 +174,6 @@ export default function ReliableUploadPrototype() {
           gap: 8px;
         }
 
-        [data-control-label] {
-          width: 46px;
-          color: #777773;
-          text-align: right;
-        }
-
         [data-control-options] {
           display: flex;
           gap: 2px;
@@ -270,6 +208,14 @@ export default function ReliableUploadPrototype() {
             blur(14px);
         }
 
+        [data-control-divider] {
+          width: 1px;
+          height: 30px;
+          margin: 0 3px;
+          background: rgba(0, 0, 0, 0.07);
+          display: none;
+        }
+
         [data-control-options]
           button {
           min-width: 44px;
@@ -286,6 +232,16 @@ export default function ReliableUploadPrototype() {
             manipulation;
           -webkit-tap-highlight-color:
             transparent;
+          transition:
+            color 200ms cubic-bezier(0.23, 1, 0.32, 1),
+            background-color 200ms cubic-bezier(0.23, 1, 0.32, 1),
+            box-shadow 200ms cubic-bezier(0.23, 1, 0.32, 1),
+            transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        [data-control-options]
+          button:active {
+          transform: scale(0.95);
         }
 
         [data-control-options]
@@ -349,10 +305,6 @@ export default function ReliableUploadPrototype() {
 
           [data-prototype-stage] {
             gap: 22px;
-          }
-
-          [data-control-label] {
-            display: none;
           }
         }
 
