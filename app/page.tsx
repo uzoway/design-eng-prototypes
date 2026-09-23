@@ -71,6 +71,13 @@ const prototypes = [
     disciplines: ["Interaction", "Motion", "SVG"],
   },
   {
+    slug: "reliable-upload",
+    title: "Reliable upload",
+    description:
+      "A file upload that stays clear and recoverable through slow networks, offline pauses, and failed transfers, with motion tuned to every state change.",
+    disciplines: ["Interaction", "Motion"],
+  },
+  {
     slug: "merchant-onboarding",
     title: "Merchant onboarding",
     description:
