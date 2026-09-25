@@ -15,11 +15,11 @@ const CANVAS_SRC = "/spotify/sirens-canvas.mp4";
 const ARTWORK_SRC = "/spotify/odyssey-sirens.jpg";
 
 const DURATION = 159;
-const INITIAL_TIME = 41;
+const INITIAL_TIME = 0;
 
 const BEST_PART = {
-  start: 96,
-  end: 110,
+  start: 62,
+  end: 100,
 } as const;
 
 const GREEN = "#1ed760";
