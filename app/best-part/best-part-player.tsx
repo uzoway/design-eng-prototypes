@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  animate,
   AnimatePresence,
   motion,
   useMotionValue,
@@ -24,113 +23,18 @@ const BEST_PART = {
 } as const;
 
 const GREEN = "#1ed760";
-
 const EASE_OUT = [0.22, 0.72, 0, 1] as const;
-
-type MorphLine = {
-  x1: number;
-  y1: number;
-  x2: number;
-  y2: number;
-  opacity?: number;
-};
 
 type RepeatMode = "off" | "all" | "one";
 
-const COLLAPSED_LINE: MorphLine = {
-  x1: 16,
-  y1: 16,
-  x2: 16,
-  y2: 16,
-  opacity: 0,
-};
-
-const PLAY_LINES: MorphLine[] = [
-  {
-    x1: 10.4,
-    y1: 7.6,
-    x2: 10.4,
-    y2: 24.4,
-  },
-  {
-    x1: 10.4,
-    y1: 7.6,
-    x2: 23.1,
-    y2: 16,
-  },
-  {
-    x1: 23.1,
-    y1: 16,
-    x2: 10.4,
-    y2: 24.4,
-  },
-  {
-    x1: 11.4,
-    y1: 16,
-    x2: 19.2,
-    y2: 16,
-  },
-];
-
-const PAUSE_LINES: MorphLine[] = [
-  {
-    x1: 11.1,
-    y1: 8,
-    x2: 11.1,
-    y2: 24,
-  },
-  {
-    x1: 20.9,
-    y1: 8,
-    x2: 20.9,
-    y2: 24,
-  },
-  COLLAPSED_LINE,
-  COLLAPSED_LINE,
-];
-
-const ADD_LINES: MorphLine[] = [
-  {
-    x1: 10.2,
-    y1: 16,
-    x2: 21.8,
-    y2: 16,
-  },
-  {
-    x1: 16,
-    y1: 10.2,
-    x2: 16,
-    y2: 21.8,
-  },
-];
-
-const SAVED_LINES: MorphLine[] = [
-  {
-    x1: 10.2,
-    y1: 16.3,
-    x2: 14.3,
-    y2: 20.3,
-  },
-  {
-    x1: 14.3,
-    y1: 20.3,
-    x2: 22,
-    y2: 11.9,
-  },
-];
-
 const SHUFFLE_PATH =
   "M13.151.922a.75.75 0 10-1.06 1.06L13.109 3H11.16a3.75 3.75 0 00-2.873 1.34l-6.173 7.356A2.25 2.25 0 01.39 12.5H0V14h.391a3.75 3.75 0 002.873-1.34l6.173-7.356a2.25 2.25 0 011.724-.804h1.947l-1.017 1.018a.75.75 0 001.06 1.06L15.98 3.75 13.15.922zM.391 3.5H0V2h.391c1.109 0 2.16.49 2.873 1.34L4.89 5.277l-.978 1.167-1.796-2.14A2.25 2.25 0 00.39 3.5z";
-
 const SHUFFLE_PATH_2 =
   "M7.5 10.723l.98-1.167.957 1.14a2.25 2.25 0 001.724.804h1.947l-1.017-1.018a.75.75 0 111.06-1.06l2.829 2.828-2.829 2.828a.75.75 0 11-1.06-1.06L13.109 13H11.16a3.75 3.75 0 01-2.873-1.34l-.787-.938z";
-
 const PREV_PATH =
   "M3.3 1a.7.7 0 01.7.7v5.15l9.95-5.744a.7.7 0 011.05.606v12.575a.7.7 0 01-1.05.607L4 9.149V14.3a.7.7 0 01-.7.7H1.7a.7.7 0 01-.7-.7V1.7a.7.7 0 01.7-.7h1.6z";
-
 const NEXT_PATH =
   "M12.7 1a.7.7 0 00-.7.7v5.15L2.05 1.107a.7.7 0 00-1.05.606v12.575a.7.7 0 001.05.607L12 9.149V14.3a.7.7 0 00.7.7h1.6a.7.7 0 00.7-.7V1.7a.7.7 0 00-.7-.7h-1.6z";
-
 const REPEAT_PATH =
   "M0 4.75A3.75 3.75 0 013.75 1h8.5A3.75 3.75 0 0116 4.75v5a3.75 3.75 0 01-3.75 3.75H9.81l1.018 1.018a.75.75 0 11-1.06 1.06L6.939 12.75l2.829-2.828a.75.75 0 111.06 1.06L9.811 12h2.439a2.25 2.25 0 002.25-2.25v-5a2.25 2.25 0 00-2.25-2.25h-8.5A2.25 2.25 0 001.5 4.75v5A2.25 2.25 0 003.75 12H5v1.5H3.75A3.75 3.75 0 010 9.75v-5z";
 
@@ -140,26 +44,10 @@ function clamp(value: number, min: number, max: number) {
 
 function formatTime(seconds: number) {
   const value = Math.max(0, Math.floor(seconds));
-
   const minutes = Math.floor(value / 60);
-
   const remainder = value % 60;
 
   return `${minutes}:${remainder.toString().padStart(2, "0")}`;
-}
-
-function morphTransition(reducedMotion: boolean) {
-  if (reducedMotion) {
-    return {
-      duration: 0,
-    };
-  }
-
-  return {
-    type: "spring" as const,
-    duration: 0.38,
-    bounce: 0,
-  };
 }
 
 function PlayPauseIcon({
@@ -169,39 +57,52 @@ function PlayPauseIcon({
   playing: boolean;
   reducedMotion: boolean;
 }) {
-  const lines = playing ? PAUSE_LINES : PLAY_LINES;
-
-  const transition = morphTransition(reducedMotion);
+  const transition = reducedMotion
+    ? { duration: 0 }
+    : { duration: 0.14, ease: EASE_OUT };
 
   return (
-    <svg viewBox="0 0 32 32" fill="none" aria-hidden="true" data-play-icon>
+    <svg viewBox="0 0 32 32" fill="none" aria-hidden="true" data-bp-play-icon>
       <motion.g
         initial={false}
         animate={{
-          x: playing ? 0 : 0.75,
+          opacity: playing ? 0 : 1,
+          scale: playing ? 0.92 : 1,
         }}
         transition={transition}
+        style={{ transformOrigin: "16px 16px", transformBox: "view-box" }}
       >
-        {lines.map(function renderLine(line, index) {
-          return (
-            <motion.line
-              key={index}
-              initial={false}
-              animate={{
-                x1: line.x1,
-                y1: line.y1,
-                x2: line.x2,
-                y2: line.y2,
-                opacity: line.opacity ?? 1,
-              }}
-              transition={transition}
-              stroke="currentColor"
-              strokeWidth="5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          );
-        })}
+        <path
+          d="M11.25 8.5c0-.9.98-1.46 1.76-1l11.08 6.5a2.32 2.32 0 010 4L13.01 24.5c-.78.46-1.76-.1-1.76-1V8.5z"
+          fill="currentColor"
+        />
+      </motion.g>
+
+      <motion.g
+        initial={false}
+        animate={{
+          opacity: playing ? 1 : 0,
+          scale: playing ? 1 : 0.92,
+        }}
+        transition={transition}
+        style={{ transformOrigin: "16px 16px", transformBox: "view-box" }}
+      >
+        <rect
+          x="10.25"
+          y="8"
+          width="4.75"
+          height="16"
+          rx="1.35"
+          fill="currentColor"
+        />
+        <rect
+          x="17"
+          y="8"
+          width="4.75"
+          height="16"
+          rx="1.35"
+          fill="currentColor"
+        />
       </motion.g>
     </svg>
   );
@@ -214,122 +115,109 @@ function SavedIcon({
   saved: boolean;
   reducedMotion: boolean;
 }) {
-  const lines = saved ? SAVED_LINES : ADD_LINES;
-
-  const transition = morphTransition(reducedMotion);
+  const shellTransition = reducedMotion
+    ? { duration: 0 }
+    : { duration: 0.16, ease: EASE_OUT };
+  const glyphTransition = reducedMotion
+    ? { duration: 0 }
+    : { duration: 0.14, ease: EASE_OUT };
 
   return (
-    <svg viewBox="0 0 32 32" fill="none" aria-hidden="true">
+    <svg viewBox="0 0 32 32" fill="none" aria-hidden="true" data-bp-save-icon>
       <motion.circle
         cx="16"
         cy="16"
-        r="13.5"
+        r="13"
         initial={false}
         animate={{
           fill: saved ? GREEN : "rgba(255,255,255,0)",
           stroke: saved ? GREEN : "#b3b3b3",
         }}
-        transition={{
-          duration: reducedMotion ? 0 : 0.18,
-          ease: EASE_OUT,
-        }}
-        strokeWidth="1.7"
+        transition={shellTransition}
+        strokeWidth="1.8"
       />
 
-      {lines.map(function renderLine(line, index) {
-        return (
-          <motion.line
-            key={index}
-            initial={false}
-            animate={{
-              x1: line.x1,
-              y1: line.y1,
-              x2: line.x2,
-              y2: line.y2,
-              opacity: line.opacity ?? 1,
-              stroke: saved ? "#000" : "#b3b3b3",
-            }}
-            transition={{
-              ...transition,
-              stroke: {
-                duration: reducedMotion ? 0 : 0.15,
-              },
-            }}
-            strokeWidth="2.35"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        );
-      })}
+      <motion.g
+        initial={false}
+        animate={{
+          opacity: saved ? 0 : 1,
+          scale: saved ? 0.86 : 1,
+        }}
+        transition={glyphTransition}
+        style={{ transformOrigin: "16px 16px", transformBox: "view-box" }}
+      >
+        <path
+          d="M16 10.4v11.2M10.4 16h11.2"
+          stroke="#b3b3b3"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+        />
+      </motion.g>
+
+      <motion.g
+        initial={false}
+        animate={{
+          opacity: saved ? 1 : 0,
+          scale: saved ? 1 : 0.86,
+        }}
+        transition={glyphTransition}
+        style={{ transformOrigin: "16px 16px", transformBox: "view-box" }}
+      >
+        <path
+          d="M10.55 16.2l3.55 3.45 7.55-8.05"
+          stroke="#000"
+          strokeWidth="2.25"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </motion.g>
     </svg>
   );
 }
 
-export function BestPartPlayer() {
+export function BestPartPlayer({
+  hasBestPart = true,
+}: {
+  hasBestPart?: boolean;
+}) {
   const reducedMotion = Boolean(useReducedMotion());
 
   const audioRef = useRef<HTMLAudioElement>(null);
-
   const videoRef = useRef<HTMLVideoElement>(null);
-
   const trackRef = useRef<HTMLDivElement>(null);
-
   const trackRectRef = useRef<DOMRect | null>(null);
 
   const scrubbingRef = useRef(false);
-
+  const suppressPauseStateRef = useRef(false);
   const wasPlayingRef = useRef(false);
-
   const jumpingRef = useRef(false);
-
   const timeRef = useRef(INITIAL_TIME);
-
   const durationRef = useRef(DURATION);
-
   const inputModeRef = useRef<"pointer" | "keyboard">("pointer");
 
   const volumeFrameRef = useRef<number | null>(null);
-
   const jumpTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   const arrivalTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   const lastTextUpdateRef = useRef(0);
-
   const lastHoverUpdateRef = useRef(0);
 
   const [currentTime, setCurrentTime] = useState(INITIAL_TIME);
-
   const [duration, setDuration] = useState(DURATION);
-
   const [playing, setPlaying] = useState(false);
-
   const [scrubbing, setScrubbing] = useState(false);
-
   const [jumping, setJumping] = useState(false);
-
   const [bestPartActive, setBestPartActive] = useState(false);
-
   const [bestPartArrival, setBestPartArrival] = useState(false);
-
   const [saved, setSaved] = useState(true);
-
   const [shuffle, setShuffle] = useState(false);
-
   const [repeatMode, setRepeatMode] = useState<RepeatMode>("off");
-
   const [hovering, setHovering] = useState(false);
-
   const [hoverTime, setHoverTime] = useState(INITIAL_TIME);
-
   const [trackKeyboardFocus, setTrackKeyboardFocus] = useState(false);
-
   const [audioError, setAudioError] = useState(false);
-
   const [canvasAvailable, setCanvasAvailable] = useState(true);
 
   const progress = useMotionValue(INITIAL_TIME / DURATION);
-
   const hoverRatio = useMotionValue(INITIAL_TIME / DURATION);
 
   const hoverLeft = useTransform(hoverRatio, function transformHover(value) {
@@ -344,32 +232,36 @@ export function BestPartPlayer() {
     return `${value * 100}%`;
   });
 
-  const bestPartLeft = `${(BEST_PART.start / duration) * 100}%`;
-
+  const safeDuration = Math.max(duration, 1);
+  const bestPartLeft = `${(BEST_PART.start / safeDuration) * 100}%`;
   const bestPartWidth = `${
-    ((BEST_PART.end - BEST_PART.start) / duration) * 100
+    ((BEST_PART.end - BEST_PART.start) / safeDuration) * 100
   }%`;
+  const bestPartCenter = `${clamp(
+    ((BEST_PART.start + BEST_PART.end) / 2 / safeDuration) * 100,
+    18,
+    82,
+  )}%`;
 
   const remaining = Math.max(0, duration - currentTime);
-
   const insideBestPart =
     currentTime >= BEST_PART.start && currentTime <= BEST_PART.end;
+  const bestPartEmphasized =
+    hasBestPart &&
+    (bestPartActive || jumping || bestPartArrival || insideBestPart);
 
   const updateVisualTime = useCallback(
     function updateVisualTime(seconds: number, forceText = false) {
       const activeDuration = durationRef.current;
-
       const next = clamp(seconds, 0, activeDuration);
 
       timeRef.current = next;
-
       progress.set(activeDuration > 0 ? next / activeDuration : 0);
 
       const now = performance.now();
 
       if (forceText || now - lastTextUpdateRef.current >= 70) {
         lastTextUpdateRef.current = now;
-
         setCurrentTime(next);
       }
     },
@@ -390,8 +282,13 @@ export function BestPartPlayer() {
       cancelAnimationFrame(volumeFrameRef.current);
     }
 
-    const startVolume = audio.volume;
+    if (durationMs <= 0) {
+      audio.volume = target;
+      volumeFrameRef.current = null;
+      return;
+    }
 
+    const startVolume = audio.volume;
     const start = performance.now();
 
     function frame(now: number) {
@@ -402,7 +299,6 @@ export function BestPartPlayer() {
       }
 
       const ratio = clamp((now - start) / durationMs, 0, 1);
-
       const eased = 1 - Math.pow(1 - ratio, 3);
 
       activeAudio.volume = startVolume + (target - startVolume) * eased;
@@ -417,10 +313,21 @@ export function BestPartPlayer() {
     volumeFrameRef.current = requestAnimationFrame(frame);
   }, []);
 
+  const markBestPartArrival = useCallback(function markBestPartArrival() {
+    if (arrivalTimerRef.current) {
+      clearTimeout(arrivalTimerRef.current);
+    }
+
+    setBestPartArrival(true);
+
+    arrivalTimerRef.current = setTimeout(function settleArrival() {
+      setBestPartArrival(false);
+    }, 520);
+  }, []);
+
   useEffect(function trackInputMode() {
     function handlePointerDown() {
       inputModeRef.current = "pointer";
-
       setTrackKeyboardFocus(false);
     }
 
@@ -437,23 +344,23 @@ export function BestPartPlayer() {
     }
 
     window.addEventListener("pointerdown", handlePointerDown, true);
-
     window.addEventListener("keydown", handleWindowKeyDown, true);
 
     return function cleanup() {
       window.removeEventListener("pointerdown", handlePointerDown, true);
-
       window.removeEventListener("keydown", handleWindowKeyDown, true);
     };
   }, []);
 
   useEffect(
     function initialiseAudio() {
-      const audio = audioRef.current;
+      const currentAudio = audioRef.current;
 
-      if (!audio) {
+      if (currentAudio === null) {
         return;
       }
+
+      const audio: HTMLAudioElement = currentAudio;
 
       function metadata() {
         const nextDuration =
@@ -462,27 +369,31 @@ export function BestPartPlayer() {
             : DURATION;
 
         durationRef.current = nextDuration;
-
         setDuration(nextDuration);
 
         const startTime = Math.min(INITIAL_TIME, nextDuration);
 
         audio.currentTime = startTime;
-
         updateVisualTime(startTime, true);
-
         setAudioError(false);
       }
 
       function handlePlay() {
         setPlaying(true);
-
         void videoRef.current?.play().catch(function ignoreVideo() {});
       }
 
       function handlePause() {
-        setPlaying(false);
+        if (suppressPauseStateRef.current) {
+          suppressPauseStateRef.current = false;
+          return;
+        }
 
+        if (scrubbingRef.current) {
+          return;
+        }
+
+        setPlaying(false);
         videoRef.current?.pause();
       }
 
@@ -501,30 +412,21 @@ export function BestPartPlayer() {
             : durationRef.current;
 
         setPlaying(false);
-
         videoRef.current?.pause();
-
         updateVisualTime(end, true);
       }
 
       function handleError() {
         setAudioError(true);
-
         setPlaying(false);
-
         videoRef.current?.pause();
       }
 
       audio.addEventListener("loadedmetadata", metadata);
-
       audio.addEventListener("play", handlePlay);
-
       audio.addEventListener("pause", handlePause);
-
       audio.addEventListener("timeupdate", handleTimeUpdate);
-
       audio.addEventListener("ended", handleEnded);
-
       audio.addEventListener("error", handleError);
 
       if (audio.readyState >= 1) {
@@ -533,15 +435,10 @@ export function BestPartPlayer() {
 
       return function cleanup() {
         audio.removeEventListener("loadedmetadata", metadata);
-
         audio.removeEventListener("play", handlePlay);
-
         audio.removeEventListener("pause", handlePause);
-
         audio.removeEventListener("timeupdate", handleTimeUpdate);
-
         audio.removeEventListener("ended", handleEnded);
-
         audio.removeEventListener("error", handleError);
       };
     },
@@ -604,18 +501,44 @@ export function BestPartPlayer() {
     };
   }, []);
 
-  async function togglePlayback() {
-    const audio = audioRef.current;
+  useEffect(
+    function resetBestPartState() {
+      if (hasBestPart) {
+        return;
+      }
 
-    if (!audio || audioError) {
+      setBestPartActive(false);
+      setBestPartArrival(false);
+      jumpingRef.current = false;
+      setJumping(false);
+
+      if (jumpTimerRef.current) {
+        clearTimeout(jumpTimerRef.current);
+        jumpTimerRef.current = null;
+      }
+
+      const audio = audioRef.current;
+
+      if (audio !== null && audio.volume !== 1) {
+        audio.volume = 1;
+      }
+    },
+    [hasBestPart],
+  );
+
+  async function togglePlayback() {
+    const currentAudio = audioRef.current;
+
+    if (currentAudio === null || audioError) {
       return;
     }
+
+    const audio: HTMLAudioElement = currentAudio;
 
     const activeDuration = durationRef.current;
 
     if (audio.currentTime >= activeDuration - 0.1) {
       audio.currentTime = 0;
-
       updateVisualTime(0, true);
     }
 
@@ -648,26 +571,27 @@ export function BestPartPlayer() {
     }
 
     const track = trackRef.current;
+    const currentAudio = audioRef.current;
 
-    const audio = audioRef.current;
-
-    if (!track || !audio) {
+    if (track === null || currentAudio === null) {
       return;
     }
 
-    inputModeRef.current = "pointer";
+    const audio: HTMLAudioElement = currentAudio;
 
+    inputModeRef.current = "pointer";
     setTrackKeyboardFocus(false);
 
     trackRectRef.current = track.getBoundingClientRect();
-
     wasPlayingRef.current = !audio.paused;
-
     scrubbingRef.current = true;
-
     setScrubbing(true);
 
-    audio.pause();
+    if (wasPlayingRef.current) {
+      suppressPauseStateRef.current = true;
+      audio.pause();
+      videoRef.current?.pause();
+    }
 
     seekFromPointer(event.clientX);
 
@@ -695,7 +619,6 @@ export function BestPartPlayer() {
     }
 
     lastHoverUpdateRef.current = now;
-
     setHoverTime(ratio * durationRef.current);
   }
 
@@ -708,7 +631,6 @@ export function BestPartPlayer() {
       trackRef.current?.getBoundingClientRect() ?? trackRectRef.current;
 
     updateHover(event.clientX);
-
     setHovering(true);
   }
 
@@ -728,53 +650,6 @@ export function BestPartPlayer() {
     seekFromPointer(event.clientX);
   }
 
-  function restart() {
-    const audio = audioRef.current;
-
-    if (!audio) {
-      return;
-    }
-
-    audio.currentTime = 0;
-
-    updateVisualTime(0, true);
-  }
-
-  function skipToEnd() {
-    const audio = audioRef.current;
-
-    const end =
-      audio && Number.isFinite(audio.duration) && audio.duration > 0
-        ? audio.duration
-        : durationRef.current;
-
-    if (audio) {
-      audio.pause();
-
-      audio.currentTime = end;
-    }
-
-    videoRef.current?.pause();
-
-    setPlaying(false);
-
-    updateVisualTime(end, true);
-  }
-
-  function cycleRepeat() {
-    setRepeatMode(function next(current) {
-      if (current === "off") {
-        return "all";
-      }
-
-      if (current === "all") {
-        return "one";
-      }
-
-      return "off";
-    });
-  }
-
   function endScrub(event: PointerEvent<HTMLDivElement>) {
     if (!scrubbingRef.current) {
       return;
@@ -783,14 +658,15 @@ export function BestPartPlayer() {
     const audio = audioRef.current;
 
     scrubbingRef.current = false;
-
     setScrubbing(false);
 
-    if (audio) {
+    if (audio !== null) {
       audio.currentTime = timeRef.current;
 
       if (wasPlayingRef.current) {
-        void audio.play().catch(function ignorePlay() {});
+        void audio.play().catch(function handleResumeError() {
+          setPlaying(false);
+        });
       }
     }
 
@@ -803,7 +679,6 @@ export function BestPartPlayer() {
 
   function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     inputModeRef.current = "keyboard";
-
     setTrackKeyboardFocus(true);
 
     let next: number | null = null;
@@ -828,93 +703,123 @@ export function BestPartPlayer() {
 
     updateVisualTime(value, true);
 
-    if (audioRef.current) {
-      audioRef.current.currentTime = value;
+    const audio = audioRef.current;
+
+    if (audio !== null) {
+      audio.currentTime = value;
     }
   }
 
-  async function skipToBestPart() {
+  function restart() {
     const audio = audioRef.current;
 
-    if (!audio || audioError || jumpingRef.current) {
+    if (!audio) {
       return;
     }
 
+    audio.currentTime = 0;
+    updateVisualTime(0, true);
+  }
+
+  function skipToEnd() {
+    const audio = audioRef.current;
+    const end =
+      audio && Number.isFinite(audio.duration) && audio.duration > 0
+        ? audio.duration
+        : durationRef.current;
+
+    if (audio) {
+      audio.pause();
+      audio.currentTime = end;
+    }
+
+    videoRef.current?.pause();
+    setPlaying(false);
+    updateVisualTime(end, true);
+  }
+
+  function cycleRepeat() {
+    setRepeatMode(function next(current) {
+      if (current === "off") {
+        return "all";
+      }
+
+      if (current === "all") {
+        return "one";
+      }
+
+      return "off";
+    });
+  }
+
+  async function skipToBestPart() {
+    const currentAudio = audioRef.current;
+
+    if (
+      !hasBestPart ||
+      currentAudio === null ||
+      audioError ||
+      jumpingRef.current
+    ) {
+      return;
+    }
+
+    const audio: HTMLAudioElement = currentAudio;
+    const activeDuration = durationRef.current;
+    const destination = clamp(BEST_PART.start, 0, activeDuration);
+    const shouldStartPlayback = audio.paused;
+
     jumpingRef.current = true;
-
     setJumping(true);
-
     setBestPartArrival(false);
 
-    const activeDuration = durationRef.current;
+    if (jumpTimerRef.current) {
+      clearTimeout(jumpTimerRef.current);
+    }
 
-    const destination = clamp(BEST_PART.start, 0, activeDuration);
+    if (shouldStartPlayback) {
+      audio.currentTime = destination;
+      updateVisualTime(destination, true);
+      audio.volume = reducedMotion ? 1 : 0.18;
 
-    const target = destination / activeDuration;
+      await audio.play().catch(function handlePlayError() {
+        audio.volume = 1;
+        jumpingRef.current = false;
+        setJumping(false);
+      });
+
+      if (!audio.paused) {
+        rampVolume(1, reducedMotion ? 0 : 180);
+        markBestPartArrival();
+      }
+
+      jumpingRef.current = false;
+      setJumping(false);
+      return;
+    }
 
     if (reducedMotion) {
       audio.currentTime = destination;
-
       updateVisualTime(destination, true);
-
-      await audio.play().catch(function ignorePlay() {});
-
+      markBestPartArrival();
       jumpingRef.current = false;
-
       setJumping(false);
-
       return;
     }
 
-    rampVolume(0.08, 100);
+    rampVolume(0.18, 72);
 
-    const controls = animate(progress, target, {
-      duration: 0.42,
-      ease: EASE_OUT,
-
-      onUpdate(value) {
-        const next = value * activeDuration;
-
-        timeRef.current = next;
-
-        const now = performance.now();
-
-        if (now - lastTextUpdateRef.current > 32) {
-          lastTextUpdateRef.current = now;
-
-          setCurrentTime(next);
-        }
-      },
-
-      onComplete() {
-        jumpingRef.current = false;
-
-        setJumping(false);
-
-        setBestPartArrival(true);
-
-        updateVisualTime(audio.currentTime, true);
-
-        arrivalTimerRef.current = setTimeout(function settle() {
-          setBestPartArrival(false);
-        }, 520);
-      },
-    });
-
-    jumpTimerRef.current = setTimeout(function commitSeek() {
+    jumpTimerRef.current = setTimeout(function commitBestPartSeek() {
       audio.currentTime = destination;
+      updateVisualTime(destination, true);
+      audio.volume = 0.18;
+      rampVolume(1, 170);
+      markBestPartArrival();
 
-      audio.volume = 0.08;
-
-      void audio
-        .play()
-        .then(function restoreAudio() {
-          rampVolume(1, 210);
-        })
-        .catch(function ignorePlay() {});
-    }, 145);
-
-    void controls;
+      jumpingRef.current = false;
+      setJumping(false);
+      jumpTimerRef.current = null;
+    }, 82);
   }
 
   return (
@@ -960,7 +865,6 @@ export function BestPartPlayer() {
 
           <div data-bp-meta-copy>
             <span data-bp-title>Sirens</span>
-
             <span data-bp-artist>Ludwig Göransson</span>
           </div>
 
@@ -982,6 +886,70 @@ export function BestPartPlayer() {
         </div>
 
         <div data-bp-scrub-region>
+          <motion.div
+            data-bp-best-rail
+            initial={false}
+            animate={{
+              height: hasBestPart ? 24 : 0,
+              opacity: hasBestPart ? 1 : 0,
+            }}
+            transition={
+              reducedMotion
+                ? { duration: 0 }
+                : {
+                    height: { duration: 0.24, ease: EASE_OUT },
+                    opacity: { duration: 0.14, ease: EASE_OUT },
+                  }
+            }
+          >
+            <AnimatePresence initial={false}>
+              {hasBestPart && (
+                <motion.button
+                  type="button"
+                  data-bp-best-action
+                  data-active={bestPartEmphasized ? "true" : "false"}
+                  data-arrival={bestPartArrival ? "true" : "false"}
+                  style={{ left: bestPartCenter, x: "-50%" }}
+                  aria-label={`Play best part at ${formatTime(BEST_PART.start)}`}
+                  onClick={skipToBestPart}
+                  onPointerEnter={function activateBestPart() {
+                    setBestPartActive(true);
+                  }}
+                  onPointerLeave={function deactivateBestPart() {
+                    setBestPartActive(false);
+                  }}
+                  onFocus={function activateBestPart() {
+                    setBestPartActive(true);
+                  }}
+                  onBlur={function deactivateBestPart() {
+                    setBestPartActive(false);
+                  }}
+                  initial={
+                    reducedMotion
+                      ? { opacity: 0 }
+                      : { opacity: 0, y: 3, scale: 0.97 }
+                  }
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={
+                    reducedMotion
+                      ? { opacity: 0 }
+                      : { opacity: 0, y: 2, scale: 0.98 }
+                  }
+                  transition={{
+                    duration: reducedMotion ? 0 : 0.16,
+                    ease: EASE_OUT,
+                  }}
+                >
+                  <span data-bp-best-chip>
+                    <span data-bp-best-indicator aria-hidden="true" />
+                    <span data-bp-best-label>Best part</span>
+                    <span data-bp-best-time>{formatTime(BEST_PART.start)}</span>
+                  </span>
+                </motion.button>
+              )}
+            </AnimatePresence>
+          </motion.div>
+
           <div
             ref={trackRef}
             data-bp-track
@@ -992,9 +960,7 @@ export function BestPartPlayer() {
             aria-valuemin={0}
             aria-valuemax={Math.round(duration)}
             aria-valuenow={Math.round(currentTime)}
-            aria-valuetext={`${formatTime(currentTime)} of ${formatTime(
-              duration,
-            )}`}
+            aria-valuetext={`${formatTime(currentTime)} of ${formatTime(duration)}`}
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerUp={endScrub}
@@ -1018,34 +984,12 @@ export function BestPartPlayer() {
                     x: "-50%",
                   }}
                   initial={
-                    reducedMotion
-                      ? {
-                          opacity: 0,
-                        }
-                      : {
-                          opacity: 0,
-                          y: 5,
-                          scale: 0.94,
-                        }
+                    reducedMotion ? { opacity: 0 } : { opacity: 0, y: 3 }
                   }
-                  animate={{
-                    opacity: 1,
-                    y: 0,
-                    scale: 1,
-                  }}
-                  exit={
-                    reducedMotion
-                      ? {
-                          opacity: 0,
-                        }
-                      : {
-                          opacity: 0,
-                          y: 3,
-                          scale: 0.96,
-                        }
-                  }
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 2 }}
                   transition={{
-                    duration: reducedMotion ? 0.08 : 0.15,
+                    duration: reducedMotion ? 0.06 : 0.12,
                     ease: EASE_OUT,
                   }}
                   aria-hidden="true"
@@ -1059,104 +1003,41 @@ export function BestPartPlayer() {
 
             <motion.span
               data-bp-track-played
-              style={{
-                width: playedWidth,
-              }}
+              style={{ width: playedWidth }}
               aria-hidden="true"
             />
 
-            <motion.span
-              data-bp-best-range
-              data-active={
-                bestPartActive || jumping || bestPartArrival || insideBestPart
-                  ? "true"
-                  : "false"
-              }
-              style={{
-                left: bestPartLeft,
-                width: bestPartWidth,
-              }}
-              animate={{
-                scaleY: bestPartActive || jumping || bestPartArrival ? 1.4 : 1,
-                opacity:
-                  bestPartActive || jumping || bestPartArrival || insideBestPart
-                    ? 1
-                    : 0.72,
-              }}
-              transition={
-                reducedMotion
-                  ? {
-                      duration: 0,
-                    }
-                  : {
-                      type: "spring",
-                      duration: 0.3,
-                      bounce: 0,
-                    }
-              }
-              aria-hidden="true"
-            />
+            <AnimatePresence initial={false}>
+              {hasBestPart && (
+                <motion.span
+                  data-bp-best-range
+                  data-active={bestPartEmphasized ? "true" : "false"}
+                  data-arrival={bestPartArrival ? "true" : "false"}
+                  style={{
+                    left: bestPartLeft,
+                    width: bestPartWidth,
+                  }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: bestPartEmphasized ? 1 : 0.78 }}
+                  exit={{ opacity: 0 }}
+                  transition={{
+                    duration: reducedMotion ? 0 : 0.16,
+                    ease: EASE_OUT,
+                  }}
+                  aria-hidden="true"
+                />
+              )}
+            </AnimatePresence>
 
             <motion.span
               data-bp-knob
-              style={{
-                left: knobLeft,
-              }}
-              animate={{
-                scale: scrubbing && !reducedMotion ? 1.28 : 1,
-              }}
-              transition={
-                reducedMotion
-                  ? {
-                      duration: 0,
-                    }
-                  : {
-                      type: "spring",
-                      duration: 0.28,
-                      bounce: 0.08,
-                    }
-              }
+              style={{ left: knobLeft }}
               aria-hidden="true"
             />
           </div>
 
           <div data-bp-times>
             <span>{formatTime(currentTime)}</span>
-
-            <button
-              type="button"
-              data-bp-best-action
-              onClick={skipToBestPart}
-              onPointerEnter={function activate() {
-                setBestPartActive(true);
-              }}
-              onPointerLeave={function deactivate() {
-                setBestPartActive(false);
-              }}
-              onFocus={function activate() {
-                setBestPartActive(true);
-              }}
-              onBlur={function deactivate() {
-                setBestPartActive(false);
-              }}
-            >
-              <motion.span
-                data-bp-best-indicator
-                animate={{
-                  scale: bestPartArrival && !reducedMotion ? [1, 1.5, 1] : 1,
-                }}
-                transition={{
-                  duration: 0.36,
-                  ease: EASE_OUT,
-                }}
-                aria-hidden="true"
-              />
-
-              <span>Best part</span>
-
-              <span data-bp-best-time>· {formatTime(BEST_PART.start)}</span>
-            </button>
-
             <span>-{formatTime(remaining)}</span>
           </div>
         </div>
@@ -1176,10 +1057,8 @@ export function BestPartPlayer() {
           >
             <svg viewBox="0 0 16 16" aria-hidden="true">
               <path d={SHUFFLE_PATH} fill="currentColor" />
-
               <path d={SHUFFLE_PATH_2} fill="currentColor" />
             </svg>
-
             <span
               data-bp-tp-dot
               data-visible={shuffle ? "true" : "false"}
@@ -1199,21 +1078,16 @@ export function BestPartPlayer() {
             </svg>
           </button>
 
-          <motion.button
+          <button
             type="button"
             data-bp-play
             onClick={togglePlayback}
             aria-label={playing ? "Pause" : "Play"}
-            whileTap={
-              reducedMotion
-                ? undefined
-                : {
-                    scale: 0.97,
-                  }
-            }
           >
-            <PlayPauseIcon playing={playing} reducedMotion={reducedMotion} />
-          </motion.button>
+            <span data-bp-play-disc>
+              <PlayPauseIcon playing={playing} reducedMotion={reducedMotion} />
+            </span>
+          </button>
 
           <button
             type="button"
@@ -1238,24 +1112,21 @@ export function BestPartPlayer() {
                   ? "Repeat"
                   : "Enable repeat"
             }
+            aria-pressed={repeatMode !== "off"}
             onClick={cycleRepeat}
           >
-            <svg viewBox="0 0 16 16" aria-hidden="true">
-              <path d={REPEAT_PATH} fill="currentColor" />
-
-              <text
-                x="8"
-                y="9.6"
-                textAnchor="middle"
-                fontSize="6.2"
-                fontWeight="700"
-                fill="currentColor"
-                opacity={repeatMode === "one" ? 1 : 0}
+            <span data-bp-repeat-glyph>
+              <svg viewBox="0 0 16 16" aria-hidden="true">
+                <path d={REPEAT_PATH} fill="currentColor" />
+              </svg>
+              <span
+                data-bp-repeat-one
+                data-visible={repeatMode === "one" ? "true" : "false"}
+                aria-hidden="true"
               >
                 1
-              </text>
-            </svg>
-
+              </span>
+            </span>
             <span
               data-bp-tp-dot
               data-visible={repeatMode !== "off" ? "true" : "false"}
@@ -1274,27 +1145,27 @@ export function BestPartPlayer() {
       <style>{`
         [data-bp-player] {
           position: relative;
-          width: min(
-            392px,
-            calc(100vw - 32px)
-          );
+          width: min(392px, calc(100vw - 32px));
           overflow: hidden;
+          border: 1px solid rgba(255, 255, 255, 0.055);
           border-radius: 20px;
           color: #fff;
-          background: #0f0f0f;
+          background: #101010;
           box-shadow:
-            0 2px 4px
-              rgba(0, 0, 0, 0.16),
-            0 36px 80px -44px
-              rgba(0, 0, 0, 0.68);
+            0 1px 2px rgba(0, 0, 0, 0.18),
+            0 26px 64px -36px rgba(0, 0, 0, 0.68);
           isolation: isolate;
           user-select: none;
           -webkit-user-select: none;
         }
 
+        [data-bp-player] button {
+          font: inherit;
+        }
+
         [data-bp-media] {
           position: relative;
-          height: 430px;
+          height: 428px;
           overflow: hidden;
           background: #182933;
         }
@@ -1322,39 +1193,35 @@ export function BestPartPlayer() {
           background:
             linear-gradient(
               to bottom,
-              rgba(0, 0, 0, 0.02) 52%,
-              rgba(0, 0, 0, 0.14) 72%,
-              rgba(15, 15, 15, 0.92) 100%
+              rgba(0, 0, 0, 0.015) 48%,
+              rgba(0, 0, 0, 0.08) 63%,
+              rgba(8, 8, 8, 0.54) 82%,
+              #101010 100%
             );
         }
 
         [data-bp-body] {
           position: relative;
           z-index: 4;
-          margin-top: -46px;
-          padding: 0 19px 19px;
+          margin-top: -42px;
+          padding: 0 19px 18px;
         }
 
         [data-bp-meta] {
           min-width: 0;
           display: grid;
-          grid-template-columns:
-            52px
-            minmax(0, 1fr)
-            44px;
+          grid-template-columns: 50px minmax(0, 1fr) 44px;
           align-items: center;
           gap: 12px;
         }
 
         [data-bp-thumbnail] {
-          width: 52px;
-          height: 52px;
+          width: 50px;
+          height: 50px;
           display: block;
-          border-radius: 6px;
+          border-radius: 5px;
           object-fit: cover;
-          box-shadow:
-            0 3px 10px
-              rgba(0, 0, 0, 0.28);
+          box-shadow: 0 3px 12px rgba(0, 0, 0, 0.28);
         }
 
         [data-bp-meta-copy] {
@@ -1367,10 +1234,10 @@ export function BestPartPlayer() {
         [data-bp-title] {
           overflow: hidden;
           color: #fff;
-          font-size: 22px;
-          font-weight: 710;
+          font-size: 21px;
+          font-weight: 700;
           line-height: 1.15;
-          letter-spacing: -0.027em;
+          letter-spacing: -0.026em;
           text-overflow: ellipsis;
           white-space: nowrap;
         }
@@ -1378,8 +1245,8 @@ export function BestPartPlayer() {
         [data-bp-artist] {
           overflow: hidden;
           color: #b3b3b3;
-          font-size: 14.5px;
-          font-weight: 430;
+          font-size: 14px;
+          font-weight: 450;
           line-height: 1.3;
           text-overflow: ellipsis;
           white-space: nowrap;
@@ -1401,7 +1268,7 @@ export function BestPartPlayer() {
           -webkit-tap-highlight-color: transparent;
         }
 
-        [data-bp-save] svg {
+        [data-bp-save-icon] {
           display: block;
           width: 28px;
           height: 28px;
@@ -1409,12 +1276,91 @@ export function BestPartPlayer() {
         }
 
         [data-bp-scrub-region] {
-          margin-top: 25px;
+          margin-top: 19px;
+        }
+
+        [data-bp-best-rail] {
+          position: relative;
+          overflow: hidden;
+        }
+
+        [data-bp-best-action] {
+          position: absolute;
+          top: 0;
+          height: 24px;
+          display: grid;
+          place-items: center;
+          margin: 0;
+          padding: 0;
+          border: 0;
+          color: #9f9f9f;
+          background: transparent;
+          white-space: nowrap;
+          cursor: pointer;
+          touch-action: manipulation;
+          -webkit-tap-highlight-color: transparent;
+        }
+
+        [data-bp-best-chip] {
+          height: 16px;
+          display: inline-flex;
+          align-items: center;
+          gap: 3.5px;
+          padding: 0 5px;
+          border: 1px solid rgba(255, 255, 255, 0.055);
+          border-radius: 5px;
+          background: rgba(255, 255, 255, 0.02);
+          box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
+          transition:
+            color 140ms ease,
+            border-color 140ms ease,
+            background-color 140ms ease,
+            box-shadow 180ms ease;
+        }
+
+        [data-bp-best-label] {
+          font-size: 8.75px;
+          font-weight: 620;
+          letter-spacing: 0;
+          line-height: 1;
+        }
+
+        [data-bp-best-action][data-active="true"] [data-bp-best-chip] {
+          color: #dedede;
+          border-color: rgba(30, 215, 96, 0.16);
+          background: rgba(30, 215, 96, 0.05);
+        }
+
+        [data-bp-best-action][data-arrival="true"] [data-bp-best-chip] {
+          box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.025),
+            0 0 0 2px rgba(30, 215, 96, 0.05);
+        }
+
+        [data-bp-best-indicator] {
+          width: 3px;
+          height: 3px;
+          flex: 0 0 auto;
+          border-radius: 50%;
+          background: ${GREEN};
+        }
+
+        [data-bp-best-time] {
+          color: #707070;
+          font-size: 8.25px;
+          font-weight: 570;
+          font-variant-numeric: tabular-nums;
+          line-height: 1;
+          transition: color 140ms ease;
+        }
+
+        [data-bp-best-action][data-active="true"] [data-bp-best-time] {
+          color: #8eaa96;
         }
 
         [data-bp-track] {
           position: relative;
-          height: 28px;
+          height: 22px;
           display: flex;
           align-items: center;
           cursor: pointer;
@@ -1428,152 +1374,109 @@ export function BestPartPlayer() {
         [data-bp-best-range] {
           position: absolute;
           left: 0;
-          height: 4px;
+          top: 50%;
           border-radius: 999px;
           pointer-events: none;
-          transform-origin: center;
+          transform: translateY(-50%);
         }
 
         [data-bp-track-base] {
           right: 0;
           z-index: 1;
-          background:
-            rgba(255, 255, 255, 0.29);
+          height: 3px;
+          background: rgba(255, 255, 255, 0.26);
         }
 
         [data-bp-track-played] {
           z-index: 2;
+          height: 3px;
           background: #fff;
           will-change: width;
         }
 
         [data-bp-best-range] {
           z-index: 3;
+          height: 5px;
           background: ${GREEN};
-          will-change: transform, opacity;
+          box-shadow: 0 0 0 1px rgba(30, 215, 96, 0.05);
+          transition:
+            height 160ms cubic-bezier(0.22, 0.72, 0, 1),
+            box-shadow 180ms ease;
+        }
+
+        [data-bp-best-range][data-active="true"] {
+          height: 6px;
+          box-shadow: 0 0 12px -3px rgba(30, 215, 96, 0.72);
+        }
+
+        [data-bp-best-range][data-arrival="true"] {
+          box-shadow: 0 0 14px -2px rgba(30, 215, 96, 0.82);
         }
 
         [data-bp-knob] {
           position: absolute;
           z-index: 4;
           top: 50%;
-          width: 11px;
-          height: 11px;
-          margin-top: -5.5px;
-          margin-left: -5.5px;
+          width: 10px;
+          height: 10px;
+          margin-top: -5px;
+          margin-left: -5px;
           border-radius: 50%;
           background: #fff;
-          box-shadow:
-            0 1px 3px
-              rgba(0, 0, 0, 0.42);
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.42);
           pointer-events: none;
+          transform: scale(1);
+          transition: transform 130ms cubic-bezier(0.22, 0.72, 0, 1);
           will-change: left, transform;
+        }
+
+        [data-bp-player][data-scrubbing="true"] [data-bp-knob] {
+          transform: scale(1.18);
         }
 
         [data-bp-hover-time] {
           position: absolute;
           z-index: 6;
-          bottom: calc(50% + 12px);
-          padding: 4px 8px;
-          border-radius: 7px;
-          background: #000;
+          bottom: calc(50% + 11px);
+          padding: 4px 7px;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 6px;
+          background: rgba(0, 0, 0, 0.94);
           color: #fff;
-          font-size: 11px;
+          font-size: 10.5px;
           font-weight: 600;
           font-variant-numeric: tabular-nums;
           line-height: 1;
           white-space: nowrap;
           pointer-events: none;
-          box-shadow:
-            0 6px 16px -6px
-              rgba(0, 0, 0, 0.7);
+          box-shadow: 0 6px 16px -7px rgba(0, 0, 0, 0.72);
         }
 
         [data-bp-track][data-keyboard-focus="true"] {
-          outline:
-            2px solid
-            rgba(255, 255, 255, 0.95);
-          outline-offset: 4px;
-          border-radius: 5px;
+          outline: 2px solid rgba(255, 255, 255, 0.95);
+          outline-offset: 3px;
+          border-radius: 4px;
         }
 
         [data-bp-times] {
-          display: grid;
-          grid-template-columns:
-            1fr
-            auto
-            1fr;
-          align-items: center;
-          margin-top: 2px;
-          color: #b3b3b3;
-          font-size: 10.5px;
-          font-weight: 510;
-          line-height: 1;
-          font-variant-numeric: tabular-nums;
-        }
-
-        [data-bp-times]
-          > span:last-child {
-          text-align: right;
-        }
-
-        [data-bp-best-action] {
-          min-height: 32px;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 4px;
-          margin: -6px 0;
-          padding: 0 7px;
-          border: 0;
-          border-radius: 7px;
-          color: #d2d2d2;
-          background: transparent;
-          font-size: 10.5px;
-          font-weight: 600;
-          line-height: 1;
-          cursor: pointer;
-          touch-action: manipulation;
-          -webkit-tap-highlight-color: transparent;
-          transition:
-            color 150ms ease,
-            background-color 150ms ease;
-        }
-
-        [data-bp-best-indicator] {
-          width: 5px;
-          height: 5px;
-          flex: 0 0 auto;
-          border-radius: 50%;
-          background: ${GREEN};
-          transform-origin: center;
-        }
-
-        [data-bp-best-time] {
-          color: #929292;
-          font-weight: 510;
-        }
-
-        [data-bp-best-action]:hover {
-          color: #fff;
-          background:
-            rgba(255, 255, 255, 0.055);
-        }
-
-        [data-bp-best-action]:focus-visible,
-        [data-bp-save]:focus-visible,
-        [data-bp-play]:focus-visible,
-        [data-bp-tp]:focus-visible {
-          outline: 2px solid #fff;
-          outline-offset: 2px;
-        }
-
-        [data-bp-transport] {
           display: flex;
           align-items: center;
           justify-content: space-between;
+          margin-top: 1px;
+          color: #8f8f8f;
+          font-size: 10.5px;
+          font-weight: 510;
+          font-variant-numeric: tabular-nums;
+          line-height: 1;
+        }
+
+        [data-bp-transport] {
+          display: grid;
+          grid-template-columns: 44px 44px 72px 44px 44px;
+          align-items: center;
+          justify-content: space-between;
           margin-top: 15px;
-          padding: 0 2px;
+          padding: 0 1px;
         }
 
         [data-bp-tp] {
@@ -1585,14 +1488,16 @@ export function BestPartPlayer() {
           margin: 0;
           padding: 0;
           border: 0;
+          border-radius: 50%;
           background: transparent;
-          color: #b3b3b3;
+          color: #a7a7a7;
           cursor: pointer;
           touch-action: manipulation;
-          -webkit-tap-highlight-color: transparent;
           transition:
-            color 160ms ease,
-            opacity 120ms ease;
+            color 140ms ease,
+            opacity 100ms ease,
+            background-color 140ms ease;
+          -webkit-tap-highlight-color: transparent;
         }
 
         [data-bp-tp] svg {
@@ -1603,12 +1508,12 @@ export function BestPartPlayer() {
         }
 
         [data-bp-tp][data-strong="true"] {
-          color: #fff;
+          color: #f3f3f3;
         }
 
         [data-bp-tp][data-strong="true"] svg {
-          width: 26px;
-          height: 26px;
+          width: 25px;
+          height: 25px;
         }
 
         [data-bp-tp][data-active="true"] {
@@ -1628,89 +1533,138 @@ export function BestPartPlayer() {
           border-radius: 50%;
           background: ${GREEN};
           opacity: 0;
-          transform:
-            translateX(-50%)
-            scale(0.5);
+          transform: translateX(-50%) scale(0.65);
           transition:
-            opacity 150ms ease,
-            transform 220ms
-              cubic-bezier(
-                0.22,
-                0.72,
-                0,
-                1
-              );
+            opacity 130ms ease,
+            transform 160ms cubic-bezier(0.22, 0.72, 0, 1);
           pointer-events: none;
         }
 
         [data-bp-tp-dot][data-visible="true"] {
           opacity: 1;
-          transform:
-            translateX(-50%)
-            scale(1);
+          transform: translateX(-50%) scale(1);
+        }
+
+        [data-bp-repeat-glyph] {
+          position: relative;
+          width: 18px;
+          height: 18px;
+          display: grid;
+          place-items: center;
+        }
+
+        [data-bp-repeat-glyph] > svg {
+          width: 18px;
+          height: 18px;
+        }
+
+        [data-bp-repeat-one] {
+          position: absolute;
+          left: 50%;
+          top: 50%;
+          color: currentColor;
+          font-size: 6px;
+          font-weight: 800;
+          line-height: 1;
+          opacity: 0;
+          transform: translate(-50%, -48%);
+          transition: opacity 120ms ease;
+          pointer-events: none;
+        }
+
+        [data-bp-repeat-one][data-visible="true"] {
+          opacity: 1;
         }
 
         [data-bp-play] {
-          width: 66px;
-          height: 66px;
+          width: 72px;
+          height: 72px;
           display: grid;
           place-items: center;
           margin: 0;
           padding: 0;
           border: 0;
           border-radius: 50%;
-          color: #000;
-          background: #fff;
+          background: transparent;
           cursor: pointer;
           touch-action: manipulation;
-          box-shadow:
-            0 6px 16px -9px
-              rgba(0, 0, 0, 0.62);
           -webkit-tap-highlight-color: transparent;
-          transform-origin: center;
         }
 
-        [data-play-icon] {
+        [data-bp-play-disc] {
+          width: 64px;
+          height: 64px;
+          display: grid;
+          place-items: center;
+          border-radius: 50%;
+          color: #000;
+          background: #fff;
+          box-shadow: 0 5px 14px -8px rgba(0, 0, 0, 0.65);
+          transform: translateZ(0) scale(1);
+          transition: transform 130ms cubic-bezier(0.22, 0.72, 0, 1);
+          will-change: transform;
+        }
+
+        [data-bp-play]:active [data-bp-play-disc] {
+          transform: translateZ(0) scale(0.965);
+        }
+
+        [data-bp-play-icon] {
           display: block;
-          width: 32px;
-          height: 32px;
+          width: 31px;
+          height: 31px;
           overflow: visible;
         }
 
         [data-bp-media-error] {
-          margin: 13px 0 0;
-          color: #b3b3b3;
+          margin: 12px 0 0;
+          color: #9a9a9a;
           font-size: 9.5px;
           line-height: 1.5;
           text-align: center;
         }
 
-        [data-bp-media-error]
-          code {
+        [data-bp-media-error] code {
           color: #fff;
-          font-family:
-            var(--font-geist-mono);
+          font-family: var(--font-geist-mono);
         }
 
-        @media (
-          hover: hover
-        ) and (
-          pointer: fine
-        ) {
-          [data-bp-tp]:hover:not(
-            [data-active="true"]
-          ) {
+        [data-bp-best-action]:focus-visible {
+          outline: none;
+        }
+
+        [data-bp-best-action]:focus-visible [data-bp-best-chip] {
+          outline: 2px solid #fff;
+          outline-offset: 2px;
+        }
+
+        [data-bp-save]:focus-visible,
+        [data-bp-play]:focus-visible,
+        [data-bp-tp]:focus-visible {
+          outline: 2px solid #fff;
+          outline-offset: 2px;
+        }
+
+        @media (hover: hover) and (pointer: fine) {
+          [data-bp-save]:hover {
             color: #fff;
           }
 
-          [data-bp-play]:hover {
-            transform: scale(1.02);
+          [data-bp-tp]:hover:not([data-active="true"]) {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.045);
+          }
+
+          [data-bp-play]:hover [data-bp-play-disc] {
+            transform: translateZ(0) scale(1.025);
+          }
+
+          [data-bp-play]:hover:active [data-bp-play-disc] {
+            transform: translateZ(0) scale(0.975);
           }
         }
 
-        @media (
-          max-width: 520px
-        ) {
+        @media (max-width: 520px) {
           [data-bp-player] {
             border-radius: 16px;
           }
@@ -1722,51 +1676,54 @@ export function BestPartPlayer() {
           [data-bp-body] {
             padding-inline: 16px;
           }
+
+          [data-bp-transport] {
+            grid-template-columns: 42px 42px 68px 42px 42px;
+          }
+
+          [data-bp-play] {
+            width: 68px;
+            height: 68px;
+          }
+
+          [data-bp-play-disc] {
+            width: 62px;
+            height: 62px;
+          }
         }
 
-        @media (
-          prefers-reduced-motion:
-            reduce
-        ) {
+        @media (prefers-reduced-motion: reduce) {
           [data-bp-best-action],
-          [data-bp-tp] {
-            transition:
-              color 150ms ease,
-              opacity 120ms ease,
-              background-color 150ms ease;
-          }
-
-          [data-bp-tp-dot] {
-            transition: opacity 120ms ease;
+          [data-bp-best-chip],
+          [data-bp-best-time],
+          [data-bp-best-range],
+          [data-bp-knob],
+          [data-bp-tp],
+          [data-bp-tp-dot],
+          [data-bp-repeat-one],
+          [data-bp-play-disc] {
+            transition-duration: 0.01ms;
           }
         }
 
-        @media (
-          forced-colors:
-            active
-        ) {
+        @media (forced-colors: active) {
           [data-bp-player] {
-            border:
-              1px solid
-              ButtonText;
+            border: 1px solid ButtonText;
           }
 
           [data-bp-track-base] {
-            background:
-              GrayText;
+            background: GrayText;
           }
 
           [data-bp-track-played],
           [data-bp-knob],
           [data-bp-best-range] {
-            background:
-              Highlight;
+            background: Highlight;
           }
 
-          [data-bp-play] {
-            border:
-              1px solid
-              ButtonText;
+          [data-bp-best-action],
+          [data-bp-play-disc] {
+            border: 1px solid ButtonText;
           }
         }
       `}</style>
