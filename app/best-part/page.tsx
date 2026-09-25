@@ -1,3 +1,5 @@
+"use client";
+
 import { BestPartPlayer } from "./best-part-player";
 
 export default function BestPartPrototype() {
@@ -23,8 +25,7 @@ export default function BestPartPrototype() {
           background: #ddddda;
         }
 
-        button,
-        input {
+        button {
           font: inherit;
         }
 
@@ -33,12 +34,13 @@ export default function BestPartPrototype() {
           display: grid;
           place-items: center;
           padding: 36px 20px;
-          background: radial-gradient(
-            90% 68% at 50% 35%,
-            #eeeeeb 0%,
-            #dfdfdc 58%,
-            #d4d4d0 100%
-          );
+          background:
+            radial-gradient(
+              90% 68% at 50% 35%,
+              #eeeeeb 0%,
+              #dfdfdc 58%,
+              #d4d4d0 100%
+            );
           font-family:
             var(--font-geist-sans),
             -apple-system,
@@ -57,13 +59,12 @@ export default function BestPartPrototype() {
           padding: 0;
           margin: -1px;
           overflow: hidden;
-          clip: rect(0 0 0 0);
-          clip-path: inset(50%);
+          clip: rect(0, 0, 0, 0);
           white-space: nowrap;
           border: 0;
         }
 
-        @media (max-width: 32.5rem) {
+        @media (max-width: 520px) {
           [data-bp-page] {
             padding-inline: 16px;
           }
