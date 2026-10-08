@@ -57,6 +57,22 @@ const websites = [
 
 const prototypes = [
   {
+    slug: "spotify-two-streams",
+    href: "/two-streams",
+    title: "Spotify Two Streams",
+    description:
+      "A Spotify concept that holds your album when you start a podcast, with a stacked mini player and crossfaded audio that resumes on the exact second you left.",
+    disciplines: ["Product UI", "Motion", "Audio"],
+  },
+  {
+    slug: "spotify-best-part",
+    href: "/best-part",
+    title: "Spotify Best Part",
+    description:
+      "A Spotify concept that marks a song's best part on the scrubber, with a one-tap jump that dips the volume so the skip doesn't sound like a cut.",
+    disciplines: ["Interaction", "Motion", "Audio"],
+  },
+  {
     slug: "unified-connection",
     title: "Unified Connection",
     description:
@@ -526,7 +542,7 @@ function LabProject({ prototype, index }: LabProjectProps) {
             </span>
 
             <Link
-              href={`/${prototype.slug}`}
+              href={prototype.href ?? `/${prototype.slug}`}
               className="rounded-sm text-[15px] font-medium tracking-[-0.025em] text-[#111] transition-opacity hover:opacity-55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-3 focus-visible:ring-offset-[#f4f4f1]"
             >
               {prototype.title}
