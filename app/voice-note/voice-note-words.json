@@ -1,0 +1,944 @@
+{
+  "src": "/whatsapp/voice-note.mp3",
+  "duration": 60.476,
+  "voice": "Samantha",
+  "peaks": [
+    0.527,
+    0.38,
+    0.942,
+    0.788,
+    0.539,
+    0.687,
+    0.116,
+    0.596,
+    0.392,
+    1.0,
+    0.381,
+    0.839,
+    0.106,
+    0.706,
+    0.241,
+    0.667,
+    0.637,
+    0.86,
+    0.456,
+    0.498,
+    0.878,
+    0.356,
+    0.598,
+    0.301,
+    0.557,
+    0.283,
+    0.152,
+    0.546,
+    0.33,
+    0.503,
+    0.592,
+    0.534,
+    0.7,
+    0.08,
+    0.672,
+    0.513,
+    0.882,
+    0.782,
+    0.499,
+    0.206
+  ],
+  "short": {
+    "src": "/whatsapp/voice-note-short.mp3",
+    "duration": 5.338,
+    "peaks": [
+      0.08,
+      0.615,
+      0.646,
+      0.405,
+      0.082,
+      0.573,
+      0.708,
+      0.855,
+      0.677,
+      0.764,
+      0.912,
+      0.739,
+      1.0,
+      0.769,
+      0.701,
+      0.754,
+      0.805,
+      0.182,
+      0.08,
+      0.111,
+      0.893,
+      0.83,
+      0.785,
+      0.574,
+      0.758,
+      0.204,
+      0.906,
+      0.735,
+      0.286,
+      0.08,
+      0.833,
+      0.64,
+      0.806,
+      0.478,
+      0.771,
+      0.505,
+      0.082,
+      0.082,
+      0.08,
+      0.08
+    ]
+  },
+  "words": [
+    {
+      "text": "Okay.",
+      "start": 0.18,
+      "end": 0.64,
+      "confidence": 0.93
+    },
+    {
+      "text": "So.",
+      "start": 1.0,
+      "end": 1.54,
+      "confidence": 0.9
+    },
+    {
+      "text": "First",
+      "start": 1.962,
+      "end": 2.242,
+      "confidence": 0.89
+    },
+    {
+      "text": "of",
+      "start": 2.242,
+      "end": 2.402,
+      "confidence": 0.98
+    },
+    {
+      "text": "all,",
+      "start": 2.402,
+      "end": 2.742,
+      "confidence": 0.87
+    },
+    {
+      "text": "it's",
+      "start": 3.022,
+      "end": 3.202,
+      "confidence": 0.87
+    },
+    {
+      "text": "114.",
+      "start": 3.202,
+      "end": 3.922,
+      "confidence": 0.87
+    },
+    {
+      "text": "Not",
+      "start": 4.789,
+      "end": 4.989,
+      "confidence": 0.95
+    },
+    {
+      "text": "115.",
+      "start": 4.989,
+      "end": 5.489,
+      "confidence": 0.96
+    },
+    {
+      "text": "So",
+      "start": 6.584,
+      "end": 6.824,
+      "confidence": 0.9
+    },
+    {
+      "text": "technically,",
+      "start": 6.824,
+      "end": 7.304,
+      "confidence": 0.9
+    },
+    {
+      "text": "we",
+      "start": 7.764,
+      "end": 7.864,
+      "confidence": 0.9
+    },
+    {
+      "text": "won",
+      "start": 7.864,
+      "end": 8.084,
+      "confidence": 0.91
+    },
+    {
+      "text": "one.",
+      "start": 8.084,
+      "end": 8.364,
+      "confidence": 0.93
+    },
+    {
+      "text": "Let's",
+      "start": 8.833,
+      "end": 9.173,
+      "confidence": 0.9
+    },
+    {
+      "text": "start",
+      "start": 9.173,
+      "end": 9.393,
+      "confidence": 0.9
+    },
+    {
+      "text": "there.",
+      "start": 9.393,
+      "end": 9.693,
+      "confidence": 0.91
+    },
+    {
+      "text": "We",
+      "start": 11.065,
+      "end": 11.185,
+      "confidence": 0.95
+    },
+    {
+      "text": "are",
+      "start": 11.185,
+      "end": 11.365,
+      "confidence": 0.96
+    },
+    {
+      "text": "top",
+      "start": 11.365,
+      "end": 11.585,
+      "confidence": 0.96
+    },
+    {
+      "text": "of",
+      "start": 11.585,
+      "end": 11.765,
+      "confidence": 0.95
+    },
+    {
+      "text": "the",
+      "start": 11.765,
+      "end": 11.885,
+      "confidence": 0.96
+    },
+    {
+      "text": "league.",
+      "start": 11.885,
+      "end": 12.105,
+      "confidence": 0.89
+    },
+    {
+      "text": "Top",
+      "start": 12.531,
+      "end": 12.751,
+      "confidence": 0.93
+    },
+    {
+      "text": "of",
+      "start": 12.751,
+      "end": 12.911,
+      "confidence": 0.91
+    },
+    {
+      "text": "the",
+      "start": 12.911,
+      "end": 13.011,
+      "confidence": 0.93
+    },
+    {
+      "text": "league,",
+      "start": 13.011,
+      "end": 13.311,
+      "confidence": 0.98
+    },
+    {
+      "text": "and",
+      "start": 13.551,
+      "end": 13.711,
+      "confidence": 0.93
+    },
+    {
+      "text": "guilty",
+      "start": 13.711,
+      "end": 13.971,
+      "confidence": 0.96
+    },
+    {
+      "text": "of",
+      "start": 13.971,
+      "end": 14.211,
+      "confidence": 0.91
+    },
+    {
+      "text": "114",
+      "start": 14.211,
+      "end": 14.911,
+      "confidence": 0.93
+    },
+    {
+      "text": "charges.",
+      "start": 14.911,
+      "end": 15.511,
+      "confidence": 0.86
+    },
+    {
+      "text": "That",
+      "start": 16.306,
+      "end": 16.446,
+      "confidence": 0.9
+    },
+    {
+      "text": "is",
+      "start": 16.446,
+      "end": 16.586,
+      "confidence": 0.87
+    },
+    {
+      "text": "the",
+      "start": 16.586,
+      "end": 16.746,
+      "confidence": 0.89
+    },
+    {
+      "text": "most",
+      "start": 16.746,
+      "end": 16.986,
+      "confidence": 0.9
+    },
+    {
+      "text": "City",
+      "start": 16.986,
+      "end": 17.306,
+      "confidence": 0.9
+    },
+    {
+      "text": "sentence",
+      "start": 17.306,
+      "end": 17.766,
+      "confidence": 0.95
+    },
+    {
+      "text": "ever",
+      "start": 17.766,
+      "end": 18.086,
+      "confidence": 0.9
+    },
+    {
+      "text": "written.",
+      "start": 18.086,
+      "end": 18.486,
+      "confidence": 0.95
+    },
+    {
+      "text": "They're",
+      "start": 19.903,
+      "end": 20.103,
+      "confidence": 0.9
+    },
+    {
+      "text": "saying",
+      "start": 20.103,
+      "end": 20.363,
+      "confidence": 0.89
+    },
+    {
+      "text": "they",
+      "start": 20.363,
+      "end": 20.583,
+      "confidence": 0.86
+    },
+    {
+      "text": "might",
+      "start": 20.583,
+      "end": 20.803,
+      "confidence": 0.87
+    },
+    {
+      "text": "strip",
+      "start": 20.803,
+      "end": 21.103,
+      "confidence": 0.87
+    },
+    {
+      "text": "the",
+      "start": 21.103,
+      "end": 21.303,
+      "confidence": 0.98
+    },
+    {
+      "text": "titles.",
+      "start": 21.303,
+      "end": 21.583,
+      "confidence": 0.9
+    },
+    {
+      "text": "Strip",
+      "start": 22.208,
+      "end": 22.508,
+      "confidence": 0.96
+    },
+    {
+      "text": "them",
+      "start": 22.508,
+      "end": 22.748,
+      "confidence": 0.95
+    },
+    {
+      "text": "from",
+      "start": 22.748,
+      "end": 22.948,
+      "confidence": 0.95
+    },
+    {
+      "text": "who?",
+      "start": 22.948,
+      "end": 23.188,
+      "confidence": 0.95
+    },
+    {
+      "text": "I",
+      "start": 23.727,
+      "end": 23.887,
+      "confidence": 0.87
+    },
+    {
+      "text": "watched",
+      "start": 23.887,
+      "end": 24.107,
+      "confidence": 0.95
+    },
+    {
+      "text": "them.",
+      "start": 24.107,
+      "end": 24.527,
+      "confidence": 0.93
+    },
+    {
+      "text": "They're",
+      "start": 24.787,
+      "end": 25.027,
+      "confidence": 0.95
+    },
+    {
+      "text": "in",
+      "start": 25.027,
+      "end": 25.107,
+      "confidence": 0.89
+    },
+    {
+      "text": "my",
+      "start": 25.107,
+      "end": 25.287,
+      "confidence": 0.89
+    },
+    {
+      "text": "head.",
+      "start": 25.287,
+      "end": 25.547,
+      "confidence": 0.93
+    },
+    {
+      "text": "You",
+      "start": 25.96,
+      "end": 26.12,
+      "confidence": 0.86
+    },
+    {
+      "text": "can't",
+      "start": 26.12,
+      "end": 26.44,
+      "confidence": 0.89
+    },
+    {
+      "text": "relegate",
+      "start": 26.44,
+      "end": 27.0,
+      "confidence": 0.93
+    },
+    {
+      "text": "a",
+      "start": 27.0,
+      "end": 27.12,
+      "confidence": 0.96
+    },
+    {
+      "text": "memory.",
+      "start": 27.12,
+      "end": 27.38,
+      "confidence": 0.91
+    },
+    {
+      "text": "Anyway,",
+      "start": 28.243,
+      "end": 28.663,
+      "confidence": 0.87
+    },
+    {
+      "text": "the",
+      "start": 29.003,
+      "end": 29.103,
+      "confidence": 0.95
+    },
+    {
+      "text": "lawyers",
+      "start": 29.103,
+      "end": 29.383,
+      "confidence": 0.87
+    },
+    {
+      "text": "are",
+      "start": 29.383,
+      "end": 29.603,
+      "confidence": 0.95
+    },
+    {
+      "text": "on",
+      "start": 29.603,
+      "end": 29.783,
+      "confidence": 0.94
+    },
+    {
+      "text": "it.",
+      "start": 29.783,
+      "end": 30.003,
+      "confidence": 0.95
+    },
+    {
+      "text": "We've",
+      "start": 30.263,
+      "end": 30.443,
+      "confidence": 0.98
+    },
+    {
+      "text": "got",
+      "start": 30.443,
+      "end": 30.623,
+      "confidence": 0.95
+    },
+    {
+      "text": "more",
+      "start": 30.623,
+      "end": 30.863,
+      "confidence": 0.96
+    },
+    {
+      "text": "lawyers",
+      "start": 30.863,
+      "end": 31.183,
+      "confidence": 0.87
+    },
+    {
+      "text": "than",
+      "start": 31.183,
+      "end": 31.463,
+      "confidence": 0.96
+    },
+    {
+      "text": "centre-backs",
+      "start": 31.463,
+      "end": 32.103,
+      "confidence": 0.94
+    },
+    {
+      "text": "at",
+      "start": 32.103,
+      "end": 32.343,
+      "confidence": 0.94
+    },
+    {
+      "text": "this",
+      "start": 32.343,
+      "end": 32.523,
+      "confidence": 0.96
+    },
+    {
+      "text": "point.",
+      "start": 32.523,
+      "end": 32.803,
+      "confidence": 0.86
+    },
+    {
+      "text": "Mascara",
+      "start": 33.452,
+      "end": 33.912,
+      "confidence": 0.3,
+      "alternative": "Maresca"
+    },
+    {
+      "text": "says",
+      "start": 33.912,
+      "end": 34.112,
+      "confidence": 0.93
+    },
+    {
+      "text": "we",
+      "start": 34.112,
+      "end": 34.352,
+      "confidence": 0.9
+    },
+    {
+      "text": "keep",
+      "start": 34.352,
+      "end": 34.572,
+      "confidence": 0.93
+    },
+    {
+      "text": "our",
+      "start": 34.572,
+      "end": 34.772,
+      "confidence": 0.91
+    },
+    {
+      "text": "heads",
+      "start": 34.772,
+      "end": 34.992,
+      "confidence": 0.94
+    },
+    {
+      "text": "down.",
+      "start": 34.992,
+      "end": 35.372,
+      "confidence": 0.94
+    },
+    {
+      "text": "Which,",
+      "start": 35.672,
+      "end": 35.972,
+      "confidence": 0.95
+    },
+    {
+      "text": "to",
+      "start": 36.312,
+      "end": 36.412,
+      "confidence": 0.9
+    },
+    {
+      "text": "be",
+      "start": 36.412,
+      "end": 36.572,
+      "confidence": 0.9
+    },
+    {
+      "text": "fair,",
+      "start": 36.572,
+      "end": 36.872,
+      "confidence": 0.94
+    },
+    {
+      "text": "is",
+      "start": 37.112,
+      "end": 37.252,
+      "confidence": 0.9
+    },
+    {
+      "text": "also",
+      "start": 37.252,
+      "end": 37.592,
+      "confidence": 0.93
+    },
+    {
+      "text": "the",
+      "start": 37.592,
+      "end": 37.772,
+      "confidence": 0.91
+    },
+    {
+      "text": "legal",
+      "start": 37.772,
+      "end": 38.052,
+      "confidence": 0.94
+    },
+    {
+      "text": "advice.",
+      "start": 38.052,
+      "end": 38.452,
+      "confidence": 0.96
+    },
+    {
+      "text": "Sunday.",
+      "start": 39.922,
+      "end": 40.402,
+      "confidence": 0.93
+    },
+    {
+      "text": "Yes,",
+      "start": 40.762,
+      "end": 41.162,
+      "confidence": 0.89
+    },
+    {
+      "text": "still",
+      "start": 41.722,
+      "end": 41.772,
+      "confidence": 0.9
+    },
+    {
+      "text": "at",
+      "start": 41.762,
+      "end": 41.942,
+      "confidence": 0.86
+    },
+    {
+      "text": "mine.",
+      "start": 41.942,
+      "end": 42.282,
+      "confidence": 0.9
+    },
+    {
+      "text": "Kick-off",
+      "start": 42.783,
+      "end": 43.083,
+      "confidence": 0.9
+    },
+    {
+      "text": "is",
+      "start": 43.083,
+      "end": 43.423,
+      "confidence": 0.95
+    },
+    {
+      "text": "half",
+      "start": 43.423,
+      "end": 43.703,
+      "confidence": 0.98
+    },
+    {
+      "text": "four,",
+      "start": 43.703,
+      "end": 44.103,
+      "confidence": 0.86
+    },
+    {
+      "text": "so",
+      "start": 44.483,
+      "end": 44.623,
+      "confidence": 0.95
+    },
+    {
+      "text": "come",
+      "start": 44.623,
+      "end": 44.903,
+      "confidence": 0.98
+    },
+    {
+      "text": "at",
+      "start": 44.903,
+      "end": 45.063,
+      "confidence": 0.95
+    },
+    {
+      "text": "four.",
+      "start": 45.063,
+      "end": 45.363,
+      "confidence": 0.86
+    },
+    {
+      "text": "Bring",
+      "start": 45.867,
+      "end": 46.047,
+      "confidence": 0.95
+    },
+    {
+      "text": "the",
+      "start": 46.047,
+      "end": 46.207,
+      "confidence": 0.93
+    },
+    {
+      "text": "soya.",
+      "start": 46.207,
+      "end": 46.727,
+      "confidence": 0.3,
+      "alternative": "suya"
+    },
+    {
+      "text": "The",
+      "start": 46.947,
+      "end": 47.107,
+      "confidence": 0.93
+    },
+    {
+      "text": "proper",
+      "start": 47.107,
+      "end": 47.387,
+      "confidence": 0.96
+    },
+    {
+      "text": "one,",
+      "start": 47.387,
+      "end": 47.787,
+      "confidence": 0.94
+    },
+    {
+      "text": "not",
+      "start": 48.107,
+      "end": 48.287,
+      "confidence": 0.93
+    },
+    {
+      "text": "the",
+      "start": 48.287,
+      "end": 48.467,
+      "confidence": 0.93
+    },
+    {
+      "text": "petrol",
+      "start": 48.467,
+      "end": 48.807,
+      "confidence": 0.96
+    },
+    {
+      "text": "station",
+      "start": 48.807,
+      "end": 49.167,
+      "confidence": 0.98
+    },
+    {
+      "text": "one.",
+      "start": 49.167,
+      "end": 49.647,
+      "confidence": 0.94
+    },
+    {
+      "text": "And",
+      "start": 50.996,
+      "end": 51.136,
+      "confidence": 0.89
+    },
+    {
+      "text": "if",
+      "start": 51.136,
+      "end": 51.276,
+      "confidence": 0.87
+    },
+    {
+      "text": "Holland",
+      "start": 51.276,
+      "end": 51.716,
+      "confidence": 0.3,
+      "alternative": "Haaland"
+    },
+    {
+      "text": "scores",
+      "start": 51.716,
+      "end": 51.996,
+      "confidence": 0.93
+    },
+    {
+      "text": "at",
+      "start": 51.996,
+      "end": 52.216,
+      "confidence": 0.87
+    },
+    {
+      "text": "Anfield,",
+      "start": 52.216,
+      "end": 52.636,
+      "confidence": 0.95
+    },
+    {
+      "text": "celebrate",
+      "start": 53.096,
+      "end": 53.536,
+      "confidence": 0.96
+    },
+    {
+      "text": "quietly.",
+      "start": 53.536,
+      "end": 53.976,
+      "confidence": 0.95
+    },
+    {
+      "text": "My",
+      "start": 54.622,
+      "end": 54.782,
+      "confidence": 0.96
+    },
+    {
+      "text": "neighbour",
+      "start": 54.782,
+      "end": 55.022,
+      "confidence": 0.93
+    },
+    {
+      "text": "is",
+      "start": 55.022,
+      "end": 55.282,
+      "confidence": 0.96
+    },
+    {
+      "text": "a",
+      "start": 55.282,
+      "end": 55.422,
+      "confidence": 0.95
+    },
+    {
+      "text": "Liverpool",
+      "start": 55.422,
+      "end": 55.742,
+      "confidence": 0.93
+    },
+    {
+      "text": "fan,",
+      "start": 55.742,
+      "end": 56.222,
+      "confidence": 0.86
+    },
+    {
+      "text": "and",
+      "start": 56.522,
+      "end": 56.662,
+      "confidence": 0.98
+    },
+    {
+      "text": "he",
+      "start": 56.662,
+      "end": 56.802,
+      "confidence": 0.96
+    },
+    {
+      "text": "has",
+      "start": 56.802,
+      "end": 56.982,
+      "confidence": 0.98
+    },
+    {
+      "text": "been",
+      "start": 56.982,
+      "end": 57.182,
+      "confidence": 0.86
+    },
+    {
+      "text": "unbearable",
+      "start": 57.182,
+      "end": 57.602,
+      "confidence": 0.94
+    },
+    {
+      "text": "all",
+      "start": 57.602,
+      "end": 57.942,
+      "confidence": 0.98
+    },
+    {
+      "text": "week.",
+      "start": 57.942,
+      "end": 58.202,
+      "confidence": 0.87
+    },
+    {
+      "text": "Okay,",
+      "start": 58.86,
+      "end": 59.32,
+      "confidence": 0.96
+    },
+    {
+      "text": "bye.",
+      "start": 59.64,
+      "end": 59.9,
+      "confidence": 0.95
+    }
+  ]
+}
