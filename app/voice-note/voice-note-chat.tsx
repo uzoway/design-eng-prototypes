@@ -99,6 +99,8 @@ type Engine = {
   resync: () => void;
   anchor: () => void;
   yieldToOther: () => void;
+  makeRoomForRecording: () => void;
+  arrive: () => void;
 };
 
 const SRC = note.src;
@@ -175,6 +177,8 @@ const PAD_Y = 1;
 const INTRO_RECORDING_AT = 700;
 const INTRO_ARRIVES_AT = 3400;
 const TRANSCRIBING_MS = 900;
+/** The recording bubble plus the gap below it. */
+const RECORDING_SLOT = 44;
 
 const GREEN = "#00a85a";
 
@@ -807,7 +811,9 @@ export function VoiceNoteChat() {
   const userCollapsedRef = useRef(false);
   const anchorModeRef = useRef<"top" | "bottom">("top");
   const collapseGapRef = useRef(0);
-  const arrivalRef = useRef<HTMLDivElement>(null);
+  const incomingRef = useRef<HTMLDivElement>(null);
+  const voiceMessageRef = useRef<HTMLDivElement>(null);
+  const incomingGlideRef = useRef<AnimationPlaybackControls | null>(null);
   const checkRef = useRef<Check | null>(null);
 
   const indexRef = useRef(-1);
@@ -844,7 +850,10 @@ export function VoiceNoteChat() {
   const [played, setPlayed] = useState(false);
   const [speedIndex, setSpeedIndex] = useState(0);
   const [expanded, setExpanded] = useState(false);
-  const [measured, setMeasured] = useState(false);
+  /** Only Read more and Show less animate the clip; re-measures snap. */
+  const [clipMotion, setClipMotion] = useState<"animate" | "instant">(
+    "instant",
+  );
   const [check, setCheckState] = useState<Check | null>(null);
   const [layout, setLayout] = useState({
     collapsed: PREVIEW_LINES * 21,
@@ -859,6 +868,7 @@ export function VoiceNoteChat() {
   const [runId, setRunId] = useState(0);
 
   const time = useMotionValue(0);
+  const incomingHeight = useMotionValue<number | string>(0);
   /** How far through a dotted word's stretch we are: drives the replay ring. */
   const stretchProgress = useMotionValue(0);
   const progress = useMotionValue(0);
@@ -1630,6 +1640,7 @@ export function VoiceNoteChat() {
 
     expandedRef.current = true;
     anchorModeRef.current = "top";
+    setClipMotion("animate");
     anchorUntilRef.current = performance.now() + OPEN.duration * 1000 + 160;
     setExpanded(true);
   }
@@ -1656,6 +1667,7 @@ export function VoiceNoteChat() {
     expandedRef.current = false;
     userCollapsedRef.current = true;
     anchorModeRef.current = "bottom";
+    setClipMotion("animate");
     anchorUntilRef.current = performance.now() + OPEN.duration * 1000 + 160;
     setExpanded(false);
     announce("Transcript collapsed.");
@@ -2007,6 +2019,29 @@ export function VoiceNoteChat() {
 
   /* Prototype controls -------------------------------------------------- */
 
+  /**
+   * Animate the incoming slot from wherever it is now to `target` pixels.
+   * Called at the top of a frame: started mid-commit, Motion dates the start
+   * back to the previous frame and the first painted frame jumps ahead.
+   */
+  function growIncoming(target: number) {
+    const slot = incomingRef.current;
+
+    incomingGlideRef.current?.stop();
+    slot?.removeAttribute("data-settled");
+    incomingHeight.set(slot ? slot.getBoundingClientRect().height : 0);
+
+    const controls = animate(
+      incomingHeight,
+      target,
+      reducedRef.current ? { duration: 0 } : OPEN,
+    );
+
+    incomingGlideRef.current = controls;
+
+    return controls;
+  }
+
   /** Back: leave the chat and come straight back in, so the scene replays. */
   function replayChat() {
     const scroller = scrollRef.current;
@@ -2054,7 +2089,6 @@ export function VoiceNoteChat() {
     speedRef.current = SPEEDS[0];
     expandedRef.current = false;
     userCollapsedRef.current = false;
-    transcriptLiveRef.current = false;
     setCheck(null);
     clearStates();
     setFocusIndex(null, false);
@@ -2073,6 +2107,10 @@ export function VoiceNoteChat() {
     setRecording(false);
     setTranscribing(true);
     setHint(0);
+    incomingGlideRef.current?.stop();
+    incomingGlideRef.current = null;
+    incomingHeight.set(0);
+    incomingRef.current?.removeAttribute("data-settled");
     setRunId(function next(current) {
       return current + 1;
     });
@@ -2230,10 +2268,9 @@ export function VoiceNoteChat() {
           next.fold !== layoutRef.current.fold
         ) {
           layoutRef.current = next;
+          setClipMotion("instant");
           setLayout(next);
         }
-
-        setMeasured(true);
 
         // The card is placed from the old layout; reopen it on the new one.
         const open = checkRef.current;
@@ -2271,6 +2308,47 @@ export function VoiceNoteChat() {
         if (Math.abs(index - indexRef.current) > 1) {
           setIndex(index, "snap");
         }
+      },
+
+      makeRoomForRecording() {
+        requestAnimationFrame(function growForRecording() {
+          growIncoming(RECORDING_SLOT);
+        });
+      },
+
+      // The voice note's final height is known before it paints: its height
+      // now, with the clip swapped for the measured preview height. So the
+      // slot animates once, to the right place, and never corrects at the end.
+      arrive() {
+        const message = voiceMessageRef.current;
+        const clip = transcriptRef.current?.parentElement;
+
+        if (!message || !clip) {
+          return;
+        }
+
+        const target =
+          message.offsetHeight -
+          clip.offsetHeight +
+          layoutRef.current.collapsed;
+
+        anchorUntilRef.current = performance.now() + OPEN.duration * 1000 + 200;
+
+        requestAnimationFrame(function growForVoiceNote() {
+          const controls = growIncoming(target);
+
+          void controls.then(function settle() {
+            if (incomingGlideRef.current !== controls) {
+              return;
+            }
+
+            // From here the voice note sizes itself (Read more, Show less),
+            // and the check card may reach past the bubble's edge.
+            incomingGlideRef.current = null;
+            incomingHeight.set("auto");
+            incomingRef.current?.setAttribute("data-settled", "true");
+          });
+        });
       },
 
       yieldToOther() {
@@ -2332,7 +2410,6 @@ export function VoiceNoteChat() {
         setTimeout(function deliver() {
           setRecording(false);
           setArrived(true);
-          anchorUntilRef.current = performance.now() + 600;
         }, INTRO_ARRIVES_AT),
         setTimeout(
           function transcribed() {
@@ -2347,6 +2424,15 @@ export function VoiceNoteChat() {
       };
     },
     [runId],
+  );
+
+  useEffect(
+    function makeRoomForRecording() {
+      if (recording) {
+        engineRef.current?.makeRoomForRecording();
+      }
+    },
+    [recording],
   );
 
   useEffect(function bindAudio() {
@@ -2456,41 +2542,40 @@ export function VoiceNoteChat() {
     [playing],
   );
 
-  // Measure every word once the transcript exists, and again whenever its
-  // width or the font changes.
-  useLayoutEffect(
-    function observeTranscript() {
-      const transcript = transcriptRef.current;
+  // Measure every word up front, and again whenever the width or font changes.
+  useLayoutEffect(function observeTranscript() {
+    const transcript = transcriptRef.current;
 
-      transcriptLiveRef.current = transcript !== null;
+    if (transcript === null) {
+      return;
+    }
 
-      if (transcript === null) {
-        engineRef.current?.measure();
-        return;
-      }
+    transcriptLiveRef.current = true;
+    engineRef.current?.measure();
 
-      transcript.dataset.mode = modeRef.current === "live" ? "live" : "rest";
-
-      // Measure before the first paint, so the arrival animates to the real
-      // preview height instead of correcting itself by a few pixels at the end.
+    let cancelled = false;
+    const observer = new ResizeObserver(function remeasure() {
       engineRef.current?.measure();
+    });
 
-      let cancelled = false;
-      const observer = new ResizeObserver(function remeasure() {
+    observer.observe(transcript);
+    void document.fonts?.ready.then(function afterFonts() {
+      if (!cancelled) {
         engineRef.current?.measure();
-      });
+      }
+    });
 
-      observer.observe(transcript);
-      void document.fonts?.ready.then(function afterFonts() {
-        if (!cancelled) {
-          engineRef.current?.measure();
-        }
-      });
+    return function cleanup() {
+      cancelled = true;
+      observer.disconnect();
+    };
+  }, []);
 
-      return function cleanup() {
-        cancelled = true;
-        observer.disconnect();
-      };
+  useLayoutEffect(
+    function deliverVoiceNote() {
+      if (arrived) {
+        engineRef.current?.arrive();
+      }
     },
     [arrived],
   );
@@ -2621,22 +2706,28 @@ export function VoiceNoteChat() {
                   </div>
                 </div>
 
-                <AnimatePresence initial={false}>
-                  {recording && (
-                    <motion.div
-                      key={`recording-${runId}`}
-                      data-vn-arrival
-                      initial={{ height: 0 }}
-                      animate={{ height: "auto" }}
-                      exit={{ height: 0 }}
-                      transition={OPEN}
-                    >
+                {/* One slot for what Uzo is sending. It grows to fit the
+                    recording bubble, then straight on to the voice note, so the
+                    chat makes a single smooth move instead of several at once. */}
+                <motion.div
+                  ref={incomingRef}
+                  data-vn-incoming
+                  style={{ height: incomingHeight }}
+                >
+                  <AnimatePresence initial={false}>
+                    {recording && (
                       <motion.div
+                        key={`recording-${runId}`}
                         data-vn-msg
                         data-side="in"
+                        data-vn-incoming-recording
                         initial={{ opacity: 0, scale: 0.4, rotate: -14 }}
                         animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                        exit={{ opacity: 0, scale: 0.6, rotate: -8 }}
+                        exit={{
+                          opacity: 0,
+                          scale: 0.9,
+                          transition: { duration: 0.16, ease: EASE },
+                        }}
                         transition={{
                           type: "spring",
                           duration: 0.45,
@@ -2646,331 +2737,281 @@ export function VoiceNoteChat() {
                       >
                         <RecordingBubble />
                       </motion.div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                    )}
+                  </AnimatePresence>
 
-                <AnimatePresence initial={false}>
-                  {arrived && (
-                    <motion.div
-                      key={runId}
-                      ref={arrivalRef}
-                      data-vn-arrival
-                      initial={{ height: 0 }}
-                      animate={{ height: "auto" }}
-                      transition={OPEN}
-                      onAnimationComplete={function settleArrival() {
-                        // Clipping is only for the entrance; after it, the
-                        // check card may reach past the bubble's edge.
-                        arrivalRef.current?.setAttribute(
-                          "data-settled",
-                          "true",
-                        );
-                      }}
+                  {/* Built once, at load, hidden in the closed slot. Creating its
+                      141 words at the moment it arrives would block the main
+                      thread right as the slot starts to grow, and the
+                      animation would skip frames. */}
+                  <motion.div
+                    ref={voiceMessageRef}
+                    data-vn-msg
+                    data-side="in"
+                    inert={!arrived}
+                    aria-hidden={!arrived}
+                    initial={false}
+                    animate={{ opacity: arrived ? 1 : 0, y: arrived ? 0 : 8 }}
+                    transition={
+                      arrived ? { ...OPEN, delay: 0.04 } : { duration: 0 }
+                    }
+                  >
+                    <div
+                      data-vn-bubble
+                      data-kind="voice"
+                      ref={bubbleRef}
+                      role="group"
+                      aria-label={`Voice message from Uzo, ${spokenTime(DURATION)}`}
                     >
-                      <motion.div
-                        data-vn-msg
-                        data-side="in"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ ...OPEN, delay: 0.06 }}
-                      >
-                        <div
-                          data-vn-bubble
-                          data-kind="voice"
-                          ref={bubbleRef}
-                          role="group"
-                          aria-label={`Voice message from Uzo, ${spokenTime(DURATION)}`}
+                      <div data-vn-player>
+                        <button
+                          type="button"
+                          data-vn-play
+                          data-vn-press
+                          aria-label={
+                            playing
+                              ? "Pause voice message"
+                              : "Play voice message"
+                          }
+                          onClick={togglePlayback}
+                          disabled={audioError}
                         >
-                          <div data-vn-player>
-                            <button
-                              type="button"
-                              data-vn-play
-                              data-vn-press
-                              aria-label={
-                                playing
-                                  ? "Pause voice message"
-                                  : "Play voice message"
-                              }
-                              onClick={togglePlayback}
-                              disabled={audioError}
-                            >
-                              <PlayGlyph state={glyph} />
-                            </button>
+                          <PlayGlyph state={glyph} />
+                        </button>
 
-                            <div
-                              ref={waveRef}
-                              data-vn-wave
-                              role="slider"
-                              tabIndex={0}
-                              aria-label="Voice message position"
-                              aria-valuemin={0}
-                              aria-valuemax={Math.round(DURATION)}
-                              aria-valuenow={0}
-                              aria-valuetext={`0:00 of ${TOTAL_LABEL}`}
-                              onPointerDown={handleWavePointerDown}
-                              onPointerMove={handleWavePointerMove}
-                              onPointerUp={finishScrub}
-                              onPointerCancel={finishScrub}
-                              onLostPointerCapture={finishScrub}
-                              onKeyDown={handleWaveKeyDown}
-                            >
-                              <Bars peaks={PEAKS} />
-                              <motion.span
-                                data-vn-played
-                                style={{ clipPath: playedClip }}
-                              >
-                                <Bars peaks={PEAKS} played />
-                              </motion.span>
-                              <motion.span
-                                data-vn-knob
-                                style={{
-                                  left: knobLeft,
-                                  backgroundColor: played ? BLUE : GREEN,
-                                }}
-                                aria-hidden="true"
-                              />
-                            </div>
-
-                            <div data-vn-side>
-                              <motion.span
-                                data-vn-sender
-                                initial={false}
-                                animate={{
-                                  opacity: showSpeed ? 0 : 1,
-                                  scale: showSpeed ? 0.86 : 1,
-                                }}
-                                transition={SWAP}
-                                aria-hidden="true"
-                              >
-                                <DefaultAvatar size="note" />
-                                <span
-                                  data-vn-badge
-                                  style={{ color: played ? BLUE : GREEN }}
-                                >
-                                  <MicBadgeGlyph />
-                                </span>
-                              </motion.span>
-                              <motion.button
-                                type="button"
-                                data-vn-speed
-                                data-vn-press
-                                initial={false}
-                                animate={{
-                                  opacity: showSpeed ? 1 : 0,
-                                  scale: showSpeed ? 1 : 0.86,
-                                }}
-                                transition={SWAP}
-                                tabIndex={showSpeed ? 0 : -1}
-                                aria-hidden={!showSpeed}
-                                aria-label={`Playback speed ${speed} times`}
-                                style={{
-                                  pointerEvents: showSpeed ? "auto" : "none",
-                                }}
-                                onClick={changeSpeed}
-                              >
-                                {speed}×
-                              </motion.button>
-                            </div>
-                          </div>
-
-                          <div data-vn-sub>
-                            <motion.span data-vn-duration>{label}</motion.span>
-                            {audioError ? (
-                              <span data-vn-error role="status">
-                                Audio couldn&apos;t load
-                              </span>
-                            ) : (
-                              <span data-vn-meta data-inline>
-                                10:42
-                              </span>
-                            )}
-                          </div>
-
-                          <div data-vn-transcript-area>
-                            <div data-vn-stack>
-                              <motion.div
-                                data-vn-clip
-                                initial={false}
-                                animate={{
-                                  height: expanded ? "auto" : layout.collapsed,
-                                }}
-                                // The first measured preview height snaps, so the bubble
-                                // never creeps by a few pixels on arrival.
-                                transition={measured ? OPEN : { duration: 0 }}
-                              >
-                                <motion.div
-                                  ref={transcriptRef}
-                                  data-vn-transcript
-                                  data-mode="rest"
-                                  role="group"
-                                  aria-label="Transcript"
-                                  aria-describedby="vn-transcript-help"
-                                  tabIndex={transcribing ? -1 : 0}
-                                  initial={false}
-                                  animate={{ opacity: transcribing ? 0 : 1 }}
-                                  transition={SWAP}
-                                  onPointerDown={handleTranscriptPointerDown}
-                                  onPointerMove={handleTranscriptPointerMove}
-                                  onClick={handleTranscriptClick}
-                                  onFocus={handleTranscriptFocus}
-                                  onKeyDown={handleTranscriptKeyDown}
-                                >
-                                  <motion.span
-                                    data-vn-hl
-                                    aria-hidden="true"
-                                    style={{
-                                      x: layerA.x,
-                                      y: layerA.y,
-                                      width: layerA.width,
-                                      height: layerA.height,
-                                      opacity: layerA.opacity,
-                                      scale: layerA.scale,
-                                    }}
-                                  />
-                                  <motion.span
-                                    data-vn-hl
-                                    aria-hidden="true"
-                                    style={{
-                                      x: layerB.x,
-                                      y: layerB.y,
-                                      width: layerB.width,
-                                      height: layerB.height,
-                                      opacity: layerB.opacity,
-                                      scale: layerB.scale,
-                                    }}
-                                  />
-                                  <TranscriptText
-                                    expanded={expanded}
-                                    fold={layout.fold}
-                                  />
-                                </motion.div>
-
-                                <motion.span
-                                  data-vn-fade
-                                  aria-hidden="true"
-                                  initial={false}
-                                  animate={{
-                                    opacity: expanded || transcribing ? 0 : 1,
-                                  }}
-                                  transition={{ duration: 0.2, ease: EASE }}
-                                  style={{ top: layout.collapsed - 16 }}
-                                />
-                              </motion.div>
-
-                              <AnimatePresence>
-                                {transcribing && (
-                                  <motion.div
-                                    data-vn-shimmer
-                                    aria-hidden="true"
-                                    initial={{ opacity: 1 }}
-                                    exit={{ opacity: 0 }}
-                                    transition={SWAP}
-                                  >
-                                    <i style={{ width: "100%" }} />
-                                    <i style={{ width: "93%" }} />
-                                    <i style={{ width: "58%" }} />
-                                  </motion.div>
-                                )}
-                              </AnimatePresence>
-
-                              <AnimatePresence>
-                                {check !== null && (
-                                  <CheckCard
-                                    key={check.index}
-                                    check={check}
-                                    progress={stretchProgress}
-                                    onReplay={replayCheck}
-                                    onPlayFrom={playFromCheck}
-                                    onKeyDown={handleCheckKeyDown}
-                                  />
-                                )}
-                              </AnimatePresence>
-                            </div>
-
-                            <div data-vn-footer>
-                              <motion.button
-                                type="button"
-                                data-vn-more
-                                initial={false}
-                                animate={{ opacity: transcribing ? 0 : 1 }}
-                                transition={SWAP}
-                                tabIndex={transcribing ? -1 : 0}
-                                aria-hidden={transcribing}
-                                aria-expanded={expanded}
-                                style={{
-                                  pointerEvents: transcribing ? "none" : "auto",
-                                }}
-                                onClick={toggleExpanded}
-                              >
-                                <span data-vn-more-label>
-                                  <motion.span
-                                    initial={false}
-                                    animate={{ opacity: expanded ? 0 : 1 }}
-                                    transition={SWAP}
-                                    aria-hidden={expanded}
-                                  >
-                                    Read more
-                                  </motion.span>
-                                  <motion.span
-                                    initial={false}
-                                    animate={{ opacity: expanded ? 1 : 0 }}
-                                    transition={SWAP}
-                                    aria-hidden={!expanded}
-                                  >
-                                    Show less
-                                  </motion.span>
-                                </span>
-                              </motion.button>
-                            </div>
-                          </div>
-
-                          <Surface />
+                        <div
+                          ref={waveRef}
+                          data-vn-wave
+                          role="slider"
+                          tabIndex={0}
+                          aria-label="Voice message position"
+                          aria-valuemin={0}
+                          aria-valuemax={Math.round(DURATION)}
+                          aria-valuenow={0}
+                          aria-valuetext={`0:00 of ${TOTAL_LABEL}`}
+                          onPointerDown={handleWavePointerDown}
+                          onPointerMove={handleWavePointerMove}
+                          onPointerUp={finishScrub}
+                          onPointerCancel={finishScrub}
+                          onLostPointerCapture={finishScrub}
+                          onKeyDown={handleWaveKeyDown}
+                        >
+                          <Bars peaks={PEAKS} />
+                          <motion.span
+                            data-vn-played
+                            style={{ clipPath: playedClip }}
+                          >
+                            <Bars peaks={PEAKS} played />
+                          </motion.span>
+                          <motion.span
+                            data-vn-knob
+                            style={{
+                              left: knobLeft,
+                              backgroundColor: played ? BLUE : GREEN,
+                            }}
+                            aria-hidden="true"
+                          />
                         </div>
-                      </motion.div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
 
-                {/* Hints live in the conversation, like WhatsApp's own system
-                    notices, so they never sit on top of a message. Their slot
-                    arrives with the voice note, so the chip fades into place
-                    instead of pushing the chat up while the transcript reveals. */}
-                <AnimatePresence initial={false}>
-                  {arrived && hint < HINTS.length && (
-                    <motion.div
-                      key={`hint-${runId}`}
-                      data-vn-arrival
-                      data-vn-hint-slot
-                      initial={{ height: 0 }}
-                      animate={{ height: "auto" }}
-                      exit={{ height: 0 }}
-                      transition={OPEN}
-                    >
-                      <div data-vn-hint-box>
-                        <AnimatePresence mode="wait" initial={false}>
-                          {showHint && (
-                            <motion.p
-                              key={hint}
-                              data-vn-hint
-                              aria-hidden="true"
-                              initial={{ opacity: 0, y: 4 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, y: -4 }}
-                              transition={{
-                                ...SWAP,
-                                delay: hint === 0 ? 0.35 : 0,
-                              }}
+                        <div data-vn-side>
+                          <motion.span
+                            data-vn-sender
+                            initial={false}
+                            animate={{
+                              opacity: showSpeed ? 0 : 1,
+                              scale: showSpeed ? 0.86 : 1,
+                            }}
+                            transition={SWAP}
+                            aria-hidden="true"
+                          >
+                            <DefaultAvatar size="note" />
+                            <span
+                              data-vn-badge
+                              style={{ color: played ? BLUE : GREEN }}
                             >
-                              <span data-vn-hint-dot />
-                              {HINTS[hint]}
-                            </motion.p>
-                          )}
-                        </AnimatePresence>
+                              <MicBadgeGlyph />
+                            </span>
+                          </motion.span>
+                          <motion.button
+                            type="button"
+                            data-vn-speed
+                            data-vn-press
+                            initial={false}
+                            animate={{
+                              opacity: showSpeed ? 1 : 0,
+                              scale: showSpeed ? 1 : 0.86,
+                            }}
+                            transition={SWAP}
+                            tabIndex={showSpeed ? 0 : -1}
+                            aria-hidden={!showSpeed}
+                            aria-label={`Playback speed ${speed} times`}
+                            style={{
+                              pointerEvents: showSpeed ? "auto" : "none",
+                            }}
+                            onClick={changeSpeed}
+                          >
+                            {speed}×
+                          </motion.button>
+                        </div>
                       </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+
+                      <div data-vn-sub>
+                        <motion.span data-vn-duration>{label}</motion.span>
+                        {audioError ? (
+                          <span data-vn-error role="status">
+                            Audio couldn&apos;t load
+                          </span>
+                        ) : (
+                          <span data-vn-meta data-inline>
+                            10:42
+                          </span>
+                        )}
+                      </div>
+
+                      <div data-vn-transcript-area>
+                        <div data-vn-stack>
+                          <motion.div
+                            data-vn-clip
+                            initial={false}
+                            animate={{
+                              height: expanded ? "auto" : layout.collapsed,
+                            }}
+                            // Re-measured preview heights snap, so the bubble
+                            // never creeps by a few pixels on arrival.
+                            transition={
+                              clipMotion === "animate" ? OPEN : { duration: 0 }
+                            }
+                          >
+                            <motion.div
+                              ref={transcriptRef}
+                              data-vn-transcript
+                              data-mode="rest"
+                              role="group"
+                              aria-label="Transcript"
+                              aria-describedby="vn-transcript-help"
+                              tabIndex={transcribing ? -1 : 0}
+                              initial={false}
+                              animate={{ opacity: transcribing ? 0 : 1 }}
+                              transition={SWAP}
+                              onPointerDown={handleTranscriptPointerDown}
+                              onPointerMove={handleTranscriptPointerMove}
+                              onClick={handleTranscriptClick}
+                              onFocus={handleTranscriptFocus}
+                              onKeyDown={handleTranscriptKeyDown}
+                            >
+                              <motion.span
+                                data-vn-hl
+                                aria-hidden="true"
+                                style={{
+                                  x: layerA.x,
+                                  y: layerA.y,
+                                  width: layerA.width,
+                                  height: layerA.height,
+                                  opacity: layerA.opacity,
+                                  scale: layerA.scale,
+                                }}
+                              />
+                              <motion.span
+                                data-vn-hl
+                                aria-hidden="true"
+                                style={{
+                                  x: layerB.x,
+                                  y: layerB.y,
+                                  width: layerB.width,
+                                  height: layerB.height,
+                                  opacity: layerB.opacity,
+                                  scale: layerB.scale,
+                                }}
+                              />
+                              <TranscriptText
+                                expanded={expanded}
+                                fold={layout.fold}
+                              />
+                            </motion.div>
+
+                            <motion.span
+                              data-vn-fade
+                              aria-hidden="true"
+                              initial={false}
+                              animate={{
+                                opacity: expanded || transcribing ? 0 : 1,
+                              }}
+                              transition={{ duration: 0.2, ease: EASE }}
+                              style={{ top: layout.collapsed - 16 }}
+                            />
+                          </motion.div>
+
+                          <AnimatePresence>
+                            {transcribing && (
+                              <motion.div
+                                data-vn-shimmer
+                                aria-hidden="true"
+                                initial={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={SWAP}
+                              >
+                                <i style={{ width: "100%" }} />
+                                <i style={{ width: "93%" }} />
+                                <i style={{ width: "58%" }} />
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+
+                          <AnimatePresence>
+                            {check !== null && (
+                              <CheckCard
+                                key={check.index}
+                                check={check}
+                                progress={stretchProgress}
+                                onReplay={replayCheck}
+                                onPlayFrom={playFromCheck}
+                                onKeyDown={handleCheckKeyDown}
+                              />
+                            )}
+                          </AnimatePresence>
+                        </div>
+
+                        <div data-vn-footer>
+                          <motion.button
+                            type="button"
+                            data-vn-more
+                            initial={false}
+                            animate={{ opacity: transcribing ? 0 : 1 }}
+                            transition={SWAP}
+                            tabIndex={transcribing ? -1 : 0}
+                            aria-hidden={transcribing}
+                            aria-expanded={expanded}
+                            style={{
+                              pointerEvents: transcribing ? "none" : "auto",
+                            }}
+                            onClick={toggleExpanded}
+                          >
+                            <span data-vn-more-label>
+                              <motion.span
+                                initial={false}
+                                animate={{ opacity: expanded ? 0 : 1 }}
+                                transition={SWAP}
+                                aria-hidden={expanded}
+                              >
+                                Read more
+                              </motion.span>
+                              <motion.span
+                                initial={false}
+                                animate={{ opacity: expanded ? 1 : 0 }}
+                                transition={SWAP}
+                                aria-hidden={!expanded}
+                              >
+                                Show less
+                              </motion.span>
+                            </span>
+                          </motion.button>
+                        </div>
+                      </div>
+
+                      <Surface />
+                    </div>
+                  </motion.div>
+                </motion.div>
               </div>
             </div>
 
@@ -3014,6 +3055,25 @@ export function VoiceNoteChat() {
             </header>
 
             <div data-vn-bar ref={barRef}>
+              {/* Hints float in a zone above the chat bar that's reserved from
+                  the start, so they only ever fade: nothing in the chat moves. */}
+              <div data-vn-hint-zone aria-hidden="true">
+                <AnimatePresence mode="wait" initial={false}>
+                  {showHint && (
+                    <motion.p
+                      key={hint}
+                      data-vn-hint
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4, transition: SWAP }}
+                      transition={{ ...SWAP, delay: hint === 0 ? 0.35 : 0 }}
+                    >
+                      <span data-vn-hint-dot />
+                      {HINTS[hint]}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
+              </div>
               <div data-vn-bar-row aria-hidden="true">
                 <span data-vn-glass data-vn-round>
                   <PlusIcon />
@@ -3350,7 +3410,7 @@ const STYLES = `
     inset: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
-    padding: calc(var(--vn-top) + 66px) 0 calc(var(--vn-bottom) + 76px);
+    padding: calc(var(--vn-top) + 66px) 0 calc(var(--vn-bottom) + 90px);
     background-color: var(--vn-wall);
     background-image: var(--vn-wallpaper);
     background-size: 300px 300px;
@@ -3417,14 +3477,23 @@ const STYLES = `
     padding: 0 14px 8px 12px;
   }
 
-  [data-vn-arrival] {
-    overflow: hidden;
+  [data-vn-incoming] {
+    position: relative;
     flex: 0 0 auto;
+    overflow: hidden;
   }
 
-  /* Entrances clip; once settled, a card may reach past the bubble. */
-  [data-vn-arrival][data-settled] {
+  /* Clipped while it grows; once settled, a card may reach past the bubble. */
+  [data-vn-incoming][data-settled] {
     overflow: visible;
+  }
+
+  /* The recording bubble sits at the bottom of the slot, where the voice note
+     will land, and fades out there as the slot grows. */
+  [data-vn-incoming-recording] {
+    position: absolute;
+    left: 0;
+    bottom: 0;
   }
 
   [data-vn-bubble] {
@@ -4099,10 +4168,12 @@ const STYLES = `
     letter-spacing: -0.005em;
   }
 
-  /* A fixed slot: hints swap inside it without moving the chat. */
-  [data-vn-hint-box] {
-    height: 36px;
-    padding-top: 6px;
+  [data-vn-hint-zone] {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 28px;
+    margin-bottom: 8px;
   }
 
   [data-vn-hint-dot] {
