@@ -271,9 +271,11 @@ const PHONE_H = 860;
 // One curve for everything that travels: fast out of the gate, long soft landing.
 const EASE = [0.32, 0.72, 0, 1] as const;
 const EASE_CSS = "cubic-bezier(0.32, 0.72, 0, 1)";
-// Opacity gets Material's standard curve. The shared curve leaves the gate
-// at full speed, which turns a 150ms fade into a 3-frame cut.
-const FADE = [0.4, 0, 0.2, 1] as const;
+/** Material's standard curve; Calendar's popover enters on it. */
+const STANDARD = [0.4, 0, 0.2, 1] as const;
+// Opacity gets the standard curve too. The shared curve leaves the gate at
+// full speed, which turns a 150ms fade into a 3-frame cut.
+const FADE = STANDARD;
 
 const MAX_MESSAGE = 2400;
 
@@ -1225,6 +1227,73 @@ function DialogPanel({
   );
 }
 
+/**
+ * Material's press ripple, with the values Calendar ships (MDC): a circle
+ * grows from the press point to cover the control over 225ms on the standard
+ * curve, fades in over 75ms, and fades out over 150ms once released (never
+ * before it has finished growing). Round icon buttons ripple from the centre.
+ */
+function startRipple(
+  host: HTMLElement,
+  clientX: number,
+  clientY: number,
+  scale: number,
+) {
+  const width = host.offsetWidth;
+  const height = host.offsetHeight;
+  const rect = host.getBoundingClientRect();
+  const round = getComputedStyle(host).borderTopLeftRadius === "50%";
+  const largest = Math.max(width, height);
+  const radius = round ? largest : Math.sqrt(width * width + height * height) + 10;
+  const size = Math.floor(largest * 0.6);
+  const grow = radius / size;
+  const fromX = round ? width / 2 : (clientX - rect.left) / scale;
+  const fromY = round ? height / 2 : (clientY - rect.top) / scale;
+  const ripple = document.createElement("span");
+
+  ripple.setAttribute("data-gc-ripple", "");
+  ripple.style.width = `${size}px`;
+  ripple.style.height = `${size}px`;
+  host.appendChild(ripple);
+
+  const born = performance.now();
+
+  ripple.animate(
+    [
+      { transform: `translate(${fromX - size / 2}px, ${fromY - size / 2}px) scale(1)` },
+      {
+        transform: `translate(${(width - size) / 2}px, ${(height - size) / 2}px) scale(${grow})`,
+      },
+    ],
+    { duration: 225, easing: "cubic-bezier(0.4, 0, 0.2, 1)", fill: "forwards" },
+  );
+  ripple.animate([{ opacity: 0 }, { opacity: 0.12 }], {
+    duration: 75,
+    easing: "linear",
+    fill: "forwards",
+  });
+
+  function release() {
+    window.removeEventListener("pointerup", release);
+    window.removeEventListener("pointercancel", release);
+
+    setTimeout(function fadeOut() {
+      ripple
+        .animate([{ opacity: 0.12 }, { opacity: 0 }], {
+          duration: 150,
+          easing: "linear",
+          fill: "forwards",
+        })
+        .finished.then(function remove() {
+          ripple.remove();
+        });
+    }, Math.max(0, 225 - (performance.now() - born)));
+  }
+
+  window.addEventListener("pointerup", release);
+  window.addEventListener("pointercancel", release);
+}
+
 /** Keeps Tab and Shift-Tab cycling inside a modal panel. */
 function trapFocus(keyEvent: KeyboardEvent, panel: HTMLElement) {
   const focusable = Array.from(
@@ -1303,6 +1372,12 @@ function Surface({
   const width = useMotionValue(POPOVER_W);
   const height = useMotionValue(0);
   const background = useMotionValue(POPOVER_BG);
+  // Opening, measured from Calendar: the card starts 32px towards its event
+  // and fades in as it settles over 250ms on the standard curve. It closes
+  // with a plain 200ms fade.
+  const enterOpacity = useMotionValue(0);
+  const enterX = useMotionValue(0);
+  const enteredRef = useRef(false);
   const popOpacity = useMotionValue(1);
   const dialogOpacity = useMotionValue(0);
   // Whole pixels only. A surface resting on half pixels makes its edges and
@@ -1462,6 +1537,22 @@ function Surface({
           top.set(geometry.top);
           width.set(geometry.width);
           height.set(geometry.height);
+
+          if (!enteredRef.current) {
+            enteredRef.current = true;
+
+            const entrance = {
+              duration: (reducedMotion ? 0.1 : 0.25) * slow,
+              ease: STANDARD,
+            };
+
+            if (!reducedMotion) {
+              enterX.set(geometry.side === "left" ? 32 : -32);
+              animate(enterX, 0, entrance);
+            }
+
+            animate(enterOpacity, 1, entrance);
+          }
         }
       } else if (current === "dialog") {
         // Height is auto here; only the position needs re-centring.
@@ -1474,7 +1565,19 @@ function Surface({
       }
     },
     // Re-run when a morph settles too, in case the window changed meanwhile.
-    [popoverGeometry, dialogGeometry, left, top, width, height, phase],
+    [
+      popoverGeometry,
+      dialogGeometry,
+      left,
+      top,
+      width,
+      height,
+      phase,
+      enterOpacity,
+      enterX,
+      reducedMotion,
+      slow,
+    ],
   );
 
   // Focus goes into the popover when it opens.
@@ -1758,10 +1861,14 @@ function Surface({
   return (
     <motion.div
       data-gc-surface-root
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: reducedMotion ? 0 : 0.16 * slow, ease: EASE }}
+      style={{ opacity: enterOpacity, x: enterX }}
+      exit={{
+        opacity: 0,
+        transition: {
+          duration: (reducedMotion ? 0.1 : 0.2) * slow,
+          ease: "easeInOut",
+        },
+      }}
     >
       <motion.div
         ref={containerRef}
@@ -2482,11 +2589,26 @@ export function CalendarApp() {
   );
 
   function handleAppPointerDown(pointerEvent: ReactPointerEvent<HTMLDivElement>) {
+    const target = pointerEvent.target as HTMLElement;
+    const pressable = target.closest<HTMLElement>("[data-gc-sl]");
+
+    if (
+      pressable &&
+      pointerEvent.button === 0 &&
+      !reducedMotion &&
+      !pressable.matches(":disabled")
+    ) {
+      startRipple(
+        pressable,
+        pointerEvent.clientX,
+        pointerEvent.clientY,
+        scaleRef.current,
+      );
+    }
+
     if (!openId || phase !== "popover" || plainOpen) {
       return;
     }
-
-    const target = pointerEvent.target as HTMLElement;
 
     if (
       target.closest("[data-gc-surface]") ||
@@ -3294,11 +3416,25 @@ const STYLES = `
     outline: none;
   }
 
-  /* State layers: Google's translucent overlay. Hover never scales. ------- */
+  /* State layers and ripple, as Calendar does them ------------------------
+     Hover lays an 8% overlay; a press grows Material's ripple from the
+     pointer (see startRipple). Nothing scales: Calendar's controls don't. */
 
   [data-gc-sl] {
     position: relative;
     isolation: isolate;
+    overflow: hidden;
+  }
+
+  [data-gc-ripple] {
+    position: absolute;
+    z-index: -1;
+    top: 0;
+    left: 0;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0;
+    pointer-events: none;
   }
 
   [data-gc-sl]::after {
@@ -3313,27 +3449,11 @@ const STYLES = `
     transition: opacity 150ms ease;
   }
 
-  [data-gc-sl]:active:not(:disabled)::after {
-    opacity: 0.12;
-  }
-
   [data-gc-press] {
-    scale: 1;
     transition:
-      scale 240ms var(--gc-ease),
       background-color 160ms ease,
       color 160ms ease,
       box-shadow 200ms ease;
-    backface-visibility: hidden;
-  }
-
-  [data-gc-press]:active:not(:disabled) {
-    scale: 0.96;
-    transition-duration: 90ms;
-  }
-
-  [data-gc-press="soft"]:active:not(:disabled) {
-    scale: 0.98;
   }
 
   @media (hover: hover) and (pointer: fine) {
@@ -3342,7 +3462,7 @@ const STYLES = `
     }
 
     [data-gc-sl]:hover:active:not(:disabled)::after {
-      opacity: 0.12;
+      opacity: 0.08;
     }
   }
 
