@@ -374,6 +374,8 @@ type Draft = {
   cancelMeeting: boolean;
   include: { yes: boolean; awaiting: boolean; me: boolean };
   removed: GuestId[];
+  /** Addresses typed into "Add email or name". */
+  added: string[];
 };
 
 function convertDraft(event: CalEvent): Draft {
@@ -383,6 +385,7 @@ function convertDraft(event: CalEvent): Draft {
     cancelMeeting: true,
     include: { yes: true, awaiting: true, me: true },
     removed: [],
+    added: [],
   };
 }
 
@@ -393,6 +396,21 @@ function plainDraft(event: CalEvent): Draft {
     cancelMeeting: false,
     include: { yes: true, awaiting: true, me: true },
     removed: [],
+    added: [],
+  };
+}
+
+const EMAIL = /^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/;
+
+/** A typed address shows as a chip with a neutral initial avatar. */
+function typedGuest(email: string): Guest {
+  return {
+    id: "you",
+    name: email,
+    email,
+    initial: email[0]?.toUpperCase() ?? "?",
+    bg: "#e3e3e3",
+    fg: "#444746",
   };
 }
 
@@ -708,8 +726,31 @@ function DialogPanel({
   }).length;
   const awaitingCount = attendees.length - yesCount;
   const recipients = recipientsFor(event, draft);
+  const [typed, setTyped] = useState("");
+  const chips = [
+    ...recipients.map(function guestChip(attendee) {
+      const guest = GUESTS[attendee.id];
+
+      return {
+        key: guest.id,
+        guest,
+        remove: function remove() {
+          removeGuest(guest.id);
+        },
+      };
+    }),
+    ...draft.added.map(function typedChip(email) {
+      return {
+        key: `typed:${email}`,
+        guest: typedGuest(email),
+        remove: function remove() {
+          removeTyped(email);
+        },
+      };
+    }),
+  ];
   const canSend =
-    !sending && draft.message.trim().length > 0 && recipients.length > 0;
+    !sending && draft.message.trim().length > 0 && chips.length > 0;
   const day = WEEK[event.day].long;
 
   const count = draft.message.length;
@@ -738,7 +779,7 @@ function DialogPanel({
         observer.disconnect();
       };
     },
-    [draft.message, recipients.length, maxHeight],
+    [draft.message, chips.length, maxHeight],
   );
 
   // When recipients change, the chips that stay glide to their new spots, the
@@ -752,9 +793,9 @@ function DialogPanel({
     positions: Map<string, { x: number; y: number }>;
   } | null>(null);
   const flipControlsRef = useRef<AnimationPlaybackControls[]>([]);
-  const recipientKey = recipients
-    .map(function id(attendee) {
-      return attendee.id;
+  const recipientKey = chips
+    .map(function id(chip) {
+      return chip.key;
     })
     .join(",");
 
@@ -875,6 +916,57 @@ function DialogPanel({
     });
   }
 
+  function removeTyped(email: string) {
+    setDraft(function apply(current) {
+      return {
+        ...current,
+        added: current.added.filter(function keep(item) {
+          return item !== email;
+        }),
+      };
+    });
+  }
+
+  /** Turns a valid typed address into a chip. Returns whether it did. */
+  function commitTyped() {
+    const value = typed.trim().replace(/,$/, "");
+
+    if (!EMAIL.test(value)) {
+      return false;
+    }
+
+    const known = (event.attendees ?? []).some(function same(attendee) {
+      return GUESTS[attendee.id].email === value;
+    });
+
+    setDraft(function apply(current) {
+      if (known || current.added.includes(value)) {
+        return current;
+      }
+
+      return { ...current, added: [...current.added, value] };
+    });
+    setTyped("");
+    return true;
+  }
+
+  // Enter or a comma turns a typed address into a chip, and so does leaving
+  // the field; Backspace in an empty field takes the last one back, as Gmail
+  // does.
+  function handleAddKeyDown(keyEvent: ReactKeyboardEvent<HTMLInputElement>) {
+    if (keyEvent.key === "Enter" || keyEvent.key === ",") {
+      keyEvent.preventDefault();
+      commitTyped();
+    } else if (
+      keyEvent.key === "Backspace" &&
+      typed === "" &&
+      draft.added.length > 0
+    ) {
+      keyEvent.preventDefault();
+      removeTyped(draft.added[draft.added.length - 1]);
+    }
+  }
+
   function handleMessageKeyDown(event: ReactKeyboardEvent<HTMLTextAreaElement>) {
     if ((event.metaKey || event.ctrlKey) && event.key === "Enter" && canSend) {
       event.preventDefault();
@@ -938,15 +1030,12 @@ function DialogPanel({
           <span
             data-gc-field-fill
           />
-          <div ref={chipsRef} data-gc-chips role="list" aria-label="To">
+          <div ref={chipsRef} data-gc-chips role="group" aria-label="To">
             <AnimatePresence initial={false} mode="popLayout">
-              {recipients.map(function chip(attendee) {
-                const guest = GUESTS[attendee.id];
-
+              {chips.map(function chip({ key, guest, remove }) {
                 return (
                   <motion.span
-                    key={guest.id}
-                    role="listitem"
+                    key={key}
                     data-gc-chip
                     initial={{ opacity: 0, scale: 0.86 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -957,7 +1046,7 @@ function DialogPanel({
                     }}
                     transition={{ duration: 0.22 * slow, ease: EASE }}
                   >
-                    <span data-gc-chip-inner data-gc-flip={guest.id}>
+                    <span data-gc-chip-inner data-gc-flip={key}>
                       <span
                         data-gc-chip-fill
                       />
@@ -973,9 +1062,7 @@ function DialogPanel({
                         data-gc-sl
                         aria-label={`Remove ${guest.name}`}
                         disabled={sending}
-                        onClick={function remove() {
-                          removeGuest(guest.id);
-                        }}
+                        onClick={remove}
                       >
                         <Icon name="close" size={14} />
                       </button>
@@ -1001,10 +1088,18 @@ function DialogPanel({
           <span data-gc-flip="add" data-gc-add-wrap>
             <input
               data-gc-add-guest
-              type="text"
+              type="email"
+              inputMode="email"
+              autoComplete="off"
               placeholder="Add email or name"
-              aria-label="Add email or name"
+              aria-label="Add email or name. Press Enter to add."
               disabled={sending}
+              value={typed}
+              onChange={function edit(changeEvent) {
+                setTyped(changeEvent.target.value);
+              }}
+              onKeyDown={handleAddKeyDown}
+              onBlur={commitTyped}
             />
           </span>
         </div>
@@ -1130,6 +1225,31 @@ function DialogPanel({
   );
 }
 
+/** Keeps Tab and Shift-Tab cycling inside a modal panel. */
+function trapFocus(keyEvent: KeyboardEvent, panel: HTMLElement) {
+  const focusable = Array.from(
+    panel.querySelectorAll<HTMLElement>(
+      "button:not([disabled]), input:not([disabled]), textarea:not([disabled])",
+    ),
+  );
+
+  if (focusable.length === 0) {
+    return;
+  }
+
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  const active = document.activeElement;
+
+  if (keyEvent.shiftKey && (active === first || !panel.contains(active))) {
+    keyEvent.preventDefault();
+    last.focus();
+  } else if (!keyEvent.shiftKey && (active === last || !panel.contains(active))) {
+    keyEvent.preventDefault();
+    first.focus();
+  }
+}
+
 /* The surface: one element that is a popover, then becomes the dialog ------ */
 
 type Phase = "popover" | "toDialog" | "dialog" | "toPopover";
@@ -1154,6 +1274,7 @@ function Surface({
   onPhaseChange,
   announce,
   blocked,
+  emailButtonRef,
 }: {
   event: CalEvent;
   stage: Stage;
@@ -1172,6 +1293,7 @@ function Surface({
   onPhaseChange: (phase: Phase) => void;
   announce: (message: string) => void;
   blocked: boolean;
+  emailButtonRef: (node: HTMLButtonElement | null) => void;
 }) {
   const titleId = useId();
   const headingId = useId();
@@ -1351,7 +1473,8 @@ function Surface({
         }
       }
     },
-    [popoverGeometry, dialogGeometry, left, top, width, height],
+    // Re-run when a morph settles too, in case the window changed meanwhile.
+    [popoverGeometry, dialogGeometry, left, top, width, height, phase],
   );
 
   // Focus goes into the popover when it opens.
@@ -1614,37 +1737,8 @@ function Surface({
         }
 
         // Focus stays inside the dialog while it's open.
-        if (keyEvent.key === "Tab" && current === "dialog") {
-          const panel = dialogRef.current;
-
-          if (!panel) {
-            return;
-          }
-
-          const focusable = Array.from(
-            panel.querySelectorAll<HTMLElement>(
-              "button:not([disabled]), input:not([disabled]), textarea:not([disabled])",
-            ),
-          );
-
-          if (focusable.length === 0) {
-            return;
-          }
-
-          const first = focusable[0];
-          const last = focusable[focusable.length - 1];
-          const active = document.activeElement;
-
-          if (keyEvent.shiftKey && (active === first || !panel.contains(active))) {
-            keyEvent.preventDefault();
-            last.focus();
-          } else if (
-            !keyEvent.shiftKey &&
-            (active === last || !panel.contains(active))
-          ) {
-            keyEvent.preventDefault();
-            first.focus();
-          }
+        if (keyEvent.key === "Tab" && current === "dialog" && dialogRef.current) {
+          trapFocus(keyEvent, dialogRef.current);
         }
       }
 
@@ -1799,6 +1893,7 @@ function Surface({
                       size={32}
                       iconSize={18}
                       onClick={onEmailGuests}
+                      buttonRef={emailButtonRef}
                     />
                   </span>
                 </div>
@@ -2018,6 +2113,15 @@ function PlainDialog({
         keyEvent.preventDefault();
         keyEvent.stopImmediatePropagation();
         onCancel();
+        return;
+      }
+
+      // It's modal: Tab cycles inside it and never reaches the popover behind.
+      const panel = panelRef.current;
+
+      if (keyEvent.key === "Tab" && panel) {
+        keyEvent.stopImmediatePropagation();
+        trapFocus(keyEvent, panel);
       }
     }
 
@@ -2172,6 +2276,7 @@ export function CalendarApp() {
   const reducedMotion = Boolean(useReducedMotion());
 
   const [stage, setStage] = useState<Stage | null>(null);
+  const [fontsReady, setFontsReady] = useState(false);
   const slow = useSyncExternalStore(subscribeToNothing, readSlow, serverSlow);
   const [openId, setOpenId] = useState<EventId | null>(null);
   const [phase, setPhase] = useState<Phase>("popover");
@@ -2190,6 +2295,7 @@ export function CalendarApp() {
 
   const appRef = useRef<HTMLDivElement | null>(null);
   const gridRef = useRef<HTMLDivElement | null>(null);
+  const emailButtonRef = useRef<HTMLButtonElement | null>(null);
   const scaleRef = useRef(1);
   const eventRefs = useRef<Partial<Record<EventId, HTMLButtonElement | null>>>({});
   const timersRef = useRef<Array<ReturnType<typeof setTimeout>>>([]);
@@ -2219,6 +2325,28 @@ export function CalendarApp() {
 
     return function cleanup() {
       window.removeEventListener("resize", measure);
+    };
+  }, []);
+
+  // Google Sans has no metric-matched fallback, so the first paint waits for
+  // it (up to a second) rather than showing text that reflows on swap.
+  useEffect(function waitForFonts() {
+    let settled = false;
+
+    function reveal() {
+      if (!settled) {
+        settled = true;
+        setFontsReady(true);
+      }
+    }
+
+    const timer = setTimeout(reveal, 1000);
+
+    document.fonts.ready.then(reveal);
+
+    return function cleanup() {
+      settled = true;
+      clearTimeout(timer);
     };
   }, []);
 
@@ -2444,6 +2572,7 @@ export function CalendarApp() {
   function handlePlainSent() {
     lastSendRef.current = { cancelled: false };
     setPlainOpen(false);
+    emailButtonRef.current?.focus({ preventScroll: true });
     animate(scrim, 0, { duration: (reducedMotion ? 0 : 0.24) * slow, ease: EASE });
 
     if (openEvent) {
@@ -2517,6 +2646,7 @@ export function CalendarApp() {
 
   function closePlain() {
     setPlainOpen(false);
+    emailButtonRef.current?.focus({ preventScroll: true });
     animate(scrim, 0, { duration: (reducedMotion ? 0.12 : 0.2) * slow, ease: EASE });
   }
 
@@ -2563,7 +2693,7 @@ export function CalendarApp() {
     return { live: slotsFor(index, false), all: slotsFor(index, true) };
   });
 
-  const ready = stage !== null;
+  const ready = stage !== null && fontsReady;
   const size = stage ?? { w: PHONE_W, h: PHONE_H, scale: 1 };
 
   return (
@@ -2673,7 +2803,7 @@ export function CalendarApp() {
                   <IconButton icon="chevronRight" label="Next month" size={32} iconSize={18} />
                 </span>
               </div>
-              <div data-gc-mini-grid role="grid" aria-label="October 2026">
+              <div data-gc-mini-grid role="group" aria-label="October 2026">
                 {["S", "M", "T", "W", "T", "F", "S"].map(function weekday(letter, index) {
                   return (
                     <span key={`h${index}`} data-gc-mini-dow aria-hidden="true">
@@ -2750,6 +2880,10 @@ export function CalendarApp() {
                               label={calendar.name}
                               disabled={busy || plainOpen}
                               onChange={function toggleCalendar(value) {
+                                if (!value && openEvent?.calendar === calendar.id) {
+                                  closePopover(false);
+                                }
+
                                 setVisible(function apply(current) {
                                   return { ...current, [calendar.id]: value };
                                 });
@@ -2781,7 +2915,7 @@ export function CalendarApp() {
           </nav>
 
           {/* Week grid ------------------------------------------------------ */}
-          <main data-gc-card aria-label="Week of October 11, 2026">
+          <section data-gc-card aria-label="Week of October 11, 2026">
             <div data-gc-week-head>
               <span data-gc-tz>GMT+01</span>
               {WEEK.map(function dayHead(day, index) {
@@ -2917,7 +3051,7 @@ export function CalendarApp() {
                 })}
               </div>
             </div>
-          </main>
+          </section>
 
           {/* Side panel rail ------------------------------------------------ */}
           <aside data-gc-rail aria-label="Side panel">
@@ -2962,6 +3096,9 @@ export function CalendarApp() {
                   handleConvertSent(openEvent, draft);
                 }}
                 onEmailGuests={openPlain}
+                emailButtonRef={function attachEmailButton(node) {
+                  emailButtonRef.current = node;
+                }}
                 onCopyGuests={copyGuests}
                 onPhaseChange={setPhase}
                 announce={announce}
@@ -3152,6 +3289,7 @@ const STYLES = `
 
   [data-gc-app] [tabindex="-1"]:focus-visible,
   [data-gc-app] input[type="text"]:focus-visible,
+  [data-gc-app] input[type="email"]:focus-visible,
   [data-gc-app] textarea:focus-visible {
     outline: none;
   }
@@ -4707,6 +4845,17 @@ const STYLES = `
   [data-gc-send] > span {
     grid-area: 1 / 1;
     transition: opacity 160ms ease;
+  }
+
+  /* While sending, everything else in the dialog reads as unavailable. */
+  [data-gc-text-button]:disabled,
+  [data-gc-chip-remove]:disabled {
+    color: rgba(31, 31, 31, 0.38);
+  }
+
+  [data-gc-switch]:disabled,
+  [data-gc-dialog] [data-gc-check][data-disabled="true"] {
+    opacity: 0.38;
   }
 
   [data-gc-send]:disabled:not([data-sending="true"]) {

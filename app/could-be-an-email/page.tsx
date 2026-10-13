@@ -10,6 +10,8 @@ const googleSans = Google_Sans({
   axes: ["opsz"],
   variable: "--font-gsans",
   display: "swap",
+  // No metric-matched fallback exists; the page waits for the font instead.
+  adjustFontFallback: false,
 });
 
 const googleSansFlex = Google_Sans_Flex({
@@ -17,6 +19,7 @@ const googleSansFlex = Google_Sans_Flex({
   axes: ["opsz"],
   variable: "--font-gsans-flex",
   display: "swap",
+  adjustFontFallback: false,
 });
 
 export const metadata: Metadata = {
