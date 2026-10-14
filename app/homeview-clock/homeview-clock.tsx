@@ -167,11 +167,12 @@ function pickerOffset(style: StyleId) {
 
 /* Timing ----------------------------------------------------------------- */
 
-// The house spring, solved from the footage: a critically damped spring
-// with ω ≈ 31 rad/s. 65% of travel by 67ms, 90% by 125ms, settled by ~300ms,
-// no overshoot. Every travelling element uses it.
-const SPRING_STIFFNESS = 960;
-const SPRING_DAMPING = 62;
+// The house spring, fitted frame by frame to the footage (T2, motion from
+// frame ~90.5): critically damped, ω = 24 rad/s. Apple vs this spring:
+// 60/59% at 83ms, 76/77% at 117ms, 86/87% at 150ms, 93/93% at 183ms.
+// Settles by ~300ms with no overshoot. Every travelling element uses it.
+const SPRING_STIFFNESS = 576;
+const SPRING_DAMPING = 48;
 
 const EASE_OUT: [number, number, number, number] = [0.22, 0.61, 0.36, 1];
 const EASE_IN_OUT: [number, number, number, number] = [0.42, 0, 0.58, 1];
@@ -456,8 +457,8 @@ export function HomeviewClock() {
         values.scaleX.set(toPose.scaleX);
         values.weight.set(toPose.weight);
         values.scale.set(toPose.scale * 0.92);
-        run(values.scale, toPose.scale, tween(0.24, 0.06));
-        run(values.opacity, 1, tween(0.24, 0.06));
+        run(values.scale, toPose.scale, tween(0.2, 0.04));
+        run(values.opacity, 1, tween(0.2, 0.04));
         return;
       }
 
@@ -489,7 +490,7 @@ export function HomeviewClock() {
     } else if (from === "giant") {
       run(cornerDateOpacity, 0, tween(0.2));
       topDateYValue.set(topDateY(to));
-      run(topDateOpacity, 1, tween(0.22, 0.08));
+      run(topDateOpacity, 1, tween(0.2, 0.06));
     } else {
       run(topDateYValue, topDateY(to), spring());
     }
@@ -511,7 +512,9 @@ export function HomeviewClock() {
     setMode("edit");
     setAnnouncement("Customizing clock. Choose a style.");
 
-    const clear = tween(0.15, 0, EASE_IN_OUT);
+    // Footage (frames 57–70): home chrome gone by +6 frames, card recentres,
+    // then the edit layer lands almost as a cut at about +10 frames.
+    const clear = tween(0.18, 0, EASE_IN_OUT);
 
     run(widgetsX, 52, clear);
     run(widgetsOpacity, 0, clear);
@@ -522,7 +525,7 @@ export function HomeviewClock() {
 
     run(cardX, EDIT_X - HOME_X, spring(0.06));
 
-    const land = tween(0.12, 0.2);
+    const land = tween(0.1, 0.26);
 
     outlineScale.set(1.03);
     run(outlineScale, 1, land);
