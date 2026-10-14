@@ -23,6 +23,8 @@ import type { PointerEvent as ReactPointerEvent, WheelEvent } from "react";
 const W = 880;
 const H = 815;
 const BEZEL = 14;
+const TOTAL_W = W + BEZEL * 2;
+const TOTAL_H = H + BEZEL * 2;
 
 const CARD = 510;
 const HALF = CARD / 2;
@@ -330,7 +332,7 @@ export function HomeviewClock() {
   const dragRef = useRef<{ startY: number; startOffset: number; id: number } | null>(
     null,
   );
-  const stageRef = useRef<HTMLDivElement>(null);
+  const fitRef = useRef<HTMLDivElement>(null);
 
   const [style, setStyle] = useState<StyleId>("giant");
   const [mode, setMode] = useState<"home" | "edit">("home");
@@ -701,24 +703,29 @@ export function HomeviewClock() {
     [hourAngle, minuteAngle, secondAngle],
   );
 
-  useEffect(function fitToViewport() {
-    function measure() {
-      const totalW = W + BEZEL * 2;
-      const totalH = H + BEZEL * 2;
-      const scale = Math.min(
-        1,
-        (window.innerWidth - 32) / totalW,
-        (window.innerHeight - 48) / totalH,
-      );
+  // The fit box is sized in CSS (so the first paint is already right, with
+  // no page overflow on phones); the device scales to whatever width it got.
+  useEffect(function fitToBox() {
+    const box = fitRef.current;
 
-      setFitScale(Math.max(0.3, scale));
+    if (box === null) {
+      return;
+    }
+
+    const element: HTMLDivElement = box;
+
+    function measure() {
+      setFitScale(element.clientWidth / TOTAL_W);
     }
 
     measure();
-    window.addEventListener("resize", measure);
+
+    const observer = new ResizeObserver(measure);
+
+    observer.observe(element);
 
     return function cleanup() {
-      window.removeEventListener("resize", measure);
+      observer.disconnect();
     };
   }, []);
 
@@ -758,20 +765,14 @@ export function HomeviewClock() {
   }, []);
 
   const editing = mode === "edit";
-  const totalW = W + BEZEL * 2;
-  const totalH = H + BEZEL * 2;
 
   return (
-    <div
-      data-hv-fit
-      style={{ width: totalW * fitScale, height: totalH * fitScale }}
-    >
+    <div ref={fitRef} data-hv-fit>
       <div
-        ref={stageRef}
         data-hv-device
         style={{
-          width: totalW,
-          height: totalH,
+          width: TOTAL_W,
+          height: TOTAL_H,
           transform: `scale(${fitScale})`,
         }}
       >
@@ -1051,6 +1052,8 @@ function SunriseIcon() {
 const STYLES = `
   [data-hv-fit] {
     position: relative;
+    width: min(${TOTAL_W}px, calc(100vw - 32px), calc((100svh - 48px) * ${(TOTAL_W / TOTAL_H).toFixed(4)}));
+    aspect-ratio: ${TOTAL_W} / ${TOTAL_H};
   }
 
   [data-hv-device] {

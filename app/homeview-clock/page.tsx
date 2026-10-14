@@ -28,6 +28,7 @@ export default function HomeviewClockPrototype() {
           display: grid;
           place-items: center;
           padding: 24px 16px;
+          overflow-x: clip;
           background:
             radial-gradient(
               72% 58% at 50% 34%,
