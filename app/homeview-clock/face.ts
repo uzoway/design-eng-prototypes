@@ -1,5 +1,5 @@
-/* The measured model of the Homeview clock face, shared by the clock and
-   its inspector. */
+/* The measured model of the Homeview clock face: layout, poses, ticks and
+   timing, all taken from the un-skewed launch footage. */
 
 import type { MotionValue } from "motion/react";
 

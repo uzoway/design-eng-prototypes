@@ -70,8 +70,6 @@ import {
   SECOND_TO,
 } from "./face";
 import type { Bezier, NumeralValues, Pose, StyleId } from "./face";
-import { INSPECT_STYLES, InspectBar, InspectFace } from "./inspect";
-import type { Change } from "./inspect";
 
 type DebugConfig = {
   slow: number;
@@ -254,10 +252,6 @@ export function HomeviewClock() {
   const [mode, setMode] = useState<"home" | "edit">("home");
   const [dateLabel, setDateLabel] = useState("TUE 13");
   const [fitScale, setFitScale] = useState(1);
-  const [inspect, setInspect] = useState(false);
-  const [change, setChange] = useState<Change | null>(null);
-  const changeIdRef = useRef(0);
-  const baseSlowRef = useRef(1);
   const [announcement, setAnnouncement] = useState("");
 
   const [numerals] = useState(function initNumerals() {
@@ -373,12 +367,6 @@ export function HomeviewClock() {
     });
   }
 
-  // Inspect explains the last change in a sentence.
-  function markTransition(key: string) {
-    changeIdRef.current += 1;
-    setChange({ key, id: changeIdRef.current });
-  }
-
   function springPose(values: NumeralValues, p: Pose, delay = 0) {
     run(values.x, p.x, spring(delay));
     run(values.y, p.y, spring(delay));
@@ -406,7 +394,6 @@ export function HomeviewClock() {
     styleRef.current = to;
     setStyle(to);
     setAnnouncement(`${STYLE_LABEL[to]} style`);
-    markTransition(`${from}>${to}`);
     focusSelectedThumb(false);
 
     HOURS.forEach(function moveNumeral(hour, i) {
@@ -493,7 +480,6 @@ export function HomeviewClock() {
     styleBeforeEditRef.current = styleRef.current;
     setMode("edit");
     setAnnouncement("Customizing clock. Choose a style.");
-    markTransition("enter");
     focusSelectedThumb(true);
 
     run(cardScale, EDIT_SCALE, spring());
@@ -515,7 +501,6 @@ export function HomeviewClock() {
     modeRef.current = "home";
     setMode("home");
     setAnnouncement(keep ? "Clock style saved." : "Changes discarded.");
-    markTransition("exit");
     requestAnimationFrame(function returnFocus() {
       customizeRef.current?.focus({ preventScroll: true });
     });
@@ -624,15 +609,9 @@ export function HomeviewClock() {
 
   useEffect(function initDebugAndDate() {
     debugRef.current = readDebugConfig();
-    baseSlowRef.current = debugRef.current.slow;
     setDateLabel(
       formatDate(new Date(Date.now() + debugRef.current.timeOffsetMs)),
     );
-
-    // `?inspect` opens with the inspector on (handy for recording).
-    if (new URLSearchParams(window.location.search).has("inspect")) {
-      setInspect(true);
-    }
 
     const registry = controlsRef.current;
 
@@ -662,14 +641,6 @@ export function HomeviewClock() {
       };
     }
   }, []);
-
-  // Inspect plays everything at ¼ speed so the motion can be followed.
-  useEffect(
-    function slowForInspect() {
-      debugRef.current.slow = inspect ? 4 : baseSlowRef.current;
-    },
-    [inspect],
-  );
 
   useEffect(
     function runHands() {
@@ -759,18 +730,6 @@ export function HomeviewClock() {
 
   useEffect(function bindKeys() {
     function handleKeyDown(event: KeyboardEvent) {
-      if (
-        event.key.toLowerCase() === "i" &&
-        !event.metaKey &&
-        !event.ctrlKey &&
-        !event.altKey
-      ) {
-        setInspect(function toggle(on) {
-          return !on;
-        });
-        return;
-      }
-
       if (modeRef.current !== "edit") {
         return;
       }
@@ -939,14 +898,6 @@ export function HomeviewClock() {
                     </div>
                   </div>
                 </div>
-
-                {inspect && (
-                  <InspectFace
-                    numerals={numerals}
-                    cardScale={cardScale}
-                    fitScale={fitScale}
-                  />
-                )}
               </motion.div>
 
               <motion.button
@@ -1084,17 +1035,7 @@ export function HomeviewClock() {
         </div>
       </div>
 
-      <InspectBar
-        inspect={inspect}
-        onToggle={function toggleInspect() {
-          setInspect(!inspect);
-        }}
-        change={change}
-        editing={editing}
-      />
-
       <style>{STYLES}</style>
-      <style>{INSPECT_STYLES}</style>
     </div>
   );
 }
@@ -1180,16 +1121,9 @@ const OUTLINE_STROKE = 4;
 const OUTLINE_SIZE = CARD * EDIT_SCALE + (OUTLINE_GAP + OUTLINE_STROKE) * 2;
 
 const STYLES = `
-  [data-hv-stage] {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 18px;
-  }
-
   [data-hv-fit] {
     position: relative;
-    width: min(${DEVICE}px, calc(100vw - 32px), calc(100svh - 48px - 106px));
+    width: min(${DEVICE}px, calc(100vw - 32px), calc(100svh - 48px));
     aspect-ratio: 1;
   }
 
