@@ -1199,7 +1199,7 @@ const STYLES = `
 
   [data-hv-fit] {
     position: relative;
-    width: min(${DEVICE}px, calc(100vw - 32px), calc(100svh - 48px - 62px));
+    width: min(${DEVICE}px, calc(100vw - 32px), calc(100svh - 48px - 72px));
     aspect-ratio: 1;
   }
 
@@ -1623,6 +1623,16 @@ const STYLES = `
     border: 4px solid #fff;
     border-radius: 25px;
     pointer-events: none;
+  }
+
+  /* The ring is the selection, so it carries keyboard focus too (a focus
+     ring on the thumb itself would scroll away under it). */
+  [data-hv-screen] [data-hv-thumb]:focus-visible {
+    outline: none;
+  }
+
+  [data-hv-picker]:has([data-hv-thumb]:focus-visible) + [data-hv-picker-ring] {
+    box-shadow: 0 0 0 4px ${SYSTEM_BLUE};
   }
 
   [data-hv-thumb-face] {

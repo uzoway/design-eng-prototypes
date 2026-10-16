@@ -668,7 +668,7 @@ export const INSPECT_STYLES = `
     align-items: center;
     justify-content: center;
     gap: 10px;
-    min-height: 44px;
+    min-height: 54px;
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
     font-size: 13px;
     color: #1d1d1f;
@@ -773,9 +773,9 @@ export const INSPECT_STYLES = `
     display: inline-flex;
     align-items: center;
     gap: 10px;
-    height: 44px;
-    padding: 0 14px 0 10px;
-    border-radius: 14px;
+    min-height: 54px;
+    padding: 6px 14px 6px 10px;
+    border-radius: 16px;
     background: rgba(255, 255, 255, 0.55);
     box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06);
   }
