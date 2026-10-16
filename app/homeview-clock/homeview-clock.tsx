@@ -70,13 +70,8 @@ import {
   SECOND_TO,
 } from "./face";
 import type { Bezier, NumeralValues, Pose, StyleId } from "./face";
-import {
-  INSPECT_STYLES,
-  InspectBar,
-  InspectCardScale,
-  InspectFace,
-} from "./inspect";
-import type { TransitionMark } from "./inspect";
+import { INSPECT_STYLES, InspectBar, InspectFace } from "./inspect";
+import type { Change } from "./inspect";
 
 type DebugConfig = {
   slow: number;
@@ -260,8 +255,9 @@ export function HomeviewClock() {
   const [dateLabel, setDateLabel] = useState("TUE 13");
   const [fitScale, setFitScale] = useState(1);
   const [inspect, setInspect] = useState(false);
-  const [speed, setSpeed] = useState(1);
-  const markRef = useRef<TransitionMark>({ at: -Infinity, slow: 1 });
+  const [change, setChange] = useState<Change | null>(null);
+  const changeIdRef = useRef(0);
+  const baseSlowRef = useRef(1);
   const [announcement, setAnnouncement] = useState("");
 
   const [numerals] = useState(function initNumerals() {
@@ -377,14 +373,10 @@ export function HomeviewClock() {
     });
   }
 
-  // Inspect plots the house spring from the last transition's start.
-  function markTransition() {
-    markRef.current = { at: performance.now(), slow: debugRef.current.slow };
-  }
-
-  function chooseSpeed(next: number) {
-    setSpeed(next);
-    debugRef.current.slow = 1 / next;
+  // Inspect explains the last change in a sentence.
+  function markTransition(key: string) {
+    changeIdRef.current += 1;
+    setChange({ key, id: changeIdRef.current });
   }
 
   function springPose(values: NumeralValues, p: Pose, delay = 0) {
@@ -414,7 +406,7 @@ export function HomeviewClock() {
     styleRef.current = to;
     setStyle(to);
     setAnnouncement(`${STYLE_LABEL[to]} style`);
-    markTransition();
+    markTransition(`${from}>${to}`);
     focusSelectedThumb(false);
 
     HOURS.forEach(function moveNumeral(hour, i) {
@@ -501,7 +493,7 @@ export function HomeviewClock() {
     styleBeforeEditRef.current = styleRef.current;
     setMode("edit");
     setAnnouncement("Customizing clock. Choose a style.");
-    markTransition();
+    markTransition("enter");
     focusSelectedThumb(true);
 
     run(cardScale, EDIT_SCALE, spring());
@@ -523,7 +515,7 @@ export function HomeviewClock() {
     modeRef.current = "home";
     setMode("home");
     setAnnouncement(keep ? "Clock style saved." : "Changes discarded.");
-    markTransition();
+    markTransition("exit");
     requestAnimationFrame(function returnFocus() {
       customizeRef.current?.focus({ preventScroll: true });
     });
@@ -632,6 +624,7 @@ export function HomeviewClock() {
 
   useEffect(function initDebugAndDate() {
     debugRef.current = readDebugConfig();
+    baseSlowRef.current = debugRef.current.slow;
     setDateLabel(
       formatDate(new Date(Date.now() + debugRef.current.timeOffsetMs)),
     );
@@ -669,6 +662,14 @@ export function HomeviewClock() {
       };
     }
   }, []);
+
+  // Inspect plays everything at ¼ speed so the motion can be followed.
+  useEffect(
+    function slowForInspect() {
+      debugRef.current.slow = inspect ? 4 : baseSlowRef.current;
+    },
+    [inspect],
+  );
 
   useEffect(
     function runHands() {
@@ -943,12 +944,6 @@ export function HomeviewClock() {
                   <InspectFace
                     numerals={numerals}
                     cardScale={cardScale}
-                    tickGrow={tickGrow}
-                    majorExtent={majorExtent}
-                    ticksOpacity={ticksOpacity}
-                    hourAngle={hourAngle}
-                    minuteAngle={minuteAngle}
-                    secondAngle={secondAngle}
                     fitScale={fitScale}
                   />
                 )}
@@ -1084,10 +1079,6 @@ export function HomeviewClock() {
                   <CheckIcon />
                 </button>
               </motion.div>
-
-              {inspect && (
-                <InspectCardScale cardScale={cardScale} fitScale={fitScale} />
-              )}
             </div>
           </div>
         </div>
@@ -1098,9 +1089,8 @@ export function HomeviewClock() {
         onToggle={function toggleInspect() {
           setInspect(!inspect);
         }}
-        speed={speed}
-        onSpeed={chooseSpeed}
-        markRef={markRef}
+        change={change}
+        editing={editing}
       />
 
       <style>{STYLES}</style>
@@ -1199,7 +1189,7 @@ const STYLES = `
 
   [data-hv-fit] {
     position: relative;
-    width: min(${DEVICE}px, calc(100vw - 32px), calc(100svh - 48px - 72px));
+    width: min(${DEVICE}px, calc(100vw - 32px), calc(100svh - 48px - 106px));
     aspect-ratio: 1;
   }
 

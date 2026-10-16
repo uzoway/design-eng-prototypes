@@ -281,14 +281,6 @@ export const TOP_DATE_Y: Record<StyleId, number> = {
 
 export const SPRING_STIFFNESS = 157.91;
 export const SPRING_DAMPING = 25.13;
-export const SPRING_OMEGA = Math.sqrt(SPRING_STIFFNESS);
-
-/** Progress of the house spring (critically damped) after t seconds. */
-export function springProgress(t: number) {
-  const wt = SPRING_OMEGA * Math.max(0, t);
-
-  return 1 - (1 + wt) * Math.exp(-wt);
-}
 
 export type Bezier = [number, number, number, number];
 
