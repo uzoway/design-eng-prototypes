@@ -1,260 +1,88 @@
 "use client";
 
-import { animate, motion, motionValue, useMotionValue, useReducedMotion } from "motion/react";
-import type { AnimationPlaybackControls, MotionValue, Transition } from "motion/react";
+import {
+  animate,
+  motion,
+  motionValue,
+  useMotionValue,
+  useReducedMotion,
+} from "motion/react";
+import type {
+  AnimationPlaybackControls,
+  MotionValue,
+  Transition,
+} from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent, WheelEvent } from "react";
 
-/* Geometry ---------------------------------------------------------------
-   Every value here was measured from the launch footage after un-skewing
-   each frame (the clock card is a square, so its four edges give the
-   camera's perspective). The glass is a square 880px design screen.
-   Face measurements were taken on the 457px edit-mode card; `k()` converts
-   them to the 496px card this file draws. */
+import {
+  S,
+  BEZEL,
+  GLASS_RADIUS,
+  DISPLAY_INSET,
+  DISPLAY_RADIUS,
+  CX,
+  CY,
+  CARD,
+  HALF,
+  CARD_RADIUS,
+  EDIT_SCALE,
+  k,
+  NUM_PX,
+  FONT,
+  CARD_BLUE,
+  INK,
+  SYSTEM_BLUE,
+  RING_X,
+  RING_SIZE,
+  TILE,
+  PITCH,
+  THUMB_FACE_SCALE,
+  CONTROL,
+  CONTROL_Y,
+  HOURS,
+  MAJOR,
+  PICKER_ORDER,
+  STYLE_LABEL,
+  poseFor,
+  MAJOR_EXTENT_WITH_NUMERALS,
+  TICKS,
+  tickPoints,
+  hasTicks,
+  CORNER_DATE_LEFT,
+  CORNER_DATE_Y,
+  TOP_DATE_Y,
+  SPRING_STIFFNESS,
+  SPRING_DAMPING,
+  EASE_OUT,
+  EASE_IN,
+  EASE_IN_OUT,
+  EASE_SINE,
+  LINEAR,
+  wghtAxis,
+  HOUR_FROM,
+  HOUR_TO,
+  MINUTE_FROM,
+  MINUTE_TO,
+  HAND_WIDTH,
+  STEM_WIDTH,
+  SECOND_TAIL,
+  SECOND_TO,
+} from "./face";
+import type { Bezier, NumeralValues, Pose, StyleId } from "./face";
+import {
+  INSPECT_STYLES,
+  InspectBar,
+  InspectCardScale,
+  InspectFace,
+} from "./inspect";
+import type { TransitionMark } from "./inspect";
 
-const S = 880;
-const BEZEL = 30;
-const GLASS_RADIUS = 158;
-const DISPLAY_INSET = 53; // the panel under the glass: widgets clip here
-const DISPLAY_RADIUS = 105;
-
-const CX = 440;
-const CY = 442;
-const CARD = 496;
-const HALF = CARD / 2;
-const CARD_RADIUS = 68;
-const EDIT_SCALE = 0.9213; // the card shrinks in place; it never slides
-
-const K = CARD / 457;
-
-function k(value: number) {
-  return Math.round(value * K * 100) / 100;
-}
-
-const NUM_PX = 288; // numerals render at the giant size and scale down
-const CAP = 0.7045; // SF Pro cap height / em
-const GIANT_SCALE = k(182.5) / (NUM_PX * CAP);
-const DIAL_SCALE = k(49.8) / (NUM_PX * CAP);
-
-const FONT =
-  '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro", "Helvetica Neue", Inter, system-ui, sans-serif';
-
-const CARD_BLUE = "#6FA1D8";
-const INK = "#101114";
-const SYSTEM_BLUE = "#0A84FF";
-
-// Picker (screen coordinates)
-const RING_X = 749.5;
-const RING_SIZE = 97;
-const TILE = 83;
-const PITCH = 108.5;
-const THUMB_FACE_SCALE = 0.158;
-
-// Edit chrome
-const CONTROL = 93;
-const CONTROL_Y = 745.5;
-
-const HOURS = [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] as const;
-const MAJOR = new Set([12, 3, 6, 9]);
-
-type StyleId = "giant" | "dial" | "numeralsTicks" | "ticks";
-
-/** Top to bottom, as in the picker. The footage walks it bottom → top. */
-const PICKER_ORDER: StyleId[] = ["ticks", "numeralsTicks", "dial", "giant"];
-
-const STYLE_LABEL: Record<StyleId, string> = {
-  giant: "Giant numerals",
-  dial: "Numerals",
-  numeralsTicks: "Numerals and ticks",
-  ticks: "Ticks",
+type DebugConfig = {
+  slow: number;
+  timeOffsetMs: number;
+  frozenAt: number | null;
 };
-
-/* Numeral layouts (ink centres, footage card units) -------------------- */
-
-// Dial: twelve numerals on a near-circle, r ≈ 183 (0.40 of the card).
-const DIAL: Record<number, [number, number]> = {
-  12: [0, -180],
-  1: [93.5, -156],
-  2: [160, -90],
-  3: [186.5, 0],
-  4: [159.75, 91.5],
-  5: [91.25, 158.5],
-  6: [0, 181],
-  7: [-91.25, 158.5],
-  8: [-159.75, 91.5],
-  9: [-186.5, 0],
-  10: [-160, -90],
-  11: [-93.5, -156],
-};
-
-// Giant: 12, 3, 6 and 9 at 3.7× the dial size, each pinned at the same
-// outer edge as its dial self (≈ 205 from centre), so shrinking reads as
-// the numeral contracting into the edge rather than flying across.
-const GIANT: Record<number, [number, number]> = {
-  12: [-14.5, -110.5],
-  3: [143, 4],
-  6: [-3.5, 111.5],
-  9: [-141.5, 3.5],
-};
-
-// Numerals and ticks: the same numerals pushed 60 in by the ticks.
-const PUSH = 60;
-
-// Ink-centre offsets from the text box centre, in 288px font units (SF Pro).
-const INK_DX: Record<number, number> = {
-  1: -10.4,
-  2: 1.5,
-  3: -0.9,
-  4: 1.2,
-  5: 3.3,
-  6: -1,
-  7: -0.3,
-  8: 0,
-  9: 1,
-  10: 0.4,
-  11: -10.4,
-  12: 0.5,
-};
-
-const WEIGHT_GIANT = 270;
-const WEIGHT_DIAL = 570;
-const TRACK_GIANT = -0.115 * NUM_PX;
-const TRACK_DIAL = -0.05 * NUM_PX;
-
-type Pose = {
-  x: number;
-  y: number;
-  scale: number;
-  weight: number;
-  track: number;
-  visible: boolean;
-};
-
-function pose(hour: number, cx: number, cy: number, scale: number, weight: number, visible = true): Pose {
-  // Position the text box so the ink centre lands on (cx, cy).
-  return {
-    x: Math.round((k(cx) - INK_DX[hour] * scale) * 100) / 100,
-    y: Math.round(k(cy) * 100) / 100,
-    scale: Math.round(scale * 10000) / 10000,
-    weight,
-    track: weight === WEIGHT_GIANT ? TRACK_GIANT : TRACK_DIAL,
-    visible,
-  };
-}
-
-function dialPose(hour: number, shrink = 1, inset = 0, visible = true, glyph = shrink) {
-  const [x, y] = DIAL[hour];
-  const r = Math.hypot(x, y);
-  const f = ((r - inset) / r) * shrink;
-
-  return pose(hour, x * f, y * f, DIAL_SCALE * glyph, WEIGHT_DIAL, visible);
-}
-
-/** Where each numeral sits in each style, including where hidden ones wait. */
-function poseFor(style: StyleId, hour: number): Pose {
-  const major = MAJOR.has(hour);
-
-  if (style === "giant") {
-    if (major) {
-      const [x, y] = GIANT[hour];
-      return pose(hour, x, y, GIANT_SCALE, WEIGHT_GIANT);
-    }
-    // Minor numerals wait inside the ring (0.67 of it, at 0.4 size) and
-    // grow out to it; in the footage their travel leads their growth.
-    return dialPose(hour, 0.67, 0, false, 0.4);
-  }
-
-  if (style === "dial") {
-    return dialPose(hour);
-  }
-
-  // Minor numerals leave with the push, shrinking to half size as they go.
-  if (style === "numeralsTicks") {
-    return major ? dialPose(hour, 1, PUSH) : dialPose(hour, 1, PUSH, false, 0.5);
-  }
-
-  // Ticks only: majors pull in toward the centre (0.69) while their
-  // glyphs shrink faster (0.5), as in the footage.
-  return major ? dialPose(hour, 0.69, PUSH, false, 0.5) : dialPose(hour, 1, PUSH, false, 0.5);
-}
-
-/* Ticks: rays between two concentric squares ----------------------------
-   Outer ends sit on a square 204 out (the numerals' edge line). Hour ticks
-   run in to 140, minute ticks to 182.8, so corner ticks are longer. With
-   numerals showing, the 12/3/6/9 ticks stop at 161. */
-
-const TICK_OUT = k(204);
-const TICK_IN_HOUR = k(140);
-const TICK_IN_MINUTE = k(182.8);
-const MAJOR_EXTENT_WITH_NUMERALS = (204 - 161) / (204 - 140);
-
-const TICKS = Array.from({ length: 60 }, function makeTick(_, i) {
-  const theta = (i / 60) * Math.PI * 2;
-  const ux = Math.sin(theta);
-  const uy = -Math.cos(theta);
-  const m = Math.max(Math.abs(ux), Math.abs(uy));
-  const hourTick = i % 5 === 0;
-  const outer = TICK_OUT / m;
-  const inner = (hourTick ? TICK_IN_HOUR : TICK_IN_MINUTE) / m;
-
-  return {
-    ux,
-    uy,
-    outer,
-    length: outer - inner,
-    major: i % 15 === 0,
-    width: hourTick ? k(3.7) : k(1.4),
-  };
-});
-
-function round2(value: number) {
-  return Math.round(value * 100) / 100;
-}
-
-function tickPoints(tick: (typeof TICKS)[number], grow: number, majorExtent: number) {
-  const reach = tick.outer - tick.length * grow * (tick.major ? majorExtent : 1);
-
-  return {
-    x1: round2(tick.ux * tick.outer),
-    y1: round2(tick.uy * tick.outer),
-    x2: round2(tick.ux * reach),
-    y2: round2(tick.uy * reach),
-  };
-}
-
-function hasTicks(style: StyleId) {
-  return style === "numeralsTicks" || style === "ticks";
-}
-
-/* Date ------------------------------------------------------------------- */
-
-const CORNER_DATE_LEFT = k(-197);
-const CORNER_DATE_Y = k(189);
-const TOP_DATE_Y: Record<StyleId, number> = {
-  giant: k(-86),
-  dial: k(-86),
-  numeralsTicks: k(-58.5),
-  ticks: k(-81.5),
-};
-
-/* Timing -----------------------------------------------------------------
-   The house spring is SwiftUI's smooth spring: critically damped, 0.5s
-   response (ω = 4π). Fitted to the footage it tracks the card's shrink and
-   every numeral's travel to within 2% at each frame. The picker scroll is
-   a separate ~300ms ease-in-out (its velocity curve is symmetric). */
-
-const SPRING_STIFFNESS = 157.91;
-const SPRING_DAMPING = 25.13;
-
-type Bezier = [number, number, number, number];
-
-const EASE_OUT: Bezier = [0.22, 0.61, 0.36, 1];
-const EASE_IN: Bezier = [0.4, 0, 1, 1];
-const EASE_IN_OUT: Bezier = [0.4, 0, 0.6, 1];
-const EASE_SINE: Bezier = [0.37, 0, 0.63, 1];
-const LINEAR: Bezier = [0, 0, 1, 1];
-
-type DebugConfig = { slow: number; timeOffsetMs: number; frozenAt: number | null };
 
 function readDebugConfig(): DebugConfig {
   if (typeof window === "undefined") {
@@ -287,31 +115,38 @@ function readDebugConfig(): DebugConfig {
 
 /* Clock face pieces --------------------------------------------------------- */
 
-type NumeralValues = {
-  x: MotionValue<number>;
-  y: MotionValue<number>;
-  scale: MotionValue<number>;
-  weight: MotionValue<number>;
-  track: MotionValue<string>;
-  opacity: MotionValue<number>;
-};
-
 function createNumeralValues(style: StyleId): NumeralValues[] {
   return HOURS.map(function create(hour) {
     const p = poseFor(style, hour);
+    const weight = motionValue(p.weight);
+    const wght = motionValue(wghtAxis(p.weight));
+
+    // Weight animates through the font's variable axis. Animating
+    // font-weight instead makes Chrome swap to a heavier face for values
+    // between ~505 and 539, which reads as a flicker mid-transition.
+    weight.on("change", function syncAxis(value) {
+      wght.set(wghtAxis(value));
+    });
 
     return {
       x: motionValue(p.x),
       y: motionValue(p.y),
       scale: motionValue(p.scale),
-      weight: motionValue(p.weight),
+      weight,
+      wght,
       track: motionValue(`${p.track}px`),
       opacity: motionValue(p.visible ? 1 : 0),
     };
   });
 }
 
-function NumeralText({ hour, track }: { hour: number; track?: MotionValue<string> | string }) {
+function NumeralText({
+  hour,
+  track,
+}: {
+  hour: number;
+  track?: MotionValue<string> | string;
+}) {
   const text = String(hour);
 
   if (text.length === 1) {
@@ -334,13 +169,28 @@ function ThumbFace({ style }: { style: StyleId }) {
 
   return (
     <span data-hv-thumb-face aria-hidden="true">
-      <span data-hv-thumb-canvas style={{ transform: `scale(${THUMB_FACE_SCALE})` }}>
+      <span
+        data-hv-thumb-canvas
+        style={{ transform: `scale(${THUMB_FACE_SCALE})` }}
+      >
         {ticks && (
-          <svg viewBox={`${-HALF} ${-HALF} ${CARD} ${CARD}`} width={CARD} height={CARD} data-hv-ticks>
+          <svg
+            viewBox={`${-HALF} ${-HALF} ${CARD} ${CARD}`}
+            width={CARD}
+            height={CARD}
+            data-hv-ticks
+          >
             {TICKS.map(function renderThumbTick(tick, i) {
               const p = tickPoints(tick, 1, extent);
 
-              return <line key={i} {...p} stroke="#fff" strokeWidth={tick.width * 1.4} />;
+              return (
+                <line
+                  key={i}
+                  {...p}
+                  stroke="#fff"
+                  strokeWidth={tick.width * 1.4}
+                />
+              );
             })}
           </svg>
         )}
@@ -357,7 +207,7 @@ function ThumbFace({ style }: { style: StyleId }) {
               data-hv-numeral
               style={{
                 transform: `translate(${p.x}px, ${p.y}px) scale(${p.scale})`,
-                fontWeight: p.weight + 60,
+                fontVariationSettings: wghtAxis(p.weight + 60),
                 color: "#fff",
               }}
             >
@@ -371,7 +221,9 @@ function ThumbFace({ style }: { style: StyleId }) {
 }
 
 function formatDate(date: Date) {
-  const day = date.toLocaleDateString("en-US", { weekday: "short" }).toUpperCase();
+  const day = date
+    .toLocaleDateString("en-US", { weekday: "short" })
+    .toUpperCase();
 
   return `${day} ${date.getDate()}`;
 }
@@ -381,21 +233,35 @@ function formatDate(date: Date) {
 export function HomeviewClock() {
   const reducedMotion = Boolean(useReducedMotion());
 
-  const debugRef = useRef<DebugConfig>({ slow: 1, timeOffsetMs: 0, frozenAt: null });
+  const debugRef = useRef<DebugConfig>({
+    slow: 1,
+    timeOffsetMs: 0,
+    frozenAt: null,
+  });
   const controlsRef = useRef<Set<AnimationPlaybackControls>>(new Set());
+  const latestRef = useRef(new WeakMap<object, AnimationPlaybackControls>());
   const styleRef = useRef<StyleId>("giant");
   const styleBeforeEditRef = useRef<StyleId>("giant");
   const modeRef = useRef<"home" | "edit">("home");
   const wheelLockRef = useRef(0);
   const wheelAccumRef = useRef(0);
-  const dragRef = useRef<{ startY: number; startOffset: number; id: number } | null>(null);
+  const dragRef = useRef<{
+    startY: number;
+    startOffset: number;
+    id: number;
+  } | null>(null);
   const fitRef = useRef<HTMLDivElement>(null);
+  const pickerRef = useRef<HTMLDivElement>(null);
+  const customizeRef = useRef<HTMLButtonElement>(null);
   const tickRefs = useRef<(SVGLineElement | null)[]>([]);
 
   const [style, setStyle] = useState<StyleId>("giant");
   const [mode, setMode] = useState<"home" | "edit">("home");
   const [dateLabel, setDateLabel] = useState("TUE 13");
   const [fitScale, setFitScale] = useState(1);
+  const [inspect, setInspect] = useState(false);
+  const [speed, setSpeed] = useState(1);
+  const markRef = useRef<TransitionMark>({ at: -Infinity, slow: 1 });
   const [announcement, setAnnouncement] = useState("");
 
   const [numerals] = useState(function initNumerals() {
@@ -444,7 +310,11 @@ export function HomeviewClock() {
     };
   }
 
-  function tween(duration: number, delay = 0, ease: Bezier = EASE_OUT): Transition {
+  function tween(
+    duration: number,
+    delay = 0,
+    ease: Bezier = EASE_OUT,
+  ): Transition {
     const slow = debugRef.current.slow;
 
     if (reducedMotion) {
@@ -454,10 +324,27 @@ export function HomeviewClock() {
     return { duration: duration * slow, delay: delay * slow, ease };
   }
 
-  function run<T extends number | string>(value: MotionValue<T>, to: T, transition: Transition) {
-    const controls = animate(value as unknown as MotionValue<number>, to as number, transition);
+  function run<T extends number | string>(
+    value: MotionValue<T>,
+    to: T,
+    transition: Transition,
+  ) {
+    const controls = animate(
+      value as unknown as MotionValue<number>,
+      to as number,
+      transition,
+    );
     const registry = controlsRef.current;
+    const latest = latestRef.current;
+    const replaced = latest.get(value);
 
+    // An interrupted animation never resolves, so drop it here; otherwise
+    // the debug seek would rewind it alongside the one that replaced it.
+    if (replaced) {
+      registry.delete(replaced);
+    }
+
+    latest.set(value, controls);
     registry.add(controls);
     void controls.then(function release() {
       registry.delete(controls);
@@ -472,6 +359,32 @@ export function HomeviewClock() {
     values.scale.set(p.scale);
     values.weight.set(p.weight);
     values.track.set(`${p.track}px`);
+  }
+
+  // Focus follows the selection, as in a radio group. Entering Customize
+  // moves focus into the picker; otherwise only keep it there if it was.
+  function focusSelectedThumb(always: boolean) {
+    requestAnimationFrame(function moveFocus() {
+      const picker = pickerRef.current;
+
+      if (!picker || (!always && !picker.contains(document.activeElement))) {
+        return;
+      }
+
+      picker
+        .querySelector<HTMLButtonElement>('[aria-checked="true"]')
+        ?.focus({ preventScroll: true });
+    });
+  }
+
+  // Inspect plots the house spring from the last transition's start.
+  function markTransition() {
+    markRef.current = { at: performance.now(), slow: debugRef.current.slow };
+  }
+
+  function chooseSpeed(next: number) {
+    setSpeed(next);
+    debugRef.current.slow = 1 / next;
   }
 
   function springPose(values: NumeralValues, p: Pose, delay = 0) {
@@ -501,6 +414,8 @@ export function HomeviewClock() {
     styleRef.current = to;
     setStyle(to);
     setAnnouncement(`${STYLE_LABEL[to]} style`);
+    markTransition();
+    focusSelectedThumb(false);
 
     HOURS.forEach(function moveNumeral(hour, i) {
       const values = numerals[i];
@@ -542,12 +457,20 @@ export function HomeviewClock() {
 
     // Ticks
     if (hasTicks(to)) {
-      run(majorExtent, to === "ticks" ? 1 : MAJOR_EXTENT_WITH_NUMERALS, spring());
+      run(
+        majorExtent,
+        to === "ticks" ? 1 : MAJOR_EXTENT_WITH_NUMERALS,
+        spring(),
+      );
     }
 
     if (hasTicks(to) !== hasTicks(from)) {
       run(tickGrow, hasTicks(to) ? 1 : 0, spring());
-      run(ticksOpacity, hasTicks(to) ? 1 : 0, hasTicks(to) ? tween(0.2, 0.04) : tween(0.18));
+      run(
+        ticksOpacity,
+        hasTicks(to) ? 1 : 0,
+        hasTicks(to) ? tween(0.2, 0.04) : tween(0.18),
+      );
     }
 
     // The date moves house between the giant face and the rest.
@@ -578,6 +501,8 @@ export function HomeviewClock() {
     styleBeforeEditRef.current = styleRef.current;
     setMode("edit");
     setAnnouncement("Customizing clock. Choose a style.");
+    markTransition();
+    focusSelectedThumb(true);
 
     run(cardScale, EDIT_SCALE, spring());
     run(homeOpacity, 0, tween(0.2, 0.04, EASE_IN_OUT));
@@ -598,6 +523,10 @@ export function HomeviewClock() {
     modeRef.current = "home";
     setMode("home");
     setAnnouncement(keep ? "Clock style saved." : "Changes discarded.");
+    markTransition();
+    requestAnimationFrame(function returnFocus() {
+      customizeRef.current?.focus({ preventScroll: true });
+    });
 
     // The mirror: edit layer out at once, card grows back, home returns.
     run(editOpacity, 0, tween(0.05, 0, LINEAR));
@@ -609,7 +538,10 @@ export function HomeviewClock() {
 
   function stepStyle(direction: 1 | -1) {
     const index = PICKER_ORDER.indexOf(styleRef.current);
-    const next = Math.min(PICKER_ORDER.length - 1, Math.max(0, index + direction));
+    const next = Math.min(
+      PICKER_ORDER.length - 1,
+      Math.max(0, index + direction),
+    );
 
     changeStyle(PICKER_ORDER[next]);
   }
@@ -639,7 +571,11 @@ export function HomeviewClock() {
       return;
     }
 
-    dragRef.current = { startY: event.clientY, startOffset: pickerY.get(), id: event.pointerId };
+    dragRef.current = {
+      startY: event.clientY,
+      startOffset: pickerY.get(),
+      id: event.pointerId,
+    };
     event.currentTarget.setPointerCapture(event.pointerId);
   }
 
@@ -671,20 +607,39 @@ export function HomeviewClock() {
 
     const index = Math.round(-pickerY.get() / PITCH);
 
-    changeStyle(PICKER_ORDER[Math.min(PICKER_ORDER.length - 1, Math.max(0, index))]);
+    changeStyle(
+      PICKER_ORDER[Math.min(PICKER_ORDER.length - 1, Math.max(0, index))],
+    );
   }
 
   /* Effects ---------------------------------------------------------------- */
 
-  const shortcutsRef = useRef({ step: stepStyle, exit: exitEdit, enter: enterEdit, change: changeStyle });
+  const shortcutsRef = useRef({
+    step: stepStyle,
+    exit: exitEdit,
+    enter: enterEdit,
+    change: changeStyle,
+  });
 
   useEffect(function refreshShortcuts() {
-    shortcutsRef.current = { step: stepStyle, exit: exitEdit, enter: enterEdit, change: changeStyle };
+    shortcutsRef.current = {
+      step: stepStyle,
+      exit: exitEdit,
+      enter: enterEdit,
+      change: changeStyle,
+    };
   });
 
   useEffect(function initDebugAndDate() {
     debugRef.current = readDebugConfig();
-    setDateLabel(formatDate(new Date(Date.now() + debugRef.current.timeOffsetMs)));
+    setDateLabel(
+      formatDate(new Date(Date.now() + debugRef.current.timeOffsetMs)),
+    );
+
+    // `?inspect` opens with the inspector on (handy for recording).
+    if (new URLSearchParams(window.location.search).has("inspect")) {
+      setInspect(true);
+    }
 
     const registry = controlsRef.current;
 
@@ -803,6 +758,18 @@ export function HomeviewClock() {
 
   useEffect(function bindKeys() {
     function handleKeyDown(event: KeyboardEvent) {
+      if (
+        event.key.toLowerCase() === "i" &&
+        !event.metaKey &&
+        !event.ctrlKey &&
+        !event.altKey
+      ) {
+        setInspect(function toggle(on) {
+          return !on;
+        });
+        return;
+      }
+
       if (modeRef.current !== "edit") {
         return;
       }
@@ -815,8 +782,16 @@ export function HomeviewClock() {
         shortcutsRef.current.step(1);
       } else if (event.key === "Escape") {
         shortcutsRef.current.exit(false);
-      } else if (event.key === "Enter" && !(event.target instanceof HTMLButtonElement)) {
-        shortcutsRef.current.exit(true);
+      } else if (event.key === "Enter") {
+        const target = event.target;
+        const onThumb =
+          target instanceof HTMLElement && target.hasAttribute("data-hv-thumb");
+
+        // Other buttons keep their own Enter; on the picker it means done.
+        if (onThumb || !(target instanceof HTMLButtonElement)) {
+          event.preventDefault();
+          shortcutsRef.current.exit(true);
+        }
       }
     }
 
@@ -830,235 +805,306 @@ export function HomeviewClock() {
   const editing = mode === "edit";
 
   return (
-    <div ref={fitRef} data-hv-fit>
-      <div data-hv-device style={{ transform: `scale(${fitScale})` }}>
-        <div data-hv-screen data-mode={mode}>
-          <p className="sr-only" role="status" aria-live="polite">
-            {announcement}
-          </p>
+    <div data-hv-stage>
+      <div ref={fitRef} data-hv-fit>
+        <div data-hv-device style={{ transform: `scale(${fitScale})` }}>
+          <div data-hv-screen data-mode={mode}>
+            <p className="sr-only" role="status" aria-live="polite">
+              {announcement}
+            </p>
 
-          <div data-hv-display>
-            {/* Home chrome ------------------------------------------------- */}
+            <div data-hv-display>
+              {/* Home chrome ------------------------------------------------- */}
 
-            <motion.span data-hv-label aria-hidden={editing} style={{ opacity: homeOpacity }}>
-              ANALOG
-            </motion.span>
+              <motion.span
+                data-hv-label
+                aria-hidden={editing}
+                style={{ opacity: homeOpacity }}
+              >
+                ANALOG
+              </motion.span>
 
-            <motion.div data-hv-widget aria-hidden="true" style={{ x: widgetX, opacity: widgetOpacity }}>
-              <div data-hv-widget-top>
-                <strong>{dateLabel}</strong>
-                <span>
-                  <SunriseIcon /> 6:52
-                </span>
-              </div>
-              <div data-hv-widget-bottom>
-                <SunIcon /> 72°
-              </div>
-            </motion.div>
+              <motion.div
+                data-hv-widget
+                aria-hidden="true"
+                style={{ x: widgetX, opacity: widgetOpacity }}
+              >
+                <div data-hv-widget-top>
+                  <strong>{dateLabel}</strong>
+                  <span>
+                    <SunriseIcon /> 6:52
+                  </span>
+                </div>
+                <div data-hv-widget-bottom>
+                  <SunIcon /> 72°
+                </div>
+              </motion.div>
 
-            {/* The clock card ---------------------------------------------- */}
+              {/* The clock card ---------------------------------------------- */}
 
-            <motion.div data-hv-card style={{ scale: cardScale }}>
-              <div data-hv-card-fill role="img" aria-label={`Analog clock, ${STYLE_LABEL[style]} style`}>
-                <div data-hv-face>
-                  <motion.svg
-                    viewBox={`${-HALF} ${-HALF} ${CARD} ${CARD}`}
-                    width={CARD}
-                    height={CARD}
-                    aria-hidden="true"
-                    data-hv-ticks
-                    style={{ opacity: ticksOpacity }}
-                  >
-                    {TICKS.map(function renderTick(tick, i) {
-                      const p = tickPoints(tick, 0, MAJOR_EXTENT_WITH_NUMERALS);
+              <motion.div data-hv-card style={{ scale: cardScale }}>
+                <div
+                  data-hv-card-fill
+                  role="img"
+                  aria-label={`Analog clock, ${STYLE_LABEL[style]} style`}
+                >
+                  <div data-hv-face>
+                    <motion.svg
+                      viewBox={`${-HALF} ${-HALF} ${CARD} ${CARD}`}
+                      width={CARD}
+                      height={CARD}
+                      aria-hidden="true"
+                      data-hv-ticks
+                      style={{ opacity: ticksOpacity }}
+                    >
+                      {TICKS.map(function renderTick(tick, i) {
+                        const p = tickPoints(
+                          tick,
+                          0,
+                          MAJOR_EXTENT_WITH_NUMERALS,
+                        );
+
+                        return (
+                          <line
+                            key={i}
+                            ref={function keepTick(node) {
+                              tickRefs.current[i] = node;
+                            }}
+                            {...p}
+                            stroke={INK}
+                            strokeWidth={tick.width}
+                          />
+                        );
+                      })}
+                    </motion.svg>
+
+                    {HOURS.map(function renderNumeral(hour, i) {
+                      const values = numerals[i];
 
                       return (
-                        <line
-                          key={i}
-                          ref={function keepTick(node) {
-                            tickRefs.current[i] = node;
+                        <motion.span
+                          key={hour}
+                          data-hv-numeral
+                          style={{
+                            x: values.x,
+                            y: values.y,
+                            scale: values.scale,
+                            opacity: values.opacity,
+                            fontVariationSettings: values.wght,
                           }}
-                          {...p}
-                          stroke={INK}
-                          strokeWidth={tick.width}
-                        />
+                        >
+                          <NumeralText hour={hour} track={values.track} />
+                        </motion.span>
                       );
                     })}
-                  </motion.svg>
 
-                  {HOURS.map(function renderNumeral(hour, i) {
-                    const values = numerals[i];
+                    <motion.span
+                      data-hv-date
+                      data-corner
+                      style={{
+                        x: CORNER_DATE_LEFT,
+                        y: CORNER_DATE_Y,
+                        opacity: cornerDateOpacity,
+                      }}
+                    >
+                      {dateLabel}
+                    </motion.span>
 
-                    return (
+                    <motion.span
+                      data-hv-date
+                      style={{ x: 0, y: topDateY, opacity: topDateOpacity }}
+                    >
+                      {dateLabel}
+                    </motion.span>
+
+                    <div data-hv-hands aria-hidden="true">
                       <motion.span
-                        key={hour}
-                        data-hv-numeral
-                        style={{
-                          x: values.x,
-                          y: values.y,
-                          scale: values.scale,
-                          opacity: values.opacity,
-                          fontWeight: values.weight,
-                        }}
+                        data-hv-hand="hour"
+                        style={{ rotate: hourAngle }}
                       >
-                        <NumeralText hour={hour} track={values.track} />
+                        <i />
                       </motion.span>
-                    );
-                  })}
-
-                  <motion.span
-                    data-hv-date
-                    data-corner
-                    style={{ x: CORNER_DATE_LEFT, y: CORNER_DATE_Y, opacity: cornerDateOpacity }}
-                  >
-                    {dateLabel}
-                  </motion.span>
-
-                  <motion.span data-hv-date style={{ x: 0, y: topDateY, opacity: topDateOpacity }}>
-                    {dateLabel}
-                  </motion.span>
-
-                  <div data-hv-hands aria-hidden="true">
-                    <motion.span data-hv-hand="hour" style={{ rotate: hourAngle }}>
-                      <i />
-                    </motion.span>
-                    <motion.span data-hv-hand="minute" style={{ rotate: minuteAngle }}>
-                      <i />
-                    </motion.span>
-                    <motion.span data-hv-hand="second" style={{ rotate: secondAngle }} />
-                    <span data-hv-pivot />
+                      <motion.span
+                        data-hv-hand="minute"
+                        style={{ rotate: minuteAngle }}
+                      >
+                        <i />
+                      </motion.span>
+                      <motion.span
+                        data-hv-hand="second"
+                        style={{ rotate: secondAngle }}
+                      />
+                      <span data-hv-pivot />
+                    </div>
                   </div>
                 </div>
-              </div>
-            </motion.div>
 
-            <motion.button
-              type="button"
-              data-hv-glass
-              data-hv-customize
-              tabIndex={editing ? -1 : 0}
-              aria-hidden={editing}
-              style={{ opacity: homeOpacity }}
-              onClick={enterEdit}
-            >
-              Customize
-            </motion.button>
+                {inspect && (
+                  <InspectFace
+                    numerals={numerals}
+                    cardScale={cardScale}
+                    tickGrow={tickGrow}
+                    majorExtent={majorExtent}
+                    ticksOpacity={ticksOpacity}
+                    hourAngle={hourAngle}
+                    minuteAngle={minuteAngle}
+                    secondAngle={secondAngle}
+                    fitScale={fitScale}
+                  />
+                )}
+              </motion.div>
 
-            <motion.button
-              type="button"
-              data-hv-glass
-              data-hv-round
-              data-hv-plus
-              tabIndex={editing ? -1 : 0}
-              aria-hidden={editing}
-              aria-label="Add widget"
-              style={{ opacity: homeOpacity }}
-            >
-              <PlusIcon />
-            </motion.button>
-
-            {/* Edit chrome ------------------------------------------------- */}
-
-            <motion.div data-hv-edit style={{ opacity: editOpacity }}>
-              <span data-hv-outline aria-hidden="true" />
-
-              <div data-hv-tabs role="tablist" aria-hidden={!editing}>
-                <button type="button" role="tab" aria-selected="true" tabIndex={editing ? 0 : -1} style={{ left: 440.5 }}>
-                  STYLE
-                </button>
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected="false"
-                  aria-disabled="true"
-                  tabIndex={-1}
-                  style={{ left: 590.5 }}
-                >
-                  COLOR
-                </button>
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected="false"
-                  aria-disabled="true"
-                  tabIndex={-1}
-                  style={{ left: 740 }}
-                >
-                  FONT
-                </button>
-              </div>
-
-              <div
-                data-hv-picker
-                role="radiogroup"
-                aria-label="Clock style"
-                aria-hidden={!editing}
-                onWheel={handleWheel}
-                onPointerDown={handlePickerPointerDown}
-                onPointerMove={handlePickerPointerMove}
-                onPointerUp={handlePickerPointerUp}
-                onPointerCancel={handlePickerPointerUp}
+              <motion.button
+                ref={customizeRef}
+                type="button"
+                data-hv-glass
+                data-hv-customize
+                tabIndex={editing ? -1 : 0}
+                aria-hidden={editing}
+                style={{ opacity: homeOpacity }}
+                onClick={enterEdit}
               >
-                <motion.div data-hv-picker-list style={{ y: pickerY }}>
-                  {PICKER_ORDER.map(function renderThumb(id, index) {
-                    const selected = id === style;
+                Customize
+              </motion.button>
 
-                    return (
-                      <button
-                        key={id}
-                        type="button"
-                        role="radio"
-                        aria-checked={selected}
-                        aria-label={STYLE_LABEL[id]}
-                        tabIndex={editing && selected ? 0 : -1}
-                        data-hv-thumb
-                        style={{ top: index * PITCH }}
-                        onClick={function selectStyle() {
-                          changeStyle(id);
-                        }}
-                      >
-                        <ThumbFace style={id} />
-                      </button>
-                    );
-                  })}
-                </motion.div>
-              </div>
-              <span data-hv-picker-ring aria-hidden="true" />
-
-              <button
+              <motion.button
                 type="button"
                 data-hv-glass
                 data-hv-round
-                data-hv-cancel
-                aria-label="Cancel"
-                aria-hidden={!editing}
-                tabIndex={editing ? 0 : -1}
-                onClick={function cancel() {
-                  exitEdit(false);
-                }}
+                data-hv-plus
+                tabIndex={editing ? -1 : 0}
+                aria-hidden={editing}
+                aria-label="Add widget"
+                style={{ opacity: homeOpacity }}
               >
-                <CloseIcon />
-              </button>
+                <PlusIcon />
+              </motion.button>
 
-              <button
-                type="button"
-                data-hv-round
-                data-hv-done
-                aria-label="Done"
-                aria-hidden={!editing}
-                tabIndex={editing ? 0 : -1}
-                onClick={function done() {
-                  exitEdit(true);
-                }}
-              >
-                <CheckIcon />
-              </button>
-            </motion.div>
+              {/* Edit chrome ------------------------------------------------- */}
+
+              <motion.div data-hv-edit style={{ opacity: editOpacity }}>
+                <span data-hv-outline aria-hidden="true" />
+
+                <div data-hv-tabs role="tablist" aria-hidden={!editing}>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected="true"
+                    tabIndex={editing ? 0 : -1}
+                    style={{ left: 440.5 }}
+                  >
+                    STYLE
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected="false"
+                    aria-disabled="true"
+                    tabIndex={-1}
+                    style={{ left: 590.5 }}
+                  >
+                    COLOR
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected="false"
+                    aria-disabled="true"
+                    tabIndex={-1}
+                    style={{ left: 740 }}
+                  >
+                    FONT
+                  </button>
+                </div>
+
+                <div
+                  ref={pickerRef}
+                  data-hv-picker
+                  role="radiogroup"
+                  aria-label="Clock style"
+                  aria-hidden={!editing}
+                  onWheel={handleWheel}
+                  onPointerDown={handlePickerPointerDown}
+                  onPointerMove={handlePickerPointerMove}
+                  onPointerUp={handlePickerPointerUp}
+                  onPointerCancel={handlePickerPointerUp}
+                >
+                  <motion.div data-hv-picker-list style={{ y: pickerY }}>
+                    {PICKER_ORDER.map(function renderThumb(id, index) {
+                      const selected = id === style;
+
+                      return (
+                        <button
+                          key={id}
+                          type="button"
+                          role="radio"
+                          aria-checked={selected}
+                          aria-label={STYLE_LABEL[id]}
+                          tabIndex={editing && selected ? 0 : -1}
+                          data-hv-thumb
+                          style={{ top: index * PITCH }}
+                          onClick={function selectStyle() {
+                            changeStyle(id);
+                          }}
+                        >
+                          <ThumbFace style={id} />
+                        </button>
+                      );
+                    })}
+                  </motion.div>
+                </div>
+                <span data-hv-picker-ring aria-hidden="true" />
+
+                <button
+                  type="button"
+                  data-hv-glass
+                  data-hv-round
+                  data-hv-cancel
+                  aria-label="Cancel"
+                  aria-hidden={!editing}
+                  tabIndex={editing ? 0 : -1}
+                  onClick={function cancel() {
+                    exitEdit(false);
+                  }}
+                >
+                  <CloseIcon />
+                </button>
+
+                <button
+                  type="button"
+                  data-hv-round
+                  data-hv-done
+                  aria-label="Done"
+                  aria-hidden={!editing}
+                  tabIndex={editing ? 0 : -1}
+                  onClick={function done() {
+                    exitEdit(true);
+                  }}
+                >
+                  <CheckIcon />
+                </button>
+              </motion.div>
+
+              {inspect && (
+                <InspectCardScale cardScale={cardScale} fitScale={fitScale} />
+              )}
+            </div>
           </div>
         </div>
       </div>
 
+      <InspectBar
+        inspect={inspect}
+        onToggle={function toggleInspect() {
+          setInspect(!inspect);
+        }}
+        speed={speed}
+        onSpeed={chooseSpeed}
+        markRef={markRef}
+      />
+
       <style>{STYLES}</style>
+      <style>{INSPECT_STYLES}</style>
     </div>
   );
 }
@@ -1068,7 +1114,12 @@ export function HomeviewClock() {
 function PlusIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M12 3.5v17M3.5 12h17" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+      <path
+        d="M12 3.5v17M3.5 12h17"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
@@ -1076,7 +1127,12 @@ function PlusIcon() {
 function CloseIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M4.5 4.5l15 15M19.5 4.5l-15 15" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" />
+      <path
+        d="M4.5 4.5l15 15M19.5 4.5l-15 15"
+        stroke="currentColor"
+        strokeWidth="2.6"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
@@ -1133,20 +1189,17 @@ const OUTLINE_GAP = 3.5;
 const OUTLINE_STROKE = 4;
 const OUTLINE_SIZE = CARD * EDIT_SCALE + (OUTLINE_GAP + OUTLINE_STROKE) * 2;
 
-// Hands, in card units from the pivot
-const HOUR_FROM = k(29);
-const HOUR_TO = k(120.5);
-const MINUTE_FROM = k(30);
-const MINUTE_TO = k(202.5);
-const HAND_WIDTH = k(17);
-const STEM_WIDTH = k(3.8);
-const SECOND_TAIL = k(32);
-const SECOND_TO = k(207);
-
 const STYLES = `
+  [data-hv-stage] {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+  }
+
   [data-hv-fit] {
     position: relative;
-    width: min(${DEVICE}px, calc(100vw - 32px), calc(100svh - 48px));
+    width: min(${DEVICE}px, calc(100vw - 32px), calc(100svh - 48px - 62px));
     aspect-ratio: 1;
   }
 
@@ -1312,6 +1365,8 @@ const STYLES = `
     top: 0;
     translate: -50% -50%;
     font-size: ${NUM_PX}px;
+    font-weight: 400;
+    font-synthesis: none;
     line-height: 1;
     text-box: trim-both cap alphabetic;
     color: ${INK};
@@ -1325,7 +1380,9 @@ const STYLES = `
     top: 0;
     translate: -50% -50%;
     font-size: ${k(24.8)}px;
-    font-weight: 520;
+    font-weight: 400;
+    font-variation-settings: "wght" 520;
+    font-synthesis: none;
     line-height: 1;
     text-box: trim-both cap alphabetic;
     color: ${INK};
