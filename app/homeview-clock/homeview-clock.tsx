@@ -12,7 +12,7 @@ import type {
   MotionValue,
   Transition,
 } from "motion/react";
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent, WheelEvent } from "react";
 
 import {
@@ -85,10 +85,8 @@ function readDebugConfig(): DebugConfig {
   const params = new URLSearchParams(window.location.search);
   const slow = Math.max(1, Number(params.get("slow")) || 1);
   let timeOffsetMs = 0;
-  // `record` frames the device for a square screen recording and shows
-  // Apple's demo time, 10:09:30, with the hands held still.
-  const record = params.has("record");
-  const time = params.get("time") ?? (record ? "10:09:30" : null);
+  const time = params.get("time");
+
   const date = params.get("date");
 
   if (time || date) {
@@ -103,19 +101,9 @@ function readDebugConfig(): DebugConfig {
   }
 
   // `freeze` holds the hands still, as on Apple's demo units (10:09:30).
-  const frozenAt =
-    params.has("freeze") || record ? Date.now() + timeOffsetMs : null;
+  const frozenAt = params.has("freeze") ? Date.now() + timeOffsetMs : null;
 
   return { slow, timeOffsetMs, frozenAt };
-}
-
-// The URL never changes while the page is open, so there's nothing to watch.
-function subscribeToNothing() {
-  return function unsubscribe() {};
-}
-
-function readRecordFlag() {
-  return new URLSearchParams(window.location.search).has("record");
 }
 
 /* Clock face pieces --------------------------------------------------------- */
@@ -264,18 +252,6 @@ export function HomeviewClock() {
   const [mode, setMode] = useState<"home" | "edit">("home");
   const [dateLabel, setDateLabel] = useState("TUE 13");
   const [fitScale, setFitScale] = useState(1);
-  const record = useSyncExternalStore(
-    subscribeToNothing,
-    readRecordFlag,
-    function serverRecordFlag() {
-      return false;
-    },
-  );
-  const recordRef = useRef(false);
-
-  useEffect(function keepRecordFlag() {
-    recordRef.current = record;
-  });
   const [announcement, setAnnouncement] = useState("");
 
   const [numerals] = useState(function initNumerals() {
@@ -633,7 +609,6 @@ export function HomeviewClock() {
 
   useEffect(function initDebugAndDate() {
     debugRef.current = readDebugConfig();
-
     setDateLabel(
       formatDate(new Date(Date.now() + debugRef.current.timeOffsetMs)),
     );
@@ -756,12 +731,6 @@ export function HomeviewClock() {
   useEffect(function bindKeys() {
     function handleKeyDown(event: KeyboardEvent) {
       if (modeRef.current !== "edit") {
-        // Recording runs on the keyboard so no cursor ends up in the clip.
-        if (recordRef.current && event.key === "Enter") {
-          event.preventDefault();
-          shortcutsRef.current.enter();
-        }
-
         return;
       }
 
@@ -796,8 +765,7 @@ export function HomeviewClock() {
   const editing = mode === "edit";
 
   return (
-    <div data-hv-stage data-record={record ? "" : undefined}>
-      {record && <span data-hv-frame aria-hidden="true" />}
+    <div data-hv-stage>
       <div ref={fitRef} data-hv-fit>
         <div data-hv-device style={{ transform: `scale(${fitScale})` }}>
           <div data-hv-screen data-mode={mode}>
@@ -1157,66 +1125,6 @@ const STYLES = `
     position: relative;
     width: min(${DEVICE}px, calc(100vw - 32px), calc(100svh - 48px));
     aspect-ratio: 1;
-  }
-
-  /* Recording: a square frame filling the screen's short side, the device
-     at 78% of it, corner marks to drag the selection between, and no
-     cursor or focus rings in the clip. */
-
-  [data-hv-stage][data-record] {
-    --hv-frame: calc(min(100vw, 100svh) - 40px);
-    position: fixed;
-    inset: 0;
-    z-index: 10;
-    display: grid;
-    place-items: center;
-    background: #dcdcd8;
-    cursor: none;
-  }
-
-  [data-hv-stage][data-record] * {
-    cursor: none !important;
-  }
-
-  [data-hv-stage][data-record] *:focus-visible {
-    outline: none !important;
-  }
-
-  [data-hv-stage][data-record] [data-hv-picker-ring] {
-    box-shadow: none !important;
-  }
-
-  [data-hv-frame] {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    width: var(--hv-frame);
-    height: var(--hv-frame);
-    translate: -50% -50%;
-    background: radial-gradient(closest-side, #f6f6f3 0%, #e8e8e4 62%, #dcdcd8 100%);
-    pointer-events: none;
-  }
-
-  /* Corner marks sit just outside the square, so they never end up in it. */
-  [data-hv-frame]::before {
-    content: "";
-    position: absolute;
-    inset: -10px;
-    --hv-mark: rgba(0, 0, 0, 0.35);
-    background:
-      linear-gradient(var(--hv-mark), var(--hv-mark)) 0 0 / 14px 1px,
-      linear-gradient(var(--hv-mark), var(--hv-mark)) 0 0 / 1px 14px,
-      linear-gradient(var(--hv-mark), var(--hv-mark)) 100% 0 / 14px 1px,
-      linear-gradient(var(--hv-mark), var(--hv-mark)) 100% 0 / 1px 14px,
-      linear-gradient(var(--hv-mark), var(--hv-mark)) 0 100% / 14px 1px,
-      linear-gradient(var(--hv-mark), var(--hv-mark)) 0 100% / 1px 14px,
-      linear-gradient(var(--hv-mark), var(--hv-mark)) 100% 100% / 14px 1px,
-      linear-gradient(var(--hv-mark), var(--hv-mark)) 100% 100% / 1px 14px;
-    background-repeat: no-repeat;
-  }
-
-  [data-hv-stage][data-record] [data-hv-fit] {
-    width: calc(var(--hv-frame) * 0.78);
   }
 
   [data-hv-device] {
