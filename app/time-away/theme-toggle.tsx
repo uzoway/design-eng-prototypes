@@ -32,7 +32,8 @@ export function ThemeToggle() {
         aria-label={label}
         onClick={() => setTheme(next)}
       >
-        <AnimatePresence initial={false} mode="popLayout">
+        {/* Both icons share one grid cell, so they cross-fade in place. */}
+        <AnimatePresence initial={false}>
           <motion.svg
             key={next}
             aria-hidden="true"

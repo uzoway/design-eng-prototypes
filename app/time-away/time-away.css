@@ -196,6 +196,10 @@ html[data-theme="dark"] [data-ta-page] {
   cursor: pointer;
 }
 
+.ta-theme-button > svg {
+  grid-area: 1 / 1;
+}
+
 .ta-theme-button:hover {
   background: var(--control-bg-hover);
 }
