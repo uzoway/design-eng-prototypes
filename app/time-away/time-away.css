@@ -310,8 +310,8 @@ html[data-theme="dark"] [data-ta-page] {
 .ta-grid {
   position: relative;
   flex-shrink: 0;
-  width: max-content;
   margin: 0 auto;
+  table-layout: fixed;
   border-collapse: separate;
   border-spacing: 3px;
   user-select: none;

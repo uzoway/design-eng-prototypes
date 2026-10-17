@@ -58,6 +58,14 @@ const AUTO_SCROLL_EDGE = 32;
 
 const PANEL_WIDTH = 352;
 
+/*
+ * Grid geometry, as on github.com. The table gets explicit column widths:
+ * left to the browser, Safari squeezes 10px days down to 7px to fit.
+ */
+const DAY_SIZE = 10;
+const DAY_GAP = 3;
+const LABEL_WIDTH = 28;
+
 /** Overlay easing from Primer. */
 const EASE_OUT: [number, number, number, number] = [0.33, 1, 0.68, 1];
 
@@ -862,6 +870,9 @@ function Profile({ today }: { today: number }) {
                 <table
                   ref={tableRef}
                   className="ta-grid"
+                  style={{
+                    width: DAY_GAP * (grid.weeks.length + 2) + LABEL_WIDTH + DAY_SIZE * grid.weeks.length,
+                  }}
                   role="grid"
                   aria-readonly="true"
                   aria-multiselectable={settings.away ? "true" : undefined}
@@ -878,8 +889,17 @@ function Profile({ today }: { today: number }) {
                   onFocus={onFocus}
                   onBlur={onBlur}
                   onContextMenu={(event) => dragRef.current && event.preventDefault()}
+                  // The grid moves focus itself. Without this, Safari's mouse
+                  // event after a tap pulls focus back out of the panel.
+                  onMouseDown={(event) => event.preventDefault()}
                 >
                   <caption className="sr-only">Contribution Graph</caption>
+                  <colgroup>
+                    <col style={{ width: LABEL_WIDTH }} />
+                    {grid.weeks.map((_, column) => (
+                      <col key={column} style={{ width: DAY_SIZE }} />
+                    ))}
+                  </colgroup>
                   <thead>
                     <tr className="ta-months">
                       <td className="ta-corner">
