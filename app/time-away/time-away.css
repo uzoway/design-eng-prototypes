@@ -1,88 +1,139 @@
 /*
  * Contribution graph with time away. Sizes, colours and timings are measured
- * from github.com (dark default and light default themes).
+ * from github.com; the colour values are Primer's light and dark tokens, read
+ * from GitHub's own theme stylesheets.
  */
 
-.ta-root {
+[data-ta-page] {
   --bg: #ffffff;
   --fg: #1f2328;
   --fg-muted: #59636e;
+  --fg-accent: #0969da;
+  --fg-danger: #d1242f;
   --border: #d1d9e0;
-  --accent: #0969da;
-  --focus: #0969da;
-  --danger: #d1242f;
+  --border-muted: #d1d9e0b3;
+  --accent-emphasis: #0969da;
+  --accent-muted: #ddf4ff;
+  --accent-muted-border: #54aeff66;
+  --neutral-muted: #818b981f;
   --overlay-bg: #ffffff;
-  --overlay-shadow: 0 0 0 1px #d1d9e0, 0 6px 12px -3px rgba(37, 41, 46, 0.04), 0 6px 18px 0 rgba(37, 41, 46, 0.12);
+  --overlay-shadow: 0 0 0 1px #d1d9e080, 0 6px 12px -3px #25292e0a, 0 6px 18px 0 #25292e1f;
   --tooltip-bg: #25292e;
-  --control-hover: rgba(129, 139, 152, 0.1);
-  --btn-bg: #f6f8fa;
-  --btn-hover: #eff2f5;
-  --btn-border: #d1d9e0;
+  --control-bg: #f6f8fa;
+  --control-bg-hover: #eff2f5;
+  --control-bg-active: #e6eaef;
+  --control-border: #d1d9e0;
+  --control-shadow: 0 1px 0 0 #1f23280a;
+  --transparent-hover: #818b981a;
+  --transparent-active: #818b9826;
   --primary-bg: #1f883d;
-  --primary-hover: #1c8139;
+  --primary-bg-hover: #1c8139;
+  --primary-border: #1f232826;
+  --primary-shadow: 0 1px 0 0 #1f23281a;
+  --danger-bg-hover: #cf222e;
   --input-bg: #ffffff;
-  --year-selected: #0969da;
+  --input-shadow: inset 0 1px 0 0 #1f23280a;
 
   --level-0: #eff2f5;
   --level-1: #aceebb;
   --level-2: #4ac26b;
   --level-3: #2da44e;
   --level-4: #116329;
-  --day-border: rgba(31, 35, 40, 0.05);
-  --day-selected: #b6d6fd;
-  --away-stripe: rgba(89, 99, 110, 0.55);
+  --day-border: #1f23280d;
+  --day-selected: #b6e3ff;
+  --away-stripe: #59636e8c;
+  --away-stripe-hot: #1f2328cc;
   --radar: #2da44e;
   --radar-blob: #40c463;
 
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-emoji: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  --ease-out: cubic-bezier(0.33, 1, 0.68, 1);
+
+  color-scheme: light;
+}
+
+html[data-theme="dark"] [data-ta-page] {
+  --bg: #0d1117;
+  --fg: #f0f6fc;
+  --fg-muted: #9198a1;
+  --fg-accent: #4493f8;
+  --fg-danger: #f85149;
+  --border: #3d444d;
+  --border-muted: #3d444db3;
+  --accent-emphasis: #1f6feb;
+  --accent-muted: #388bfd1a;
+  --accent-muted-border: #388bfd66;
+  --neutral-muted: #656c7633;
+  --overlay-bg: #010409;
+  --overlay-shadow: 0 0 0 1px #3d444d, 0 6px 12px -3px #01040966, 0 6px 18px 0 #01040966;
+  --tooltip-bg: #3d444d;
+  --control-bg: #212830;
+  --control-bg-hover: #262c36;
+  --control-bg-active: #2a313c;
+  --control-border: #3d444d;
+  --control-shadow: 0 0 0 0 #0000;
+  --transparent-hover: #656c7633;
+  --transparent-active: #656c7640;
+  --primary-bg: #238636;
+  --primary-bg-hover: #29903b;
+  --primary-border: #ffffff26;
+  --primary-shadow: 0 0 0 0 #0000;
+  --danger-bg-hover: #da3633;
+  --input-bg: #0d1117;
+  --input-shadow: inset 0 1px 0 0 #0104093d;
+
+  --level-0: #151b23;
+  --level-1: #033a16;
+  --level-2: #196c2e;
+  --level-3: #2ea043;
+  --level-4: #56d364;
+  --day-border: #0104090d;
+  --day-selected: #1d3557;
+  --away-stripe: #9198a180;
+  --away-stripe-hot: #f0f6fcc0;
+  --radar: #56d364;
+  --radar-blob: #40c463;
+
+  color-scheme: dark;
+}
+
+/* ------------------------------------------------------------------------ */
+/* Page                                                                     */
+/* ------------------------------------------------------------------------ */
+
+[data-ta-page] {
   position: relative;
+  box-sizing: border-box;
+  display: grid;
+  align-items: center;
+  min-height: 100svh;
+  /* Even padding, so the graph sits at the true centre of the viewport. */
+  padding: 72px 16px;
+  overflow-x: clip;
   color: var(--fg);
-  font-family: var(--font-mona), -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  font-family: var(--font);
   font-size: 14px;
   line-height: 1.5;
-  -webkit-font-smoothing: antialiased;
+  /* GitHub leaves smoothing on auto; antialiased renders the type thinner. */
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
 }
 
-@media (prefers-color-scheme: dark) {
-  .ta-root {
-    --bg: #0d1117;
-    --fg: #f0f6fc;
-    --fg-muted: #9198a1;
-    --border: #3d444d;
-    --accent: #4493f8;
-    --focus: #1f6feb;
-    --danger: #f85149;
-    --overlay-bg: #010409;
-    --overlay-shadow: 0 0 0 1px #3d444d, 0 6px 12px -3px rgba(1, 4, 9, 0.4), 0 6px 18px 0 rgba(1, 4, 9, 0.4);
-    --tooltip-bg: #3d444d;
-    --control-hover: rgba(101, 108, 118, 0.2);
-    --btn-bg: #212830;
-    --btn-hover: #262c36;
-    --btn-border: #3d444d;
-    --primary-bg: #238636;
-    --primary-hover: #29903b;
-    --input-bg: #0d1117;
-    --year-selected: #1f6feb;
-
-    --level-0: #151b23;
-    --level-1: #033a16;
-    --level-2: #196c2e;
-    --level-3: #2ea043;
-    --level-4: #56d364;
-    --day-border: rgba(1, 4, 9, 0.05);
-    --day-selected: #1d3557;
-    --away-stripe: rgba(145, 152, 161, 0.5);
-    --radar: #56d364;
-    --radar-blob: #40c463;
-  }
-}
-
-.ta-root *,
-.ta-root *::before,
-.ta-root *::after {
+[data-ta-page] *,
+[data-ta-page] *::before,
+[data-ta-page] *::after {
   box-sizing: border-box;
 }
 
-.ta-root .sr-only {
+.ta-stage {
+  width: 100%;
+  max-width: 896px;
+  margin: 0 auto;
+}
+
+.ta-page-title,
+[data-ta-page] .sr-only {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -94,8 +145,86 @@
   border: 0;
 }
 
+.ta-page-note {
+  position: absolute;
+  right: 16px;
+  bottom: 24px;
+  left: 16px;
+  margin: 0;
+  text-align: center;
+  color: var(--fg-muted);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.ta-root {
+  position: relative;
+}
+
 .ta-loading {
   min-height: 487px;
+}
+
+/* ------------------------------------------------------------------------ */
+/* Theme switch (a Primer IconButton with its tooltip)                      */
+/* ------------------------------------------------------------------------ */
+
+.ta-theme {
+  position: fixed;
+  top: max(16px, env(safe-area-inset-top));
+  right: max(16px, env(safe-area-inset-right));
+  z-index: 50;
+  visibility: hidden;
+}
+
+.ta-theme[data-ready] {
+  visibility: visible;
+}
+
+.ta-theme-button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--control-border);
+  border-radius: 6px;
+  background: var(--control-bg);
+  box-shadow: var(--control-shadow);
+  color: var(--fg-muted);
+  cursor: pointer;
+}
+
+.ta-theme-button:hover {
+  background: var(--control-bg-hover);
+}
+
+.ta-theme-button:active {
+  background: var(--control-bg-active);
+}
+
+.ta-theme-tip {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--tooltip-bg);
+  color: #ffffff;
+  font-size: 12px;
+  line-height: 19.5px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+}
+
+.ta-theme-button:hover + .ta-theme-tip,
+.ta-theme-button:focus-visible + .ta-theme-tip {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 100ms ease-in 300ms;
 }
 
 /* ------------------------------------------------------------------------ */
@@ -131,24 +260,20 @@
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
-  gap: 0;
   padding: 0;
   border: 0;
+  border-radius: 6px;
   background: none;
   color: var(--fg-muted);
   font: inherit;
   font-size: 12px;
   line-height: 18px;
   cursor: pointer;
-  border-radius: 6px;
 }
 
-.ta-settings:hover {
-  color: var(--accent);
-}
-
-.ta-settings .ta-octicon {
-  margin-left: 0;
+.ta-settings:hover,
+.ta-settings[data-state="open"] {
+  color: var(--fg-accent);
 }
 
 .ta-box {
@@ -158,10 +283,6 @@
 
 .ta-graph {
   padding: 8px 0;
-}
-
-.ta-box[data-overview] .ta-graph {
-  border-bottom: 1px solid var(--border);
 }
 
 .ta-scroller {
@@ -211,10 +332,10 @@
 .ta-label {
   position: relative;
   padding: 0;
+  color: var(--fg);
   font-size: 12px;
   line-height: 18px;
   text-align: left;
-  color: var(--fg);
 }
 
 .ta-month {
@@ -247,9 +368,10 @@
   outline-offset: -1px;
   background-color: var(--level-0);
   box-shadow: inset 0 0 0 0.5px var(--day-border);
-  shape-rendering: geometricPrecision;
   cursor: pointer;
-  transition: opacity 160ms ease, background-color 160ms ease;
+  transition:
+    opacity 160ms ease,
+    background-color 160ms ease;
 }
 
 .ta-day[data-level="1"] {
@@ -273,7 +395,7 @@
 }
 
 .ta-day:focus-visible {
-  outline: 2px solid var(--focus);
+  outline: 2px solid var(--accent-emphasis);
 }
 
 /* Selecting: the days outside the range fade to half, as on github.com. */
@@ -293,19 +415,21 @@
   transition: none;
 }
 
-/* Away: a hatch over the empty days. */
+/* Away: a hatch over the empty days. Hovering one lights up its whole range. */
 .ta-day[data-away]::after,
 .ta-legend-day[data-away]::after {
+  --stripe: var(--away-stripe);
+
   content: "";
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background-image: repeating-linear-gradient(
-    -45deg,
-    var(--away-stripe) 0 1px,
-    transparent 1px 3px
-  );
+  background-image: repeating-linear-gradient(-45deg, var(--stripe) 0 1px, transparent 1px 3px);
   pointer-events: none;
+}
+
+.ta-day[data-away][data-hot]::after {
+  --stripe: var(--away-stripe-hot);
 }
 
 .ta-day[data-enter]::after {
@@ -340,6 +464,16 @@
   }
 }
 
+@keyframes ta-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ta-day[data-enter]::after {
     animation: ta-fade-in 150ms ease both;
@@ -351,16 +485,6 @@
 
   .ta-day {
     transition: none;
-  }
-}
-
-@keyframes ta-fade-in {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
   }
 }
 
@@ -380,19 +504,19 @@
 }
 
 .ta-link {
+  border-radius: 6px;
   color: var(--fg-muted);
   text-decoration: none;
-  border-radius: 6px;
 }
 
 .ta-link:hover {
-  color: var(--accent);
+  color: var(--fg-accent);
 }
 
 .ta-legend {
   display: flex;
-  align-items: center;
   flex-shrink: 0;
+  align-items: center;
   color: var(--fg-muted);
 }
 
@@ -447,17 +571,20 @@
 /* Activity overview                                                        */
 /* ------------------------------------------------------------------------ */
 
+.ta-overview-clip {
+  overflow: hidden;
+}
+
 .ta-overview {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  border-top: 1px solid var(--border);
 }
 
 .ta-overview-text {
-  padding: 16px;
-  border-right: 1px solid var(--border);
   margin: 16px 0;
-  padding-top: 0;
-  padding-bottom: 0;
+  padding: 0 16px;
+  border-right: 1px solid var(--border);
 }
 
 .ta-overview-title {
@@ -475,10 +602,10 @@
 }
 
 .ta-overview-repos a {
-  color: var(--accent);
+  border-radius: 6px;
+  color: var(--fg-accent);
   font-weight: 600;
   text-decoration: none;
-  border-radius: 6px;
 }
 
 .ta-overview-repos a:hover {
@@ -527,14 +654,14 @@
 /* Years                                                                    */
 /* ------------------------------------------------------------------------ */
 
+.ta-years {
+  padding-top: 22px;
+}
+
 .ta-years ul {
   margin: 0;
   padding: 0;
   list-style: none;
-}
-
-.ta-years {
-  padding-top: 22px;
 }
 
 .ta-year {
@@ -554,17 +681,17 @@
 }
 
 .ta-year:hover {
-  background: var(--control-hover);
+  background: var(--transparent-hover);
   color: var(--fg);
 }
 
 .ta-year[aria-current="true"] {
-  background: var(--year-selected);
+  background: var(--accent-emphasis);
   color: #ffffff;
 }
 
 /* ------------------------------------------------------------------------ */
-/* Tooltip                                                                  */
+/* Day tooltip                                                              */
 /* ------------------------------------------------------------------------ */
 
 .ta-tooltip {
@@ -593,37 +720,135 @@
 }
 
 /* ------------------------------------------------------------------------ */
-/* Overlays: the dialog and the settings menu                               */
+/* Shared Primer bits                                                       */
 /* ------------------------------------------------------------------------ */
 
-.ta-overlay,
-.ta-menu {
+.ta-octicon {
+  display: block;
+  flex-shrink: 0;
+  fill: currentColor;
+}
+
+.ta-icon-button {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--fg-muted);
+  cursor: pointer;
+}
+
+.ta-icon-button:hover {
+  background: var(--transparent-hover);
+  color: var(--fg);
+}
+
+.ta-icon-button:active {
+  background: var(--transparent-active);
+}
+
+/* Primer Button, small. */
+.ta-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--control-border);
+  border-radius: 6px;
+  background: var(--control-bg);
+  box-shadow: var(--control-shadow);
+  color: var(--fg);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 20px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color 80ms cubic-bezier(0.65, 0, 0.35, 1),
+    border-color 80ms cubic-bezier(0.65, 0, 0.35, 1),
+    color 80ms cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+.ta-btn:hover {
+  background: var(--control-bg-hover);
+}
+
+.ta-btn:active {
+  background: var(--control-bg-active);
+}
+
+.ta-btn-primary {
+  border-color: var(--primary-border);
+  background: var(--primary-bg);
+  box-shadow: var(--primary-shadow);
+  color: #ffffff;
+}
+
+.ta-btn-primary:hover,
+.ta-btn-primary:active {
+  background: var(--primary-bg-hover);
+}
+
+.ta-btn-danger {
+  color: var(--fg-danger);
+}
+
+.ta-btn-danger:hover,
+.ta-btn-danger:active {
+  border-color: var(--primary-border);
+  background: var(--danger-bg-hover);
+  color: #ffffff;
+}
+
+/* Focus rings, matching Primer. */
+[data-ta-page] :is(a, button, [role="radio"]):focus-visible {
+  outline: 2px solid var(--accent-emphasis);
+  outline-offset: -2px;
+}
+
+[data-ta-page] .ta-chip:focus-visible,
+[data-ta-page] .ta-btn:focus-visible {
+  outline-offset: 2px;
+}
+
+/* ------------------------------------------------------------------------ */
+/* Mark as away: an anchored panel in the family of "Edit status"           */
+/* ------------------------------------------------------------------------ */
+
+.ta-overlay {
+  position: absolute;
+  z-index: 20;
   border-radius: 12px;
   background: var(--overlay-bg);
   box-shadow: var(--overlay-shadow);
   color: var(--fg);
-}
-
-.ta-overlay {
-  position: absolute;
   outline: none;
-  z-index: 20;
-  transform-origin: top center;
 }
 
 .ta-overlay-header {
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 16px 16px 8px;
+  padding: 8px 8px 0;
+}
+
+.ta-overlay-heading {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 8px;
 }
 
 .ta-overlay-title {
   margin: 0;
   font-size: 14px;
   font-weight: 600;
-  line-height: 21px;
+  line-height: 20px;
 }
 
 .ta-overlay-summary {
@@ -635,192 +860,185 @@
 }
 
 .ta-overlay-body {
-  padding: 8px 16px 0;
+  padding: 8px 16px 16px;
 }
 
-.ta-icon-button {
-  display: inline-grid;
-  place-items: center;
-  flex-shrink: 0;
-  width: 32px;
-  height: 32px;
-  margin: -6px -8px 0 0;
-  padding: 0;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--fg-muted);
-  cursor: pointer;
-}
-
-.ta-icon-button:hover {
-  background: var(--control-hover);
-  color: var(--fg);
-}
-
-.ta-octicon {
-  fill: currentColor;
-  vertical-align: text-bottom;
+.ta-field-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
 }
 
 .ta-input {
   display: flex;
   align-items: center;
+  gap: 8px;
   height: 32px;
-  border: 1px solid var(--btn-border);
+  padding-left: 12px;
+  border: 1px solid var(--control-border);
   border-radius: 6px;
   background: var(--input-bg);
+  box-shadow: var(--input-shadow);
+  cursor: text;
 }
 
 .ta-input:focus-within {
-  border-color: var(--focus);
-  outline: 1px solid var(--focus);
+  border-color: var(--accent-emphasis);
+  outline: 2px solid var(--accent-emphasis);
   outline-offset: -1px;
 }
 
 .ta-input-visual {
   display: grid;
+  flex-shrink: 0;
   place-items: center;
-  width: 32px;
-  height: 100%;
+  width: 16px;
+  height: 16px;
   color: var(--fg-muted);
+  font-family: var(--font-emoji);
   font-size: 14px;
+  line-height: 1;
 }
 
 .ta-input input {
   flex: 1;
   min-width: 0;
   height: 100%;
-  padding: 0 8px 0 0;
+  padding: 0 12px 0 0;
   border: 0;
-  background: transparent;
-  color: var(--fg);
-  font: inherit;
-  font-size: 14px;
-  outline: none;
-}
-
-.ta-input input::placeholder {
-  color: var(--fg-muted);
-}
-
-.ta-input-clear {
-  width: 28px;
-  height: 28px;
-  margin: 0 2px 0 0;
-}
-
-.ta-suggestions-title {
-  margin: 12px 0 4px;
-  color: var(--fg-muted);
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 18px;
-}
-
-.ta-suggestions {
-  margin: 0 -8px;
-  padding: 0;
-  list-style: none;
-}
-
-.ta-suggestion {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  min-height: 32px;
-  padding: 6px 8px;
-  border: 0;
-  border-radius: 6px;
   background: transparent;
   color: var(--fg);
   font: inherit;
   font-size: 14px;
   line-height: 20px;
-  text-align: left;
-  cursor: pointer;
+  outline: none;
 }
 
-.ta-suggestion:hover {
-  background: var(--control-hover);
+.ta-input input::placeholder {
+  color: var(--fg-muted);
+  opacity: 1;
 }
 
-.ta-suggestion[aria-pressed="true"] {
-  background: var(--control-hover);
+.ta-input-clear {
+  width: 24px;
+  height: 24px;
+  margin-right: 3px;
+}
+
+.ta-input:has(.ta-input-clear) input {
+  padding-right: 0;
+}
+
+.ta-caption {
+  margin: 4px 0 0;
+  color: var(--fg-muted);
+  font-size: 12px;
+  line-height: 18px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ta-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 0;
+  border: 0;
+}
+
+/* Primer Label shape, as in the status suggestions. */
+.ta-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 20px;
+  padding: 0 7px 0 6px;
+  border: 1px solid var(--border-muted);
+  border-radius: 999px;
+  background: var(--neutral-muted);
+  color: var(--fg-muted);
+  font: inherit;
+  font-size: 12px;
   font-weight: 600;
+  line-height: 18px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color 80ms ease,
+    border-color 80ms ease,
+    color 80ms ease;
 }
 
-.ta-suggestion-emoji {
-  width: 16px;
-  text-align: center;
+/* A taller hit area for fingers, without changing how the chip looks. */
+.ta-chip::after {
+  content: "";
+  position: absolute;
+  inset: -4px -2px;
+}
+
+.ta-chip:hover {
+  background: var(--transparent-active);
+  color: var(--fg);
+}
+
+.ta-chip[aria-checked="true"] {
+  border-color: var(--accent-muted-border);
+  background: var(--accent-muted);
+  color: var(--fg-accent);
+}
+
+.ta-chip-emoji {
+  font-family: var(--font-emoji);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.ta-note {
+  display: flex;
+  gap: 8px;
+  margin: 16px 0 0;
+  color: var(--fg-muted);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.ta-note .ta-octicon {
+  margin-top: 1px;
 }
 
 .ta-overlay-footer {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 8px;
-  padding: 16px;
-  border-top: 1px solid var(--border);
+  padding: 8px;
+  border-top: 1px solid var(--border-muted);
 }
 
 .ta-spacer {
   flex: 1;
 }
 
-.ta-btn {
-  height: 32px;
-  padding: 0 12px;
-  border: 1px solid var(--btn-border);
-  border-radius: 6px;
-  background: var(--btn-bg);
-  color: var(--fg);
-  font: inherit;
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 20px;
-  cursor: pointer;
-  white-space: nowrap;
-}
+/* ------------------------------------------------------------------------ */
+/* Contribution settings menu (Primer ActionMenu with checkbox items)       */
+/* ------------------------------------------------------------------------ */
 
-.ta-btn:hover {
-  background: var(--btn-hover);
-}
-
-.ta-btn-primary {
-  border-color: rgba(240, 246, 252, 0.1);
-  background: var(--primary-bg);
-  color: #ffffff;
-}
-
-.ta-btn-primary:hover {
-  background: var(--primary-hover);
-}
-
-.ta-btn-danger {
-  border-color: transparent;
-  background: transparent;
-  color: var(--danger);
-  margin-left: -12px;
-}
-
-.ta-btn-danger:hover {
-  background: var(--control-hover);
-}
-
-/* Settings menu (Primer ActionMenu with checkbox items). */
 .ta-menu {
   z-index: 40;
   width: 320px;
   max-width: calc(100vw - 16px);
   padding: 8px;
-  font-family: var(--font-mona), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  border-radius: 12px;
+  background: var(--overlay-bg);
+  box-shadow: var(--overlay-shadow);
+  color: var(--fg);
   font-size: 14px;
   line-height: 21px;
-  -webkit-font-smoothing: antialiased;
   transform-origin: var(--radix-dropdown-menu-content-transform-origin);
-  animation: ta-fade-in 120ms ease-out;
+  animation: ta-fade-in 200ms var(--ease-out);
 }
 
 .ta-menu-item {
@@ -833,11 +1051,11 @@
 }
 
 .ta-menu-item[data-highlighted] {
-  background: var(--control-hover);
+  background: var(--transparent-hover);
 }
 
 .ta-menu-item:focus-visible {
-  outline: 2px solid var(--focus);
+  outline: 2px solid var(--accent-emphasis);
   outline-offset: -2px;
 }
 
@@ -860,17 +1078,6 @@
   color: var(--fg-muted);
   font-size: 12px;
   line-height: 19.5px;
-}
-
-/* Focus rings for everything else, matching Primer. */
-.ta-root :is(a, button, input):focus-visible,
-.ta-settings:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: -2px;
-}
-
-.ta-root .ta-input input:focus-visible {
-  outline: none;
 }
 
 /* ------------------------------------------------------------------------ */
@@ -898,31 +1105,31 @@
     width: auto;
     margin: 0;
   }
-
 }
 
 @media (max-width: 767px) {
+  [data-ta-page] {
+    padding: 64px 16px 72px;
+  }
+
   .ta-overview {
     grid-template-columns: 1fr;
   }
 
   .ta-overview-text {
-    border-right: 0;
-    border-bottom: 1px solid var(--border);
     margin: 0;
     padding: 16px;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
   }
 
   .ta-footer {
+    justify-content: flex-end;
     padding: 4px 0 0;
   }
 
   .ta-link {
     display: none;
-  }
-
-  .ta-footer {
-    justify-content: flex-end;
   }
 }
 
@@ -959,8 +1166,9 @@
   }
 
   .ta-day[data-away]::after,
-  .ta-legend-day[data-away]::after {
-    background-image: repeating-linear-gradient(-45deg, CanvasText 0 1px, transparent 1px 3px);
+  .ta-legend-day[data-away]::after,
+  .ta-day[data-away][data-hot]::after {
+    --stripe: CanvasText;
   }
 
   .ta-grid[data-selecting] .ta-day[aria-selected="true"] {
@@ -969,5 +1177,10 @@
 
   .ta-day:focus-visible {
     outline-color: Highlight;
+  }
+
+  .ta-chip[aria-checked="true"] {
+    border-color: Highlight;
+    color: Highlight;
   }
 }

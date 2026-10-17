@@ -13,7 +13,6 @@ import {
   useState,
   useSyncExternalStore,
   type CSSProperties,
-  type FormEvent,
   type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react";
@@ -32,11 +31,12 @@ import {
   reasonFor,
   removeRange,
   shortDate,
-  SUGGESTIONS,
   contributionsOn,
   type AwayRange,
   type View,
 } from "./calendar";
+import { AwayPanel, type PanelState } from "./away-panel";
+import { CheckIcon, RepoIcon, TriangleDownIcon } from "./octicons";
 import "./time-away.css";
 
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -52,6 +52,11 @@ const LEVEL_NAMES = [
 /** Long-press before a touch drag selects instead of scrolling the graph. */
 const LONG_PRESS_MS = 320;
 const TOUCH_SLOP = 8;
+
+/** Dragging this close to the edge of a scrolling graph scrolls it. */
+const AUTO_SCROLL_EDGE = 32;
+
+const PANEL_WIDTH = 352;
 
 /** Overlay easing from Primer. */
 const EASE_OUT: [number, number, number, number] = [0.33, 1, 0.68, 1];
@@ -79,16 +84,7 @@ export function TimeAway() {
 
 type Selection = { anchor: number; focus: number };
 
-type DialogState = {
-  mode: "create" | "edit";
-  start: number;
-  end: number;
-  rangeId?: string;
-  initialText: string;
-  position: { left: number; top: number; width: number };
-  /** Typing straight away suits a keyboard; on touch it would cover the suggestions. */
-  focusInput: boolean;
-};
+type DialogState = PanelState;
 
 type Tip = { day: number; mode: "day" | "range" };
 
@@ -99,6 +95,9 @@ type Settings = { private: boolean; overview: boolean; away: boolean };
 
 type Drag = {
   pointerId: number;
+  /** Last pointer position, for auto-scroll while the pointer rests at an edge. */
+  x: number;
+  y: number;
   anchor: number;
   focus: number;
   startDay: number;
@@ -127,16 +126,19 @@ function Profile({ today }: { today: number }) {
   const [enter, setEnter] = useState<Wave | null>(null);
   const [leave, setLeave] = useState<Wave | null>(null);
   const [tip, setTip] = useState<Tip | null>(null);
+  const [hot, setHot] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState("");
 
   const rootRef = useRef<HTMLDivElement>(null);
   const tableRef = useRef<HTMLTableElement>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
+  const boxRef = useRef<HTMLDivElement>(null);
   const tipRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<Drag | null>(null);
   const pressRef = useRef<Press | null>(null);
   const lastInputRef = useRef<"pointer" | "touch" | "keyboard">("pointer");
   const waveTimerRef = useRef(0);
+  const autoScrollRef = useRef(0);
   const announceTimerRef = useRef(0);
 
   const headingId = useId();
@@ -216,11 +218,16 @@ function Profile({ today }: { today: number }) {
       const table = tableRef.current!.getBoundingClientRect();
       const first = cellFor(Math.max(start, grid.first))?.getBoundingClientRect();
       const last = cellFor(Math.min(end, grid.last))?.getBoundingClientRect();
-      const width = Math.min(320, root.width - 16);
-      const centre = first && last ? (first.left + last.right) / 2 - root.left : root.width / 2;
-      const left = Math.min(Math.max(centre - width / 2, 8), root.width - width - 8);
+      // Stay within the graph's column so the year list is never covered.
+      const column = boxRef.current!.getBoundingClientRect();
+      const minLeft = column.left - root.left;
+      const maxRight = column.right - root.left;
+      const width = Math.min(PANEL_WIDTH, column.width);
+      const centre = first && last ? (first.left + last.right) / 2 - root.left : minLeft + column.width / 2;
+      const left = Math.min(Math.max(centre - width / 2, minLeft), maxRight - width);
+      const originX = Math.min(Math.max(centre - left, 24), width - 24);
 
-      return { left, top: table.bottom - root.top + 8, width };
+      return { left, top: table.bottom - root.top + 8, width, originX };
     },
     [cellFor, grid.first, grid.last],
   );
@@ -228,6 +235,28 @@ function Profile({ today }: { today: number }) {
   /* ---------------------------------------------------------------------- */
   /* Opening and closing the dialog                                         */
   /* ---------------------------------------------------------------------- */
+
+  const contributionNote = (start: number, end: number) => {
+    const busy: number[] = [];
+
+    for (let day = Math.max(start, grid.first); day <= Math.min(end, grid.last); day += 1) {
+      if ((counts.get(day) ?? 0) > 0) busy.push(day);
+    }
+
+    if (busy.length === 0) return null;
+
+    if (busy.length === end - start + 1) {
+      return busy.length === 1
+        ? "This day has contributions, so it stays green."
+        : "Every day here has contributions, so they all stay green.";
+    }
+
+    if (busy.length === 1) {
+      return `${shortDate(busy[0])} has ${plural(counts.get(busy[0]) ?? 0, "contribution")}, so it stays green.`;
+    }
+
+    return `${busy.length} of these days have contributions, so they stay green.`;
+  };
 
   const openCreate = (start: number, end: number) => {
     setSelection({ anchor: start, focus: end });
@@ -238,6 +267,7 @@ function Profile({ today }: { today: number }) {
       end,
       initialText: "",
       position: dialogPosition(start, end),
+      note: contributionNote(start, end),
       focusInput: lastInputRef.current !== "touch",
     });
   };
@@ -252,6 +282,7 @@ function Profile({ today }: { today: number }) {
       rangeId: range.id,
       initialText: range.label === "Away" ? "" : range.label,
       position: dialogPosition(range.start, range.end),
+      note: contributionNote(range.start, range.end),
       focusInput: lastInputRef.current !== "touch",
     });
   };
@@ -332,16 +363,99 @@ function Profile({ today }: { today: number }) {
     return cell ? Number(cell.dataset.day) : null;
   };
 
-  const beginDrag = (pointerId: number, day: number, extend: boolean) => {
+  const beginDrag = (pointerId: number, day: number, extend: boolean, x: number, y: number) => {
     const anchor = extend ? (selection?.anchor ?? safeCursor) : day;
 
-    dragRef.current = { pointerId, anchor, focus: day, startDay: day, moved: false, extend };
+    dragRef.current = { pointerId, x, y, anchor, focus: day, startDay: day, moved: false, extend };
     setDialog(null);
     setSelection({ anchor, focus: day });
     setDragging(true);
+    setHot(null);
     setCursor(day);
     setTip({ day, mode: "range" });
     focusDay(day);
+  };
+
+  /**
+   * The day under the pointer, with the pointer pinned inside the days: past
+   * the last week you get the last week, over the weekday labels the first.
+   */
+  const dayNear = (x: number, y: number) => {
+    const scroller = scrollerRef.current?.getBoundingClientRect();
+    const body = tableRef.current?.tBodies[0]?.getBoundingClientRect();
+
+    if (!scroller || !body) return null;
+
+    const left = Math.max(scroller.left, body.left + 31) + 2;
+    const right = Math.min(scroller.right, body.right) - 2;
+    const px = Math.min(Math.max(x, left), right);
+    const py = Math.min(Math.max(y, body.top + 2), body.bottom - 2);
+
+    return dayFrom(document.elementFromPoint(px, py));
+  };
+
+  const trackDrag = (x: number, y: number) => {
+    const drag = dragRef.current;
+
+    if (!drag) return;
+
+    drag.x = x;
+    drag.y = y;
+
+    const day = dayNear(x, y);
+
+    // Between days (the 3px gaps) there's no cell, so keep the last one.
+    if (day === null || day === drag.focus) return;
+
+    drag.focus = day;
+    drag.moved = true;
+    setSelection({ anchor: drag.anchor, focus: day });
+    setCursor(day);
+    setTip({ day, mode: "range" });
+  };
+
+  // On narrow screens the graph scrolls; holding the pointer near an edge
+  // keeps scrolling it so a range can run past what's visible.
+  const autoScroll = () => {
+    autoScrollRef.current = 0;
+
+    const drag = dragRef.current;
+    const scroller = scrollerRef.current;
+
+    if (!drag || !scroller || scroller.scrollWidth <= scroller.clientWidth) return;
+
+    const rect = scroller.getBoundingClientRect();
+    const over =
+      drag.x < rect.left + AUTO_SCROLL_EDGE
+        ? drag.x - (rect.left + AUTO_SCROLL_EDGE)
+        : drag.x > rect.right - AUTO_SCROLL_EDGE
+          ? drag.x - (rect.right - AUTO_SCROLL_EDGE)
+          : 0;
+    const before = scroller.scrollLeft;
+
+    scroller.scrollLeft += Math.max(-14, Math.min(14, over / 2));
+
+    if (scroller.scrollLeft === before) return;
+
+    trackDrag(drag.x, drag.y);
+    autoScrollRef.current = requestAnimationFrame(autoScroll);
+  };
+
+  const cancelDrag = () => {
+    const drag = dragRef.current;
+
+    if (!drag) return;
+
+    if (tableRef.current?.hasPointerCapture?.(drag.pointerId)) {
+      tableRef.current.releasePointerCapture(drag.pointerId);
+    }
+
+    cancelAnimationFrame(autoScrollRef.current);
+    autoScrollRef.current = 0;
+    dragRef.current = null;
+    setDragging(false);
+    setSelection(null);
+    setTip(null);
   };
 
   const finishDrag = (drag: Drag) => {
@@ -375,7 +489,7 @@ function Profile({ today }: { today: number }) {
           pressRef.current = null;
           tableRef.current?.setPointerCapture?.(press.pointerId);
           navigator.vibrate?.(8);
-          beginDrag(press.pointerId, day, false);
+          beginDrag(press.pointerId, day, false, press.x, press.y);
         }, LONG_PRESS_MS),
       };
 
@@ -386,7 +500,7 @@ function Profile({ today }: { today: number }) {
 
     event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
-    beginDrag(event.pointerId, day, event.shiftKey);
+    beginDrag(event.pointerId, day, event.shiftKey, event.clientX, event.clientY);
   };
 
   const onPointerMove = (event: ReactPointerEvent<HTMLTableElement>) => {
@@ -401,15 +515,9 @@ function Profile({ today }: { today: number }) {
 
     if (!drag || drag.pointerId !== event.pointerId) return;
 
-    const day = dayFrom(document.elementFromPoint(event.clientX, event.clientY));
+    trackDrag(event.clientX, event.clientY);
 
-    if (day === null || day === drag.focus) return;
-
-    drag.focus = day;
-    drag.moved = true;
-    setSelection({ anchor: drag.anchor, focus: day });
-    setCursor(day);
-    setTip({ day, mode: "range" });
+    if (!autoScrollRef.current) autoScrollRef.current = requestAnimationFrame(autoScroll);
   };
 
   const onPointerUp = (event: ReactPointerEvent<HTMLTableElement>) => {
@@ -422,6 +530,8 @@ function Profile({ today }: { today: number }) {
       setCursor(press.day);
       finishDrag({
         pointerId: press.pointerId,
+        x: press.x,
+        y: press.y,
         anchor: press.day,
         focus: press.day,
         startDay: press.day,
@@ -436,6 +546,8 @@ function Profile({ today }: { today: number }) {
 
     if (!drag || drag.pointerId !== event.pointerId) return;
 
+    cancelAnimationFrame(autoScrollRef.current);
+    autoScrollRef.current = 0;
     dragRef.current = null;
     setDragging(false);
     finishDrag(drag);
@@ -445,13 +557,7 @@ function Profile({ today }: { today: number }) {
     if (pressRef.current) window.clearTimeout(pressRef.current.timer);
 
     pressRef.current = null;
-
-    if (dragRef.current) {
-      dragRef.current = null;
-      setDragging(false);
-      setSelection(null);
-      setTip(null);
-    }
+    cancelDrag();
   };
 
   // While a touch drag is selecting, stop the page and the graph scrolling.
@@ -475,6 +581,17 @@ function Profile({ today }: { today: number }) {
 
   const onKeyDown = (event: ReactKeyboardEvent<HTMLTableElement>) => {
     if (dayFrom(event.target) === null) return;
+
+    // Escape mid-drag lets go without selecting anything.
+    if (event.key === "Escape" && dragRef.current) {
+      event.preventDefault();
+      cancelDrag();
+      announce("Selection cancelled.");
+
+      return;
+    }
+
+    if (dragRef.current) return;
 
     lastInputRef.current = "keyboard";
 
@@ -567,6 +684,7 @@ function Profile({ today }: { today: number }) {
     }
 
     setCursor(next);
+    setHot(awayByDay.get(next)?.id ?? null);
     focusDay(next);
   };
 
@@ -580,6 +698,14 @@ function Profile({ today }: { today: number }) {
     const day = dayFrom(event.target);
 
     setTip(day === null ? null : { day, mode: "day" });
+    setHot(day === null ? null : (awayByDay.get(day)?.id ?? null));
+  };
+
+  const onPointerLeave = () => {
+    if (dragRef.current) return;
+
+    setTip(null);
+    setHot(null);
   };
 
   const onFocus = (event: React.FocusEvent<HTMLTableElement>) => {
@@ -590,10 +716,14 @@ function Profile({ today }: { today: number }) {
 
     setCursor(day);
     setTip({ day, mode: selection ? "range" : "day" });
+    setHot(awayByDay.get(day)?.id ?? null);
   };
 
   const onBlur = (event: React.FocusEvent<HTMLTableElement>) => {
-    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setTip(null);
+    if (event.currentTarget.contains(event.relatedTarget as Node | null)) return;
+
+    setTip(null);
+    setHot(null);
   };
 
   const tipText = tip && !dialog ? tooltipText(tip) : null;
@@ -726,7 +856,7 @@ function Profile({ today }: { today: number }) {
             <SettingsMenu settings={settings} onChange={setSettings} />
           </div>
 
-          <div className="ta-box" data-overview={settings.overview ? "" : undefined}>
+          <div ref={boxRef} className="ta-box">
             <div className="ta-graph">
               <div ref={scrollerRef} className="ta-scroller">
                 <table
@@ -743,7 +873,7 @@ function Profile({ today }: { today: number }) {
                   onPointerUp={onPointerUp}
                   onPointerCancel={onPointerCancel}
                   onPointerOver={onPointerOver}
-                  onPointerLeave={() => !dragRef.current && setTip(null)}
+                  onPointerLeave={onPointerLeave}
                   onKeyDown={onKeyDown}
                   onFocus={onFocus}
                   onBlur={onBlur}
@@ -803,6 +933,7 @@ function Profile({ today }: { today: number }) {
                               enterDelay={enter?.get(day)}
                               leaveDelay={leave?.get(day)}
                               tabbable={day === safeCursor}
+                              hot={!!away && away.id === hot}
                             />
                           );
                         })}
@@ -859,7 +990,21 @@ function Profile({ today }: { today: number }) {
               </div>
             </div>
 
-            {settings.overview ? <ActivityOverview grid={grid} /> : null}
+            {/* The page is centred, so animating the height lets it re-centre smoothly. */}
+            <AnimatePresence initial={false}>
+              {settings.overview ? (
+                <motion.div
+                  key="overview"
+                  className="ta-overview-clip"
+                  initial={reducedMotion ? { opacity: 0 } : { height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={reducedMotion ? { opacity: 0 } : { height: 0, opacity: 0 }}
+                  transition={{ duration: 0.25, ease: EASE_OUT }}
+                >
+                  <ActivityOverview grid={grid} />
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
           </div>
         </div>
 
@@ -883,7 +1028,7 @@ function Profile({ today }: { today: number }) {
 
       <AnimatePresence>
         {dialog ? (
-          <AwayDialog
+          <AwayPanel
             key={`${dialog.mode}-${dialog.start}-${dialog.end}`}
             state={dialog}
             reducedMotion={reducedMotion}
@@ -929,6 +1074,8 @@ type DayProps = {
   enterDelay: number | undefined;
   leaveDelay: number | undefined;
   tabbable: boolean;
+  /** Part of the away range under the pointer or focus. */
+  hot: boolean;
 };
 
 const Day = memo(function Day({
@@ -941,6 +1088,7 @@ const Day = memo(function Day({
   enterDelay,
   leaveDelay,
   tabbable,
+  hot,
 }: DayProps) {
   const delay = enterDelay ?? leaveDelay;
 
@@ -951,6 +1099,7 @@ const Day = memo(function Day({
       data-day={day}
       data-level={level}
       data-away={away ? "" : undefined}
+      data-hot={hot ? "" : undefined}
       data-enter={enterDelay !== undefined ? "" : undefined}
       data-leave={leaveDelay !== undefined ? "" : undefined}
       style={delay !== undefined ? ({ "--delay": `${delay}ms` } as CSSProperties) : undefined}
@@ -961,179 +1110,6 @@ const Day = memo(function Day({
     />
   );
 });
-
-/* ------------------------------------------------------------------------ */
-/* Mark time away                                                           */
-/* ------------------------------------------------------------------------ */
-
-function AwayDialog({
-  state,
-  reducedMotion,
-  onCancel,
-  onSubmit,
-  onRemove,
-}: {
-  state: DialogState;
-  reducedMotion: boolean;
-  onCancel: () => void;
-  onSubmit: (text: string) => void;
-  onRemove: () => void;
-}) {
-  const [text, setText] = useState(state.initialText);
-  const dialogRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const titleId = useId();
-  const summaryId = useId();
-  const inputId = useId();
-  const suggestionsId = useId();
-
-  const reason = reasonFor(text);
-  const editing = state.mode === "edit";
-
-  useEffect(() => {
-    if (state.focusInput) inputRef.current?.focus();
-    else dialogRef.current?.focus();
-    // Focus once, when the dialog opens.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const onKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      event.stopPropagation();
-      onCancel();
-
-      return;
-    }
-
-    if (event.key !== "Tab") return;
-
-    // Keep focus inside while the dialog is open.
-    const focusable = [
-      ...dialogRef.current!.querySelectorAll<HTMLElement>("button:not([disabled]), input"),
-    ];
-    const first = focusable[0];
-    const last = focusable.at(-1)!;
-
-    if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault();
-      first.focus();
-    }
-  };
-
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
-    onSubmit(text);
-  };
-
-  return (
-    <motion.div
-      ref={dialogRef}
-      className="ta-overlay"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby={titleId}
-      aria-describedby={summaryId}
-      tabIndex={-1}
-      style={state.position}
-      initial={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -6, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -4, scale: 0.98 }}
-      transition={{ duration: 0.18, ease: EASE_OUT }}
-      onKeyDown={onKeyDown}
-    >
-      <form onSubmit={submit}>
-        <div className="ta-overlay-header">
-          <div>
-            <h2 id={titleId} className="ta-overlay-title">
-              {editing ? "Edit time away" : "Mark time away"}
-            </h2>
-            <p id={summaryId} className="ta-overlay-summary">
-              {rangeSummary(state.start, state.end)}
-            </p>
-          </div>
-          <button type="button" className="ta-icon-button" aria-label="Close" onClick={onCancel}>
-            <XIcon />
-          </button>
-        </div>
-
-        <div className="ta-overlay-body">
-          <label className="sr-only" htmlFor={inputId}>
-            What were you up to?
-          </label>
-          <div className="ta-input">
-            <span className="ta-input-visual" aria-hidden="true">
-              {text.trim() ? reason.emoji : <SmileyIcon />}
-            </span>
-            <input
-              ref={inputRef}
-              id={inputId}
-              type="text"
-              value={text}
-              maxLength={80}
-              placeholder="What were you up to?"
-              autoComplete="off"
-              spellCheck={false}
-              onChange={(event) => setText(event.target.value)}
-            />
-            {text ? (
-              <button
-                type="button"
-                className="ta-icon-button ta-input-clear"
-                aria-label="Clear"
-                onClick={() => {
-                  setText("");
-                  inputRef.current?.focus();
-                }}
-              >
-                <XIcon />
-              </button>
-            ) : null}
-          </div>
-
-          <h3 id={suggestionsId} className="ta-suggestions-title">
-            Suggestions
-          </h3>
-          <ul className="ta-suggestions" aria-labelledby={suggestionsId}>
-            {SUGGESTIONS.map((suggestion) => (
-              <li key={suggestion.label}>
-                <button
-                  type="button"
-                  className="ta-suggestion"
-                  aria-pressed={reason.label === suggestion.label}
-                  onClick={() => setText(suggestion.label)}
-                >
-                  <span className="ta-suggestion-emoji" aria-hidden="true">
-                    {suggestion.emoji}
-                  </span>
-                  {suggestion.label}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <div className="ta-overlay-footer">
-          {editing ? (
-            <button type="button" className="ta-btn ta-btn-danger" onClick={onRemove}>
-              Remove
-            </button>
-          ) : null}
-          <span className="ta-spacer" />
-          <button type="button" className="ta-btn" onClick={onCancel}>
-            Cancel
-          </button>
-          <button type="submit" className="ta-btn ta-btn-primary">
-            {editing ? "Save" : "Mark as away"}
-          </button>
-        </div>
-      </form>
-    </motion.div>
-  );
-}
 
 /* ------------------------------------------------------------------------ */
 /* Contribution settings                                                    */
@@ -1261,49 +1237,5 @@ function ActivityOverview({ grid }: { grid: { first: number; last: number } }) {
         </svg>
       </div>
     </div>
-  );
-}
-
-/* ------------------------------------------------------------------------ */
-/* Octicons                                                                 */
-/* ------------------------------------------------------------------------ */
-
-function TriangleDownIcon() {
-  return (
-    <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" className="ta-octicon">
-      <path d="m4.427 7.427 3.396 3.396a.25.25 0 0 0 .354 0l3.396-3.396A.25.25 0 0 0 11.396 7H4.604a.25.25 0 0 0-.177.427Z" />
-    </svg>
-  );
-}
-
-function CheckIcon() {
-  return (
-    <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" className="ta-octicon">
-      <path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z" />
-    </svg>
-  );
-}
-
-function XIcon() {
-  return (
-    <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" className="ta-octicon">
-      <path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z" />
-    </svg>
-  );
-}
-
-function SmileyIcon() {
-  return (
-    <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" className="ta-octicon">
-      <path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm3.82 1.636a.75.75 0 0 1 1.038.175l.007.009c.103.118.22.222.35.31.264.178.683.37 1.285.37.602 0 1.02-.192 1.285-.371.13-.088.247-.192.35-.31l.007-.008a.75.75 0 0 1 1.222.87l-.022-.015c.02.013.021.015.021.015v.001l-.001.002-.002.003-.005.007-.014.019a2.066 2.066 0 0 1-.184.213c-.16.166-.338.316-.53.445-.63.418-1.37.638-2.127.629-.946 0-1.652-.308-2.126-.63a3.331 3.331 0 0 1-.715-.657l-.014-.02-.005-.006-.002-.003v-.002h-.001l.613-.432-.614.43a.75.75 0 0 1 .183-1.044ZM12 7a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM5 8a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z" />
-    </svg>
-  );
-}
-
-function RepoIcon() {
-  return (
-    <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" className="ta-octicon ta-repo-icon">
-      <path d="M2 2.5A2.5 2.5 0 0 1 4.5 0h8.75a.75.75 0 0 1 .75.75v12.5a.75.75 0 0 1-.75.75h-2.5a.75.75 0 0 1 0-1.5h1.75v-2h-8a1 1 0 0 0-.714 1.7.75.75 0 1 1-1.072 1.05A2.495 2.495 0 0 1 2 11.5Zm10.5-1h-8a1 1 0 0 0-1 1v6.708A2.486 2.486 0 0 1 4.5 9h8ZM5 12.25a.25.25 0 0 1 .25-.25h3.5a.25.25 0 0 1 .25.25v3.25a.25.25 0 0 1-.4.2l-1.45-1.087a.249.249 0 0 0-.3 0L5.4 15.7a.25.25 0 0 1-.4-.2Z" />
-    </svg>
   );
 }

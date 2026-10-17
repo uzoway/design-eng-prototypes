@@ -82,7 +82,8 @@ describe("words", () => {
   });
 
   it("summarises ranges, naming the year only when it changes", () => {
-    assert.equal(rangeSummary(dayOf(2026, 7, 3), dayOf(2026, 7, 24)), "Aug 3 – Aug 24 · 22 days");
+    assert.equal(rangeSummary(dayOf(2026, 7, 3), dayOf(2026, 7, 24)), "Aug 3 – 24 · 22 days");
+    assert.equal(rangeSummary(dayOf(2026, 6, 28), dayOf(2026, 7, 3)), "Jul 28 – Aug 3 · 7 days");
     assert.equal(rangeSummary(dayOf(2026, 7, 3), dayOf(2026, 7, 3)), "Aug 3 · 1 day");
     assert.equal(
       rangeSummary(dayOf(2025, 11, 28), dayOf(2026, 0, 4)),

@@ -78,15 +78,22 @@ export function plural(n: number, one: string, many = `${one}s`) {
   return `${n} ${n === 1 ? one : many}`;
 }
 
-/** "Aug 3 – Aug 24 · 22 days" */
+/** "Aug 3 – 24", "Jul 28 – Aug 3", "Dec 28, 2025 – Jan 4, 2026": say each part once. */
+export function rangeDates(start: number, end: number) {
+  if (start === end) return shortDate(start);
+
+  const from = parts(start);
+  const to = parts(end);
+
+  if (from.year !== to.year) return `${shortDate(start, true)} – ${shortDate(end, true)}`;
+  if (from.month !== to.month) return `${shortDate(start)} – ${shortDate(end)}`;
+
+  return `${shortDate(start)} – ${to.date}`;
+}
+
+/** "Aug 3 – 24 · 22 days" */
 export function rangeSummary(start: number, end: number) {
-  const days = end - start + 1;
-
-  if (days === 1) return `${shortDate(start)} · 1 day`;
-
-  const crossesYear = parts(start).year !== parts(end).year;
-
-  return `${shortDate(start, crossesYear)} – ${shortDate(end, crossesYear)} · ${plural(days, "day")}`;
+  return `${rangeDates(start, end)} · ${plural(end - start + 1, "day")}`;
 }
 
 /* ------------------------------------------------------------------------ */
