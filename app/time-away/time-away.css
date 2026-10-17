@@ -1,0 +1,973 @@
+/*
+ * Contribution graph with time away. Sizes, colours and timings are measured
+ * from github.com (dark default and light default themes).
+ */
+
+.ta-root {
+  --bg: #ffffff;
+  --fg: #1f2328;
+  --fg-muted: #59636e;
+  --border: #d1d9e0;
+  --accent: #0969da;
+  --focus: #0969da;
+  --danger: #d1242f;
+  --overlay-bg: #ffffff;
+  --overlay-shadow: 0 0 0 1px #d1d9e0, 0 6px 12px -3px rgba(37, 41, 46, 0.04), 0 6px 18px 0 rgba(37, 41, 46, 0.12);
+  --tooltip-bg: #25292e;
+  --control-hover: rgba(129, 139, 152, 0.1);
+  --btn-bg: #f6f8fa;
+  --btn-hover: #eff2f5;
+  --btn-border: #d1d9e0;
+  --primary-bg: #1f883d;
+  --primary-hover: #1c8139;
+  --input-bg: #ffffff;
+  --year-selected: #0969da;
+
+  --level-0: #eff2f5;
+  --level-1: #aceebb;
+  --level-2: #4ac26b;
+  --level-3: #2da44e;
+  --level-4: #116329;
+  --day-border: rgba(31, 35, 40, 0.05);
+  --day-selected: #b6d6fd;
+  --away-stripe: rgba(89, 99, 110, 0.55);
+  --radar: #2da44e;
+  --radar-blob: #40c463;
+
+  position: relative;
+  color: var(--fg);
+  font-family: var(--font-mona), -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (prefers-color-scheme: dark) {
+  .ta-root {
+    --bg: #0d1117;
+    --fg: #f0f6fc;
+    --fg-muted: #9198a1;
+    --border: #3d444d;
+    --accent: #4493f8;
+    --focus: #1f6feb;
+    --danger: #f85149;
+    --overlay-bg: #010409;
+    --overlay-shadow: 0 0 0 1px #3d444d, 0 6px 12px -3px rgba(1, 4, 9, 0.4), 0 6px 18px 0 rgba(1, 4, 9, 0.4);
+    --tooltip-bg: #3d444d;
+    --control-hover: rgba(101, 108, 118, 0.2);
+    --btn-bg: #212830;
+    --btn-hover: #262c36;
+    --btn-border: #3d444d;
+    --primary-bg: #238636;
+    --primary-hover: #29903b;
+    --input-bg: #0d1117;
+    --year-selected: #1f6feb;
+
+    --level-0: #151b23;
+    --level-1: #033a16;
+    --level-2: #196c2e;
+    --level-3: #2ea043;
+    --level-4: #56d364;
+    --day-border: rgba(1, 4, 9, 0.05);
+    --day-selected: #1d3557;
+    --away-stripe: rgba(145, 152, 161, 0.5);
+    --radar: #56d364;
+    --radar-blob: #40c463;
+  }
+}
+
+.ta-root *,
+.ta-root *::before,
+.ta-root *::after {
+  box-sizing: border-box;
+}
+
+.ta-root .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.ta-loading {
+  min-height: 487px;
+}
+
+/* ------------------------------------------------------------------------ */
+/* Layout                                                                   */
+/* ------------------------------------------------------------------------ */
+
+.ta-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 117px;
+  column-gap: 32px;
+}
+
+.ta-main {
+  min-width: 0;
+}
+
+.ta-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.ta-heading {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+}
+
+.ta-settings {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--fg-muted);
+  font: inherit;
+  font-size: 12px;
+  line-height: 18px;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.ta-settings:hover {
+  color: var(--accent);
+}
+
+.ta-settings .ta-octicon {
+  margin-left: 0;
+}
+
+.ta-box {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.ta-graph {
+  padding: 8px 0;
+}
+
+.ta-box[data-overview] .ta-graph {
+  border-bottom: 1px solid var(--border);
+}
+
+.ta-scroller {
+  display: flex;
+  margin: 0 8px;
+  padding-top: 4px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+
+.ta-scroller::-webkit-scrollbar {
+  display: none;
+}
+
+/* ------------------------------------------------------------------------ */
+/* Grid                                                                     */
+/* ------------------------------------------------------------------------ */
+
+/* Auto margins centre the grid when it fits and keep its start reachable when it scrolls. */
+.ta-grid {
+  position: relative;
+  flex-shrink: 0;
+  width: max-content;
+  margin: 0 auto;
+  border-collapse: separate;
+  border-spacing: 3px;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  font-size: 12px;
+}
+
+.ta-months {
+  height: 16px;
+}
+
+.ta-row {
+  height: 10px;
+}
+
+.ta-corner {
+  width: 28px;
+  padding: 0;
+}
+
+.ta-label {
+  position: relative;
+  padding: 0;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: left;
+  color: var(--fg);
+}
+
+.ta-month {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.ta-weekday {
+  position: absolute;
+  bottom: -3px;
+  left: 0;
+}
+
+.ta-weekday[data-hidden] {
+  clip-path: circle(0);
+}
+
+.ta-pad {
+  width: 10px;
+  padding: 0;
+}
+
+.ta-day {
+  position: relative;
+  width: 10px;
+  height: 10px;
+  padding: 0;
+  border-radius: 2px;
+  outline-offset: -1px;
+  background-color: var(--level-0);
+  box-shadow: inset 0 0 0 0.5px var(--day-border);
+  shape-rendering: geometricPrecision;
+  cursor: pointer;
+  transition: opacity 160ms ease, background-color 160ms ease;
+}
+
+.ta-day[data-level="1"] {
+  background-color: var(--level-1);
+}
+
+.ta-day[data-level="2"] {
+  background-color: var(--level-2);
+}
+
+.ta-day[data-level="3"] {
+  background-color: var(--level-3);
+}
+
+.ta-day[data-level="4"] {
+  background-color: var(--level-4);
+}
+
+.ta-day:focus {
+  outline: none;
+}
+
+.ta-day:focus-visible {
+  outline: 2px solid var(--focus);
+}
+
+/* Selecting: the days outside the range fade to half, as on github.com. */
+.ta-grid[data-selecting] .ta-day {
+  opacity: 0.5;
+}
+
+.ta-grid[data-selecting] .ta-day[aria-selected="true"] {
+  opacity: 1;
+}
+
+.ta-grid[data-selecting] .ta-day[aria-selected="true"][data-level="0"] {
+  background-color: var(--day-selected);
+}
+
+.ta-root[data-dragging] .ta-day {
+  transition: none;
+}
+
+/* Away: a hatch over the empty days. */
+.ta-day[data-away]::after,
+.ta-legend-day[data-away]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--away-stripe) 0 1px,
+    transparent 1px 3px
+  );
+  pointer-events: none;
+}
+
+.ta-day[data-enter]::after {
+  animation: ta-away-in 300ms cubic-bezier(0.34, 1.4, 0.64, 1) var(--delay, 0ms) both;
+}
+
+.ta-day[data-leave]::after {
+  animation: ta-away-out 200ms cubic-bezier(0.32, 0, 0.67, 0) var(--delay, 0ms) both;
+}
+
+@keyframes ta-away-in {
+  from {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes ta-away-out {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+
+  to {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ta-day[data-enter]::after {
+    animation: ta-fade-in 150ms ease both;
+  }
+
+  .ta-day[data-leave]::after {
+    animation: ta-fade-in 150ms ease reverse both;
+  }
+
+  .ta-day {
+    transition: none;
+  }
+}
+
+@keyframes ta-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+/* ------------------------------------------------------------------------ */
+/* Footer and legend                                                        */
+/* ------------------------------------------------------------------------ */
+
+.ta-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 26px;
+  margin: 0 8px;
+  padding: 4px 24px 0;
+  font-size: 12px;
+}
+
+.ta-link {
+  color: var(--fg-muted);
+  text-decoration: none;
+  border-radius: 6px;
+}
+
+.ta-link:hover {
+  color: var(--accent);
+}
+
+.ta-legend {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  color: var(--fg-muted);
+}
+
+.ta-legend-text {
+  line-height: 18px;
+}
+
+.ta-legend-text:first-child {
+  margin-right: 4px;
+}
+
+.ta-legend-day {
+  position: relative;
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 4px;
+  border-radius: 3px;
+  background-color: var(--level-0);
+  box-shadow: inset 0 0 0 0.5px var(--day-border);
+}
+
+.ta-legend-day[data-level="1"] {
+  background-color: var(--level-1);
+}
+
+.ta-legend-day[data-level="2"] {
+  background-color: var(--level-2);
+}
+
+.ta-legend-day[data-level="3"] {
+  background-color: var(--level-3);
+}
+
+.ta-legend-day[data-level="4"] {
+  background-color: var(--level-4);
+}
+
+.ta-legend-away {
+  display: inline-block;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.ta-legend-away-inner {
+  display: inline-flex;
+  align-items: center;
+  padding-left: 16px;
+}
+
+/* ------------------------------------------------------------------------ */
+/* Activity overview                                                        */
+/* ------------------------------------------------------------------------ */
+
+.ta-overview {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.ta-overview-text {
+  padding: 16px;
+  border-right: 1px solid var(--border);
+  margin: 16px 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.ta-overview-title {
+  margin: 0 0 16px;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 21px;
+}
+
+.ta-overview-repos {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  line-height: 21px;
+}
+
+.ta-overview-repos a {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 6px;
+}
+
+.ta-overview-repos a:hover {
+  text-decoration: underline;
+}
+
+.ta-repo-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  fill: var(--fg-muted);
+}
+
+.ta-overview-chart {
+  display: flex;
+  justify-content: center;
+  padding: 16px 0 17px;
+}
+
+.ta-radar {
+  display: block;
+  max-width: 100%;
+  overflow: visible;
+}
+
+.ta-radar-axis {
+  stroke: var(--radar);
+}
+
+.ta-radar-blob {
+  fill: var(--radar-blob);
+  stroke: var(--radar-blob);
+  opacity: 0.5;
+}
+
+.ta-radar-point {
+  fill: #ffffff;
+  stroke: var(--radar);
+}
+
+.ta-radar-label {
+  fill: var(--fg-muted);
+  font-size: 12px;
+}
+
+/* ------------------------------------------------------------------------ */
+/* Years                                                                    */
+/* ------------------------------------------------------------------------ */
+
+.ta-years ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ta-years {
+  padding-top: 22px;
+}
+
+.ta-year {
+  display: block;
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 8px 16px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--fg-muted);
+  font: inherit;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ta-year:hover {
+  background: var(--control-hover);
+  color: var(--fg);
+}
+
+.ta-year[aria-current="true"] {
+  background: var(--year-selected);
+  color: #ffffff;
+}
+
+/* ------------------------------------------------------------------------ */
+/* Tooltip                                                                  */
+/* ------------------------------------------------------------------------ */
+
+.ta-tooltip {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 30;
+  max-width: 320px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--tooltip-bg);
+  color: #ffffff;
+  font-size: 12px;
+  line-height: 19.5px;
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: none;
+  visibility: hidden;
+  opacity: 0;
+}
+
+.ta-tooltip[data-shown] {
+  visibility: visible;
+  opacity: 1;
+  animation: ta-fade-in 100ms ease-in;
+}
+
+/* ------------------------------------------------------------------------ */
+/* Overlays: the dialog and the settings menu                               */
+/* ------------------------------------------------------------------------ */
+
+.ta-overlay,
+.ta-menu {
+  border-radius: 12px;
+  background: var(--overlay-bg);
+  box-shadow: var(--overlay-shadow);
+  color: var(--fg);
+}
+
+.ta-overlay {
+  position: absolute;
+  outline: none;
+  z-index: 20;
+  transform-origin: top center;
+}
+
+.ta-overlay-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 16px 16px 8px;
+}
+
+.ta-overlay-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 21px;
+}
+
+.ta-overlay-summary {
+  margin: 0;
+  color: var(--fg-muted);
+  font-size: 12px;
+  line-height: 18px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ta-overlay-body {
+  padding: 8px 16px 0;
+}
+
+.ta-icon-button {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  margin: -6px -8px 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--fg-muted);
+  cursor: pointer;
+}
+
+.ta-icon-button:hover {
+  background: var(--control-hover);
+  color: var(--fg);
+}
+
+.ta-octicon {
+  fill: currentColor;
+  vertical-align: text-bottom;
+}
+
+.ta-input {
+  display: flex;
+  align-items: center;
+  height: 32px;
+  border: 1px solid var(--btn-border);
+  border-radius: 6px;
+  background: var(--input-bg);
+}
+
+.ta-input:focus-within {
+  border-color: var(--focus);
+  outline: 1px solid var(--focus);
+  outline-offset: -1px;
+}
+
+.ta-input-visual {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 100%;
+  color: var(--fg-muted);
+  font-size: 14px;
+}
+
+.ta-input input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0 8px 0 0;
+  border: 0;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  font-size: 14px;
+  outline: none;
+}
+
+.ta-input input::placeholder {
+  color: var(--fg-muted);
+}
+
+.ta-input-clear {
+  width: 28px;
+  height: 28px;
+  margin: 0 2px 0 0;
+}
+
+.ta-suggestions-title {
+  margin: 12px 0 4px;
+  color: var(--fg-muted);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.ta-suggestions {
+  margin: 0 -8px;
+  padding: 0;
+  list-style: none;
+}
+
+.ta-suggestion {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 32px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  font-size: 14px;
+  line-height: 20px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ta-suggestion:hover {
+  background: var(--control-hover);
+}
+
+.ta-suggestion[aria-pressed="true"] {
+  background: var(--control-hover);
+  font-weight: 600;
+}
+
+.ta-suggestion-emoji {
+  width: 16px;
+  text-align: center;
+}
+
+.ta-overlay-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.ta-spacer {
+  flex: 1;
+}
+
+.ta-btn {
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--btn-border);
+  border-radius: 6px;
+  background: var(--btn-bg);
+  color: var(--fg);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.ta-btn:hover {
+  background: var(--btn-hover);
+}
+
+.ta-btn-primary {
+  border-color: rgba(240, 246, 252, 0.1);
+  background: var(--primary-bg);
+  color: #ffffff;
+}
+
+.ta-btn-primary:hover {
+  background: var(--primary-hover);
+}
+
+.ta-btn-danger {
+  border-color: transparent;
+  background: transparent;
+  color: var(--danger);
+  margin-left: -12px;
+}
+
+.ta-btn-danger:hover {
+  background: var(--control-hover);
+}
+
+/* Settings menu (Primer ActionMenu with checkbox items). */
+.ta-menu {
+  z-index: 40;
+  width: 320px;
+  max-width: calc(100vw - 16px);
+  padding: 8px;
+  font-family: var(--font-mona), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 14px;
+  line-height: 21px;
+  -webkit-font-smoothing: antialiased;
+  transform-origin: var(--radix-dropdown-menu-content-transform-origin);
+  animation: ta-fade-in 120ms ease-out;
+}
+
+.ta-menu-item {
+  display: flex;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  outline: none;
+  cursor: pointer;
+}
+
+.ta-menu-item[data-highlighted] {
+  background: var(--control-hover);
+}
+
+.ta-menu-item:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+.ta-menu-check {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 16px;
+  height: 21px;
+  color: var(--fg-muted);
+}
+
+.ta-menu-label {
+  display: block;
+  font-weight: 600;
+}
+
+.ta-menu-description {
+  display: block;
+  color: var(--fg-muted);
+  font-size: 12px;
+  line-height: 19.5px;
+}
+
+/* Focus rings for everything else, matching Primer. */
+.ta-root :is(a, button, input):focus-visible,
+.ta-settings:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+.ta-root .ta-input input:focus-visible {
+  outline: none;
+}
+
+/* ------------------------------------------------------------------------ */
+/* Narrow screens                                                           */
+/* ------------------------------------------------------------------------ */
+
+@media (max-width: 1011px) {
+  .ta-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ta-years {
+    order: -1;
+    padding: 0 0 16px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .ta-years ul {
+    display: flex;
+    gap: 8px;
+  }
+
+  .ta-year {
+    width: auto;
+    margin: 0;
+  }
+
+}
+
+@media (max-width: 767px) {
+  .ta-overview {
+    grid-template-columns: 1fr;
+  }
+
+  .ta-overview-text {
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+    margin: 0;
+    padding: 16px;
+  }
+
+  .ta-footer {
+    padding: 4px 0 0;
+  }
+
+  .ta-link {
+    display: none;
+  }
+
+  .ta-footer {
+    justify-content: flex-end;
+  }
+}
+
+/* ------------------------------------------------------------------------ */
+/* Windows high contrast: GitHub draws levels as dots; away is a hatch.     */
+/* ------------------------------------------------------------------------ */
+
+@media (forced-colors: active) {
+  .ta-day,
+  .ta-legend-day {
+    forced-color-adjust: none;
+    background-color: Canvas;
+    box-shadow: inset 0 0 0 1px CanvasText;
+  }
+
+  .ta-day[data-level="1"],
+  .ta-legend-day[data-level="1"] {
+    background: radial-gradient(CanvasText 15%, Canvas 15%);
+  }
+
+  .ta-day[data-level="2"],
+  .ta-legend-day[data-level="2"] {
+    background: radial-gradient(CanvasText 35%, Canvas 35%);
+  }
+
+  .ta-day[data-level="3"],
+  .ta-legend-day[data-level="3"] {
+    background: radial-gradient(CanvasText 55%, Canvas 55%);
+  }
+
+  .ta-day[data-level="4"],
+  .ta-legend-day[data-level="4"] {
+    background: radial-gradient(CanvasText 75%, Canvas 75%);
+  }
+
+  .ta-day[data-away]::after,
+  .ta-legend-day[data-away]::after {
+    background-image: repeating-linear-gradient(-45deg, CanvasText 0 1px, transparent 1px 3px);
+  }
+
+  .ta-grid[data-selecting] .ta-day[aria-selected="true"] {
+    box-shadow: inset 0 0 0 2px Highlight;
+  }
+
+  .ta-day:focus-visible {
+    outline-color: Highlight;
+  }
+}
