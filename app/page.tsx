@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { LabProject } from "./components/portfolio/lab-project";
 import { MediaFallback, Metadata } from "./components/portfolio/project-meta";
@@ -79,10 +79,21 @@ type ProjectImageProps = {
 function ProjectImage({ slug, title }: ProjectImageProps) {
   const [failed, setFailed] = useState(false);
 
+  const attachImage = useCallback(function attachImage(
+    image: HTMLImageElement | null,
+  ) {
+    // A missing cover can fail before hydration attaches onError, so the
+    // error event never reaches React. Catch that case here.
+    if (image?.complete && image.naturalWidth === 0) {
+      setFailed(true);
+    }
+  }, []);
+
   return (
     <div className="relative aspect-video overflow-hidden rounded-[11px] sm:rounded-[18px] border border-black/[0.045] bg-[#e9e9e6] transition-[box-shadow,border-color] duration-300 group-hover:border-black/[0.08] group-hover:shadow-[0_12px_40px_-28px_rgba(0,0,0,.32)]">
       {!failed && (
         <img
+          ref={attachImage}
           src={`/portfolio/work/${slug}/cover.webp`}
           alt={`${title} website preview`}
           loading="lazy"
@@ -152,7 +163,7 @@ export default function Home() {
   const additionalWork = websites.slice(3);
 
   return (
-    <main className="min-h-screen bg-[#f4f4f1] text-[#111] selection:bg-black selection:text-white">
+    <main className="min-h-screen bg-[#f4f4f1] font-sans text-[#111] selection:bg-black selection:text-white">
       <SiteHeader />
 
       <div className="mx-auto max-w-[1200px] px-5 pb-8 pt-[68px] sm:px-8">
@@ -176,7 +187,7 @@ export default function Home() {
         <section
           id="work"
           aria-labelledby="work-title"
-          className="scroll-mt-24 border-t border-black/10 pt-6"
+          className="scroll-mt-6 border-t border-black/10 pt-6"
         >
           <div className="mb-12 flex items-center justify-between">
             <h2
@@ -276,7 +287,7 @@ export default function Home() {
         <section
           id="lab"
           aria-labelledby="lab-title"
-          className="scroll-mt-24 border-t border-black/10 pb-28 pt-6"
+          className="scroll-mt-6 border-t border-black/10 pb-28 pt-6"
         >
           <div className="mb-12 flex items-center justify-between">
             <h2
@@ -336,7 +347,7 @@ export default function Home() {
         <section
           id="about"
           aria-labelledby="about-title"
-          className="scroll-mt-24 border-t border-black/10 py-20"
+          className="scroll-mt-6 border-t border-black/10 py-20"
         >
           <div className="grid gap-12 sm:grid-cols-2 sm:gap-16">
             <div>

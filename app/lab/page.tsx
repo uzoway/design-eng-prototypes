@@ -45,7 +45,7 @@ export const metadata: Metadata = {
 
 export default function LabPage() {
   return (
-    <main className="min-h-screen bg-[#f4f4f1] text-[#111] selection:bg-black selection:text-white">
+    <main className="min-h-screen bg-[#f4f4f1] font-sans text-[#111] selection:bg-black selection:text-white">
       <SiteHeader page="lab" />
 
       <div className="mx-auto max-w-[1200px] px-5 pb-8 pt-[68px] sm:px-8">
