@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, type MouseEvent } from "react";
+import { useLayoutEffect, useRef, useState, type MouseEvent } from "react";
+import { flushSync } from "react-dom";
 import { useReducedMotion } from "framer-motion";
 import { EMAIL } from "./site-footer";
 
@@ -19,6 +20,42 @@ const NAV_ITEMS = [
     label: "About",
   },
 ];
+
+// Keys that scroll the page. Pressing one during a nav click's smooth scroll
+// hands control back to the reader.
+const SCROLL_KEYS = new Set([
+  "ArrowUp",
+  "ArrowDown",
+  "PageUp",
+  "PageDown",
+  "Home",
+  "End",
+  " ",
+]);
+
+// The section whose top has passed 40% of the viewport. At the very bottom of
+// the page the last section wins, even if it's too short to reach that line.
+function sectionAtReadingLine(sections: HTMLElement[]) {
+  const atEnd =
+    window.innerHeight + window.scrollY >=
+    document.documentElement.scrollHeight - 2;
+
+  if (atEnd) {
+    return sections[sections.length - 1].id;
+  }
+
+  const line = window.innerHeight * 0.4;
+
+  let current = sections[0].id;
+
+  sections.forEach(function checkSection(section) {
+    if (section.getBoundingClientRect().top <= line) {
+      current = section.id;
+    }
+  });
+
+  return current;
+}
 
 const navLinkClass =
   "relative z-10 grid h-8 w-14 place-items-center rounded-[8px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black";
@@ -38,12 +75,17 @@ export function SiteHeader({ page = "home" }: SiteHeaderProps) {
 
   const [indicatorSettled, setIndicatorSettled] = useState(false);
 
+  // Set while a nav click smooth-scrolls to its section, so the sections it
+  // passes on the way don't pull the indicator back and forth.
+  const lockToTargetRef = useRef(function lockToTarget() {});
+
   const activeIndex = NAV_ITEMS.findIndex(function findActive(item) {
     return item.id === activeSection;
   });
 
-  useEffect(
-    function observeSections() {
+  // A layout effect, so the indicator is in place before the first paint.
+  useLayoutEffect(
+    function followSections() {
       if (onLab) {
         return;
       }
@@ -56,47 +98,126 @@ export function SiteHeader({ page = "home" }: SiteHeaderProps) {
         return;
       }
 
+      let frame = 0;
+
       let settleFrame = 0;
 
-      const observer = new IntersectionObserver(
-        function handleIntersection(entries) {
-          const visible = entries
-            .filter(function filterEntry(entry) {
-              return entry.isIntersecting;
-            })
-            .sort(function sortEntries(first, second) {
-              return second.intersectionRatio - first.intersectionRatio;
-            });
+      let locked = false;
 
-          if (visible.length > 0) {
-            setActiveSection(visible[0].target.id);
-          }
+      let releaseTimer = 0;
 
-          // The first callback places the indicator wherever the page opened,
-          // including a scroll position restored by Back. Let it jump there
-          // and only slide between sections after it has painted.
-          if (settleFrame === 0) {
-            settleFrame = requestAnimationFrame(function waitForPaint() {
-              settleFrame = requestAnimationFrame(function settle() {
-                setIndicatorSettled(true);
-              });
-            });
-          }
-        },
-        {
-          rootMargin: "-20% 0px -55% 0px",
-          threshold: [0, 0.25, 0.5, 0.75],
-        },
-      );
+      let settled = false;
 
-      sections.forEach(function observeSection(section) {
-        observer.observe(section);
+      function update() {
+        frame = 0;
+
+        if (!locked) {
+          setActiveSection(sectionAtReadingLine(sections));
+        }
+      }
+
+      function scheduleUpdate() {
+        if (frame === 0) {
+          frame = requestAnimationFrame(update);
+        }
+      }
+
+      function release() {
+        window.clearTimeout(releaseTimer);
+
+        locked = false;
+
+        scheduleUpdate();
+      }
+
+      // The smooth scroll has ended once scroll events stop for 150ms.
+      function holdUntilScrollStops() {
+        window.clearTimeout(releaseTimer);
+
+        releaseTimer = window.setTimeout(release, 150);
+      }
+
+      lockToTargetRef.current = function lockToTarget() {
+        locked = true;
+
+        holdUntilScrollStops();
+      };
+
+      function handleScroll() {
+        if (locked) {
+          holdUntilScrollStops();
+
+          return;
+        }
+
+        // Back restores the scroll position just after the page mounts. Move
+        // the indicator before that frame paints, so it never shows the top
+        // section first.
+        if (!settled) {
+          flushSync(update);
+
+          return;
+        }
+
+        scheduleUpdate();
+      }
+
+      function handleReaderScroll() {
+        if (locked) {
+          release();
+        }
+      }
+
+      function handleKeyDown(event: KeyboardEvent) {
+        if (SCROLL_KEYS.has(event.key)) {
+          handleReaderScroll();
+        }
+      }
+
+      // Place the indicator wherever the page opened, including a scroll
+      // position restored by Back, without sliding. Slide only after that.
+      update();
+
+      settleFrame = requestAnimationFrame(function waitForPaint() {
+        settleFrame = requestAnimationFrame(function settle() {
+          settled = true;
+
+          setIndicatorSettled(true);
+        });
       });
 
+      window.addEventListener("scroll", handleScroll, {
+        passive: true,
+      });
+
+      window.addEventListener("resize", scheduleUpdate);
+
+      window.addEventListener("wheel", handleReaderScroll, {
+        passive: true,
+      });
+
+      window.addEventListener("touchstart", handleReaderScroll, {
+        passive: true,
+      });
+
+      window.addEventListener("keydown", handleKeyDown);
+
       return function cleanup() {
+        cancelAnimationFrame(frame);
+
         cancelAnimationFrame(settleFrame);
 
-        observer.disconnect();
+        window.clearTimeout(releaseTimer);
+
+        window.removeEventListener("scroll", handleScroll);
+
+        window.removeEventListener("resize", scheduleUpdate);
+
+        window.removeEventListener("wheel", handleReaderScroll);
+
+        window.removeEventListener("touchstart", handleReaderScroll);
+
+        window.removeEventListener("keydown", handleKeyDown);
       };
     },
     [onLab],
@@ -113,6 +234,8 @@ export function SiteHeader({ page = "home" }: SiteHeaderProps) {
     if (!section) {
       return;
     }
+
+    lockToTargetRef.current();
 
     setActiveSection(sectionId);
 
