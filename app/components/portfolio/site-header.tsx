@@ -36,6 +36,8 @@ export function SiteHeader({ page = "home" }: SiteHeaderProps) {
 
   const [activeSection, setActiveSection] = useState(onLab ? "lab" : "work");
 
+  const [indicatorSettled, setIndicatorSettled] = useState(false);
+
   const activeIndex = NAV_ITEMS.findIndex(function findActive(item) {
     return item.id === activeSection;
   });
@@ -54,6 +56,8 @@ export function SiteHeader({ page = "home" }: SiteHeaderProps) {
         return;
       }
 
+      let settleFrame = 0;
+
       const observer = new IntersectionObserver(
         function handleIntersection(entries) {
           const visible = entries
@@ -67,6 +71,17 @@ export function SiteHeader({ page = "home" }: SiteHeaderProps) {
           if (visible.length > 0) {
             setActiveSection(visible[0].target.id);
           }
+
+          // The first callback places the indicator wherever the page opened,
+          // including a scroll position restored by Back. Let it jump there
+          // and only slide between sections after it has painted.
+          if (settleFrame === 0) {
+            settleFrame = requestAnimationFrame(function waitForPaint() {
+              settleFrame = requestAnimationFrame(function settle() {
+                setIndicatorSettled(true);
+              });
+            });
+          }
         },
         {
           rootMargin: "-20% 0px -55% 0px",
@@ -79,6 +94,8 @@ export function SiteHeader({ page = "home" }: SiteHeaderProps) {
       });
 
       return function cleanup() {
+        cancelAnimationFrame(settleFrame);
+
         observer.disconnect();
       };
     },
@@ -136,7 +153,11 @@ export function SiteHeader({ page = "home" }: SiteHeaderProps) {
             >
               <span
                 aria-hidden="true"
-                className="absolute bottom-[3px] left-[3px] top-[3px] w-[56px] rounded-[8px] bg-white shadow-[0_1px_2px_rgba(0,0,0,.055),0_3px_9px_rgba(0,0,0,.025)] transition-transform duration-[420ms] ease-[cubic-bezier(.22,.72,0,1)] motion-reduce:transition-none"
+                className={`absolute bottom-[3px] left-[3px] top-[3px] w-[56px] rounded-[8px] bg-white shadow-[0_1px_2px_rgba(0,0,0,.055),0_3px_9px_rgba(0,0,0,.025)] motion-reduce:transition-none ${
+                  indicatorSettled
+                    ? "transition-transform duration-[420ms] ease-[cubic-bezier(.22,.72,0,1)]"
+                    : ""
+                }`}
                 style={{
                   transform: `translateX(${activeIndex * 56}px)`,
                 }}
