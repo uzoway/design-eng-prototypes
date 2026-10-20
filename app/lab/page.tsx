@@ -26,9 +26,9 @@ export const metadata: Metadata = {
     locale: "en_US",
     images: [
       {
-        url: "/og.png",
-        width: 1200,
-        height: 630,
+        url: "/og.png?v=2",
+        width: 2400,
+        height: 1260,
         alt: "Uzo Okafor — Design Engineer portfolio",
       },
     ],
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
     title: `${title} — Uzo Okafor`,
     description,
     creator: "@uzodev",
-    images: ["/og.png"],
+    images: ["/og.png?v=2"],
   },
 };
 
