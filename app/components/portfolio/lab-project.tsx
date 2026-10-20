@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import type { Prototype } from "../../lab/prototypes";
 import { MediaFallback, Metadata } from "./project-meta";
@@ -133,6 +133,18 @@ function PrototypeVideo({ slug, title }: PrototypeVideoProps) {
 
   const [failed, setFailed] = useState(false);
 
+  const attachVideo = useCallback(function attachVideo(
+    video: HTMLVideoElement | null,
+  ) {
+    videoRef.current = video;
+
+    // A missing file can fail before hydration attaches onError, so the
+    // error event never reaches React. Catch that case here.
+    if (video?.error) {
+      setFailed(true);
+    }
+  }, []);
+
   useEffect(function observeVideo() {
     const container = containerRef.current;
 
@@ -208,7 +220,7 @@ function PrototypeVideo({ slug, title }: PrototypeVideoProps) {
     >
       {!failed && (
         <video
-          ref={videoRef}
+          ref={attachVideo}
           src={`/portfolio/lab/${slug}/preview.mp4`}
           poster={`/portfolio/lab/${slug}/poster.webp`}
           muted
