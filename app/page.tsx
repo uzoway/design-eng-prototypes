@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { LabProject } from "./components/portfolio/lab-project";
@@ -286,12 +287,16 @@ export default function Home() {
             </h2>
 
             <span className="text-[11px] text-[#686864]">
-              Prototypes · 2026
+              {prototypes.length} prototypes
             </span>
           </div>
 
           <div className="grid gap-x-6 gap-y-14 md:grid-cols-2">
             {prototypes.map(function renderPrototype(prototype, index) {
+              if (!prototype.featured) {
+                return null;
+              }
+
               return (
                 <LabProject
                   key={prototype.slug}
@@ -300,6 +305,31 @@ export default function Home() {
                 />
               );
             })}
+          </div>
+
+          <div className="mt-16 flex justify-center">
+            <Link
+              href="/lab"
+              className="group inline-flex min-h-10 items-center gap-1.5 rounded-[11px] border border-black/[0.065] bg-white/65 px-4 text-[11px] font-medium text-[#444440] shadow-[0_1px_2px_rgba(0,0,0,.025),0_4px_14px_rgba(0,0,0,.025)] backdrop-blur-xl transition-[background-color,box-shadow,transform] duration-200 hover:bg-white hover:shadow-[0_1px_2px_rgba(0,0,0,.04),0_6px_20px_rgba(0,0,0,.04)] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-3 focus-visible:ring-offset-[#f4f4f1] motion-reduce:transition-none motion-reduce:active:scale-100"
+            >
+              See all prototypes
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 12 12"
+                fill="none"
+                aria-hidden="true"
+                className="transition-transform duration-200 ease-out group-hover:translate-x-[2px] motion-reduce:transition-none motion-reduce:group-hover:translate-x-0"
+              >
+                <path
+                  d="M2.5 6h7M6.75 3.25 9.5 6 6.75 8.75"
+                  stroke="currentColor"
+                  strokeWidth="1.3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </Link>
           </div>
         </section>
 
