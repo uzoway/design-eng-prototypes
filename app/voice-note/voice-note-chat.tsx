@@ -3124,7 +3124,7 @@ const STYLES = `
     --vn-wallpaper: ${WALLPAPER_LIGHT};
     --vn-wall: #f5f1eb;
     --vn-text: #0b0b0b;
-    --vn-dim: rgba(11, 11, 11, 0.42);
+    --vn-dim: rgba(11, 11, 11, 0.58);
     --vn-meta: #8a8f93;
     --vn-meta-out: #6f8a6c;
     --vn-icon: #0b0b0b;
@@ -3179,7 +3179,7 @@ const STYLES = `
       --vn-wallpaper: ${WALLPAPER_DARK};
       --vn-wall: #0b0b0b;
       --vn-text: #f2f2f2;
-      --vn-dim: rgba(242, 242, 242, 0.4);
+      --vn-dim: rgba(242, 242, 242, 0.55);
       --vn-meta: #9a9c9e;
       --vn-meta-out: #9bb8a8;
       --vn-icon: #f2f2f2;
