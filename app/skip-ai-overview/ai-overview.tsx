@@ -674,7 +674,9 @@ function CiteChip({ cite }: { cite: Cite }) {
   const sources = cite.sources.map((id) => SOURCES[id]);
   const extra = (cite.more ?? 0) + Math.max(0, sources.length - 2);
   const names = sources.slice(0, 2).map((source) => source.name);
-  const spoken = `Sources: ${names.join(" and ")}${extra ? ` and ${extra} more` : ""}`;
+  const spoken = extra
+    ? `Sources: ${names.join(", ")} and ${extra} more`
+    : `Sources: ${names.join(" and ")}`;
 
   return (
     <span className="aio-chip">
@@ -700,7 +702,11 @@ export function Favicon({ sourceId, size }: { sourceId: string; size: number }) 
   const source = SOURCES[sourceId];
 
   return (
-    <span className="sk-favicon" style={{ width: size, height: size, ["--hue" as string]: source.hue, fontSize: Math.round(size * 0.55) }}>
+    <span
+      className="sk-favicon"
+      aria-hidden="true"
+      style={{ width: size, height: size, ["--hue" as string]: source.hue, fontSize: Math.round(size * 0.55) }}
+    >
       {source.name[0]}
     </span>
   );
