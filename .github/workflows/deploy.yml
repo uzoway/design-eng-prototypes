@@ -36,6 +36,21 @@ jobs:
       - name: Build static site
         run: npm run build
 
+      # Lunon Living Report lives in its own repo and is served from this
+      # site at /lunon-living-report/ (its next.config sets that base path).
+      - name: Check out Lunon Living Report
+        uses: actions/checkout@v4
+        with:
+          repository: uzoway/lunon-living-report
+          path: lunon-living-report
+
+      - name: Build Lunon Living Report
+        working-directory: lunon-living-report
+        run: npm ci && npm run build
+
+      - name: Add Lunon Living Report to the site
+        run: cp -R lunon-living-report/out ./out/lunon-living-report
+
       - name: Upload site
         uses: actions/upload-pages-artifact@v4
         with:
