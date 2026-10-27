@@ -528,10 +528,12 @@ button.sk-icon-button:hover {
 .aio-sparkle {
   flex: none;
   color: var(--sparkle);
+  transition: color 150ms ease-out;
 }
 
 .aio-head-stack {
   display: grid;
+  flex: 1;
   min-width: 0;
 }
 
@@ -540,6 +542,7 @@ button.sk-icon-button:hover {
   grid-area: 1 / 1;
   align-items: center;
   min-width: 0;
+  width: 100%;
   white-space: nowrap;
 }
 
@@ -558,7 +561,8 @@ button.sk-icon-button:hover {
 .aio-actions {
   display: flex;
   gap: 4px;
-  margin-left: 10px;
+  margin-inline-start: auto;
+  padding-inline-start: 12px;
 }
 
 .aio-text-button {
@@ -568,21 +572,35 @@ button.sk-icon-button:hover {
   border: 0;
   border-radius: 18px;
   background: transparent;
-  color: var(--accent);
+  color: var(--muted);
   font-family: var(--font-gs);
   font-size: 14px;
   font-weight: 500;
   line-height: 20px;
   cursor: pointer;
-  transition: background-color 150ms linear;
+  transition: background-color 150ms ease-out, color 150ms ease-out;
 }
 
 .aio-text-button:hover {
   background: var(--accent-hover);
+  color: var(--accent);
 }
 
 .aio-text-button:active {
   background: var(--accent-press);
+}
+
+.aio-always {
+  background: var(--accent-hover);
+  color: var(--accent);
+}
+
+.aio-always:hover {
+  background: var(--accent-press);
+}
+
+.aio[data-folded] .aio-sparkle {
+  color: var(--muted);
 }
 
 .aio-dot {
@@ -613,24 +631,23 @@ button.sk-icon-button:hover {
   margin-top: 16px;
 }
 
-.aio-body[data-hidden],
-.aio-side[data-hidden] {
+.aio-body[data-generating] .aio-more {
   visibility: hidden;
+}
+
+.aio-body[data-expanded] .aio-content {
+  padding-bottom: 48px;
 }
 
 /* The skip pill's track: the whole overview, so it can stick to the bottom of the screen. */
 .aio-rail {
   position: absolute;
-  inset: 0;
+  inset: 0 0 60px;
   z-index: 3;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
   pointer-events: none;
-}
-
-.aio-rail[data-above-more] {
-  bottom: 60px;
 }
 
 .aio-rail-stick {
@@ -651,6 +668,7 @@ button.sk-icon-button:hover {
   font-family: var(--font-gs);
   font-size: 16px;
   line-height: 24px;
+  text-wrap: pretty;
 }
 
 .aio-content strong {
@@ -658,7 +676,12 @@ button.sk-icon-button:hover {
 }
 
 .aio-list {
+  margin-block: 12px;
   padding-left: 18px;
+}
+
+.aio-list li + li {
+  margin-top: 4px;
 }
 
 .aio-ul {
@@ -674,7 +697,7 @@ button.sk-icon-button:hover {
 }
 
 .aio-h {
-  margin-top: 2px;
+  margin-top: 16px;
   color: var(--fg);
   font-size: 18px;
   font-weight: 600;
@@ -740,11 +763,15 @@ button.sk-icon-button:hover {
   display: inline;
 }
 
+.aio-cite-tail {
+  white-space: nowrap;
+}
+
 .aio-chip-visual {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  max-width: 100%;
+  max-width: 190px;
   height: 20px;
   padding: 1px 8px 1px 1px;
   border-radius: 20px;
@@ -755,20 +782,12 @@ button.sk-icon-button:hover {
   font-weight: 500;
   line-height: 16px;
   white-space: nowrap;
-  vertical-align: 2px;
+  vertical-align: 1px;
 }
 
 .aio-chip-names {
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.aio-chip-second {
-  display: inline-block;
-  max-width: 64px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  vertical-align: bottom;
 }
 
 /* Letter favicons and placeholder thumbnails stand in for real sites. */
@@ -795,15 +814,36 @@ html[data-theme="dark"] .sk-favicon {
   width: 58px;
   height: 58px;
   border-radius: 8px;
-  background:
-    radial-gradient(circle at 62% 58%, hsl(var(--hue) 45% 82% / 0.9) 0 26%, transparent 27%),
-    linear-gradient(140deg, hsl(var(--hue) 40% 92%), hsl(var(--hue) 30% 80%));
+  background: linear-gradient(145deg, hsl(var(--hue) 24% 94%), hsl(var(--hue) 22% 86%));
+  outline: 1px solid oklch(0 0 0 / 0.08);
+  outline-offset: -1px;
+  --thumb-paper: hsl(var(--hue) 22% 99%);
+  --thumb-detail: hsl(var(--hue) 35% 64%);
+  --thumb-line: hsl(var(--hue) 22% 48%);
 }
 
 html[data-theme="dark"] .sk-thumb {
-  background:
-    radial-gradient(circle at 62% 58%, hsl(var(--hue) 30% 46% / 0.9) 0 26%, transparent 27%),
-    linear-gradient(140deg, hsl(var(--hue) 22% 30%), hsl(var(--hue) 25% 22%));
+  background: linear-gradient(145deg, hsl(var(--hue) 12% 28%), hsl(var(--hue) 14% 20%));
+  outline-color: oklch(1 0 0 / 0.1);
+  --thumb-paper: hsl(var(--hue) 15% 66%);
+  --thumb-detail: hsl(var(--hue) 24% 40%);
+  --thumb-line: hsl(var(--hue) 16% 36%);
+}
+
+.sk-thumb-paper {
+  fill: var(--thumb-paper);
+}
+
+.sk-thumb-detail {
+  fill: var(--thumb-detail);
+}
+
+.sk-thumb-line {
+  fill: none;
+  stroke: var(--thumb-line);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 /* Sources panel */
@@ -815,21 +855,24 @@ html[data-theme="dark"] .sk-thumb {
 
 .aio-panel {
   position: relative;
-  max-height: 315px;
   overflow: hidden;
   border: 1px solid var(--hairline);
-  border-radius: 24px;
+  border-radius: 16px;
 }
 
 .aio-panel-list {
-  padding: 10px 0 0;
+  padding: 2px 0;
   list-style: none;
 }
 
 .aio-card {
   margin: 0 1px;
-  padding: 14px 16px;
+  overflow: hidden;
   border-radius: 16px;
+}
+
+.aio-card-inner {
+  padding: 14px 16px;
 }
 
 .aio-card + .aio-card {
@@ -850,7 +893,7 @@ html[data-theme="dark"] .sk-thumb {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: var(--card-title);
+  color: var(--card-muted);
   font-family: var(--font-gs);
   font-size: 12px;
   line-height: 16px;
@@ -896,14 +939,36 @@ html[data-theme="dark"] .sk-thumb {
   -webkit-line-clamp: 2;
 }
 
-.aio-panel-fade {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  height: 48px;
-  background: linear-gradient(rgba(var(--fade), 0), rgb(var(--fade)) 14px);
-  pointer-events: none;
+.aio-sources-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: calc(100% - 24px);
+  height: 36px;
+  margin: 0 12px 10px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 18px;
+  background: var(--chip-bg);
+  color: var(--fg);
+  font-family: var(--font-gs);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 150ms ease-out;
+}
+
+.aio-sources-more:hover {
+  background: var(--accent-hover);
+}
+
+.aio-sources-more svg {
+  transition: transform 200ms var(--fold-ease);
+}
+
+.aio-sources-more[aria-expanded="true"] svg {
+  transform: rotate(180deg);
 }
 
 /* Generating */
@@ -923,7 +988,7 @@ html[data-theme="dark"] .sk-thumb {
 }
 
 .aio-shimmer span:nth-child(3) {
-  width: 92%;
+  width: 88%;
 }
 
 .aio-shimmer span:nth-child(4) {
@@ -963,6 +1028,7 @@ html[data-theme="dark"] .sk-thumb {
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   color: #fff;
+  box-shadow: 0 2px 4px rgb(0 0 0 / 0.12), inset 0 0 0 1px rgb(255 255 255 / 0.1);
   font-family: var(--font-yt);
   font-size: 14px;
   font-weight: 500;
@@ -979,7 +1045,7 @@ html[data-theme="dark"] .sk-thumb {
 }
 
 .sk-skip[data-ready]:hover {
-  background: linear-gradient(rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.2)), rgb(15, 15, 15);
+  background: rgba(0, 0, 0, 0.86);
 }
 
 /* YouTube inverts the pill on keyboard focus; the outer ring keeps it visible on a dark page. */
@@ -998,8 +1064,13 @@ html[data-theme="dark"] .sk-thumb {
 }
 
 .sk-skip-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   grid-area: 1 / 1;
   justify-self: start;
+  height: 20px;
+  line-height: 20px;
 }
 
 .sk-skip-icon {
@@ -1018,8 +1089,11 @@ html[data-theme="dark"] .sk-thumb {
 
 .sk-digit {
   display: inline-grid;
+  width: 1ch;
+  height: 20px;
+  overflow: clip;
   font-variant-numeric: tabular-nums;
-  vertical-align: top;
+  line-height: 20px;
 }
 
 .sk-digit-cell {
@@ -1032,7 +1106,7 @@ html[data-theme="dark"] .sk-thumb {
 
 .sk-ring circle {
   fill: none;
-  stroke-width: 2;
+  stroke-width: 1.5;
 }
 
 .sk-ring-track {
@@ -1310,7 +1384,7 @@ html[data-theme="dark"] .sk-thumb {
     content: none;
   }
 
-  .aio-panel-fade {
+  .aio-sources-more {
     display: none;
   }
 }
@@ -1450,11 +1524,11 @@ html[data-theme="dark"] .sk-thumb {
   }
 
   .aio-actions {
-    margin-left: 4px;
+    padding-inline-start: 4px;
   }
 
   .aio-text-button {
-    padding: 0 10px;
+    padding: 0 8px;
   }
 
   .aio-card {
@@ -1485,4 +1559,26 @@ html[data-theme="dark"] .sk-thumb {
     padding-bottom: max(24px, env(safe-area-inset-bottom));
     border-top: 0;
   }
+}
+
+@media (max-width: 380px) {
+  .aio[data-folded] .aio-title,
+  .aio-text-button {
+    font-size: 13px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-sk-page] *,
+  [data-sk-page] *::before,
+  [data-sk-page] *::after {
+    transition: none !important;
+  }
+}
+
+/* Keep a theme change crisp even though the shared site provider animates
+   colors on other prototypes. */
+html[data-theme-transitioning="true"] [data-sk-page],
+html[data-theme-transitioning="true"] [data-sk-page] * {
+  transition: none !important;
 }

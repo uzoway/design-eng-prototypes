@@ -18,7 +18,9 @@ export function isUntrackedRoute(pathname: string | null) {
 
 export function Analytics() {
   const pathname = usePathname();
-  const untracked = isUntrackedRoute(pathname);
+  // Local interaction reviews must never contribute to the live analytics.
+  // The flag below also silences a tag loaded before a development HMR update.
+  const untracked = process.env.NODE_ENV !== "production" || isUntrackedRoute(pathname);
 
   useEffect(() => {
     // gtag checks this flag before every hit, so it also silences a tag that

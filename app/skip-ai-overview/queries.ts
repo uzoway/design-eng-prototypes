@@ -66,7 +66,7 @@ const EGG: Search = {
     {
       kind: "p",
       line: {
-        runs: ["For large eggs straight from the fridge, the time depends on how set you want the yolk:"],
+        runs: ["For large, fridge-cold eggs, timing depends on how you like the yolk:"],
         cite: { sources: ["kitchen"], more: 1 },
       },
     },

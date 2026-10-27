@@ -5,6 +5,7 @@ import {
   motion,
   useIsPresent,
   useMotionValue,
+  usePresenceData,
   useReducedMotion,
   type MotionValue,
   type Transition,
@@ -38,8 +39,18 @@ const subscribePhone = (onChange: () => void) => {
 
 const isPhone = () => window.matchMedia(PHONE_QUERY).matches;
 
+const SOURCES_ROW_QUERY = "(max-width: 1199px)";
+const subscribeSourcesRow = (onChange: () => void) => {
+  const query = window.matchMedia(SOURCES_ROW_QUERY);
+
+  query.addEventListener("change", onChange);
+
+  return () => query.removeEventListener("change", onChange);
+};
+const isSourcesRow = () => window.matchMedia(SOURCES_ROW_QUERY).matches;
+
 /** The slim bar: the heading row plus room for its 36px buttons and their focus rings. */
-const FOLDED_HEIGHT = 44;
+const FOLDED_HEIGHT = 52;
 
 const EASE_OUT: [number, number, number, number] = [0, 0, 0.2, 1];
 /** Google's emphasized easing, used for the fold. */
@@ -53,8 +64,8 @@ const FADE_OUT_S = 0.12;
 const FOLD_S = 0.35;
 const REDUCED_FADE_S = 0.15;
 
-/* YouTube's skip button: 16px padding, the label, a 36px icon slot, 6px padding. */
-const PILL_CHROME = 16 + 36 + 6;
+/* Label + YouTube's 16px/6px padding, a 36px icon slot, and two 1px borders. */
+const PILL_CHROME = 16 + 36 + 6 + 2;
 
 type Props = {
   search: Search;
@@ -166,15 +177,17 @@ export function AiOverview({ search, announce, onAlwaysSkip, onTurnBackOn }: Pro
     ? { duration: REDUCED_FADE_S }
     : folded
       ? { duration: FADE_OUT_S, ease: "linear" }
-      : { duration: REVEAL_S, ease: EASE_OUT, delay: FOLD_S };
+      : { duration: REVEAL_S, ease: EASE_OUT, delay: restored ? FOLD_S * 0.65 : 0 };
 
   // Clip only while the height moves (or while folded), so focus rings and
   // the sticky pill aren't cut off the rest of the time.
   const clip = folded || animating;
-  const hideBody = folded && !animating;
+  // The label resolves near the end of the fold, rather than becoming a
+  // compact bar while an empty, full-size overview is still underneath it.
+  const headDelay = folded && phase === "skipped" && !reducedMotion ? FOLD_S : 0;
 
   return (
-    <section className="aio" aria-labelledby={headingId}>
+    <section className="aio" data-folded={folded ? "" : undefined} aria-labelledby={headingId}>
       <motion.div
         className="aio-frame"
         data-clip={clip ? "" : undefined}
@@ -189,7 +202,7 @@ export function AiOverview({ search, announce, onAlwaysSkip, onTurnBackOn }: Pro
             <div className="aio-head">
               <SparkleIcon className="aio-sparkle" />
               <div className="aio-head-stack">
-                <AnimatePresence initial={false}>
+                <AnimatePresence initial={false} custom={headDelay}>
                   {phase === "skipped" ? (
                     <HeadLine key="skipped" reducedMotion={reducedMotion}>
                       {(present) => (
@@ -201,7 +214,7 @@ export function AiOverview({ search, announce, onAlwaysSkip, onTurnBackOn }: Pro
                             <button type="button" className="aio-text-button" ref={present ? showRef : undefined} onClick={show}>
                               Show
                             </button>
-                            <button type="button" className="aio-text-button" onClick={alwaysSkip}>
+                            <button type="button" className="aio-text-button aio-always" onClick={alwaysSkip}>
                               Always skip
                             </button>
                           </span>
@@ -241,13 +254,14 @@ export function AiOverview({ search, announce, onAlwaysSkip, onTurnBackOn }: Pro
               className="aio-body"
               inert={folded}
               aria-hidden={folded ? true : undefined}
-              data-hidden={hideBody ? "" : undefined}
+              data-generating={!generated ? "" : undefined}
+              data-expanded={expanded ? "" : undefined}
               initial={false}
               animate={{ opacity: folded ? 0 : 1 }}
               transition={bodyTransition}
             >
               {/* First in the tab order after the heading, though it sits at the bottom. */}
-              <div className="aio-rail" data-above-more={generated ? "" : undefined}>
+              <div className="aio-rail">
                 <div className="aio-rail-stick">
                   <AnimatePresence>
                     {pillShown && (
@@ -256,7 +270,7 @@ export function AiOverview({ search, announce, onAlwaysSkip, onTurnBackOn }: Pro
                         ready={phase === "ready"}
                         seconds={seconds}
                         progress={progress}
-                        delay={restored && !reducedMotion ? FOLD_S + REVEAL_S : 0}
+                        delay={restored && !reducedMotion ? FOLD_S * 0.65 : 0}
                         reducedMotion={reducedMotion}
                         onSkip={skip}
                       />
@@ -265,63 +279,64 @@ export function AiOverview({ search, announce, onAlwaysSkip, onTurnBackOn }: Pro
                 </div>
               </div>
 
-              {generated ? (
-                <>
+              <motion.div
+                id={contentId}
+                className="aio-clip"
+                initial={false}
+                animate={{ height: expanded ? "auto" : phone ? COLLAPSED_HEIGHT_PHONE : COLLAPSED_HEIGHT }}
+                transition={reducedMotion ? { duration: 0 } : { duration: FOLD_S, ease: FOLD_EASE }}
+              >
+                <AnimatePresence initial={false} mode="wait">
+                  {generated ? (
+                    <Overview key="answer" blocks={search.overview} stagger={!restored} reducedMotion={reducedMotion} />
+                  ) : (
+                    <motion.div key="shimmer" exit={{ opacity: 0 }} transition={{ duration: reducedMotion ? 0 : 0.1 }}>
+                      <Shimmer reducedMotion={reducedMotion} />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+
+              <AnimatePresence initial={false}>
+                {generated && !expanded && (
                   <motion.div
-                    id={contentId}
-                    className="aio-clip"
-                    initial={{ height: "auto" }}
-                    animate={{ height: expanded ? "auto" : phone ? COLLAPSED_HEIGHT_PHONE : COLLAPSED_HEIGHT }}
-                    transition={reducedMotion ? { duration: 0 } : { duration: FOLD_S, ease: FOLD_EASE }}
-                  >
-                    <Overview blocks={search.overview} stagger={!restored} reducedMotion={reducedMotion} />
-                  </motion.div>
+                    key="fade"
+                    className="aio-fade"
+                    aria-hidden="true"
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: reducedMotion ? 0 : 0.2 }}
+                  />
+                )}
+              </AnimatePresence>
 
-                  <AnimatePresence initial={false}>
-                    {!expanded && (
-                      <motion.div
-                        key="fade"
-                        className="aio-fade"
-                        aria-hidden="true"
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: reducedMotion ? 0 : 0.2 }}
-                      />
-                    )}
-                  </AnimatePresence>
-
-                  <motion.button
-                    type="button"
-                    className="aio-more"
-                    aria-expanded={expanded}
-                    aria-controls={contentId}
-                    onClick={() => setExpanded((value) => !value)}
-                    initial={restored || reducedMotion ? false : { opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: REVEAL_S, ease: EASE_OUT }}
-                  >
-                    <span>{expanded ? "Show less" : "Show more"}</span>
-                    <ChevronDownIcon size={20} className="aio-more-chevron" />
-                  </motion.button>
-                </>
-              ) : (
-                <Shimmer reducedMotion={reducedMotion} />
-              )}
+              <motion.button
+                type="button"
+                className="aio-more"
+                aria-expanded={expanded}
+                aria-controls={contentId}
+                aria-hidden={!generated ? true : undefined}
+                disabled={!generated}
+                onClick={() => setExpanded((value) => !value)}
+                initial={restored || reducedMotion ? false : { opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: REVEAL_S, ease: EASE_OUT }}
+              >
+                <span>{expanded ? "Show less" : "Show more"}</span>
+                <ChevronDownIcon size={20} className="aio-more-chevron" />
+              </motion.button>
             </motion.div>
           </div>
 
-          {generated && (
-            <motion.div
-              className="aio-side"
-              inert={folded}
-              aria-hidden={folded ? true : undefined}
-              data-hidden={hideBody ? "" : undefined}
-              initial={restored || reducedMotion ? false : { opacity: 0, y: 4 }}
-              animate={{ opacity: folded ? 0 : 1, y: 0 }}
-              transition={bodyTransition}
-            >
-              <SourcesPanel cards={search.cards} />
-            </motion.div>
-          )}
+          <motion.div
+            className="aio-side"
+            inert={folded || !generated}
+            aria-hidden={folded || !generated ? true : undefined}
+            initial={false}
+            animate={{ opacity: folded || !generated ? 0 : 1 }}
+            transition={bodyTransition}
+          >
+            <SourcesPanel cards={search.cards} topic={search.id} reducedMotion={reducedMotion} />
+          </motion.div>
         </div>
       </motion.div>
 
@@ -346,6 +361,7 @@ function HeadLine({
   children: (present: boolean) => ReactNode;
 }) {
   const present = useIsPresent();
+  const delay: number = usePresenceData() ?? 0;
 
   return (
     <motion.div
@@ -355,7 +371,7 @@ function HeadLine({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: reducedMotion ? REDUCED_FADE_S : 0.12, ease: "linear" }}
+      transition={{ duration: reducedMotion ? REDUCED_FADE_S : 0.12, ease: "linear", delay }}
     >
       {children(present)}
     </motion.div>
@@ -401,6 +417,7 @@ function SkipPill({
         }}
         initial={reducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.96 }}
         animate={{ opacity: 1, scale: 1, ...(width ? { width } : {}) }}
+        whileTap={ready && !reducedMotion ? { scale: 0.96 } : undefined}
         exit={{ opacity: 0, transition: { duration: reducedMotion ? REDUCED_FADE_S : FADE_OUT_S } }}
         transition={{
           opacity: { duration: 0.18, ease: EASE_OUT, delay },
@@ -424,11 +441,18 @@ function SkipPill({
         <span className="sk-skip-icon">
           <AnimatePresence initial={false}>
             {ready ? (
-              <motion.span key="glyph" className="sk-skip-icon-cell" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={swap}>
+              <motion.span
+                key="glyph"
+                className="sk-skip-icon-cell"
+                initial={reducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.25, filter: "blur(4px)" }}
+                animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+                exit={{ opacity: 0 }}
+                transition={reducedMotion ? swap : { type: "spring", duration: 0.3, bounce: 0 }}
+              >
                 <SkipGlyph />
               </motion.span>
             ) : (
-              <motion.span key="ring" className="sk-skip-icon-cell" exit={{ opacity: 0 }} transition={swap}>
+              <motion.span key="ring" className="sk-skip-icon-cell" exit={reducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.25, filter: "blur(4px)" }} transition={swap}>
                 <Ring progress={progress} />
               </motion.span>
             )}
@@ -657,14 +681,24 @@ function Overview({ blocks, stagger, reducedMotion }: { blocks: Block[]; stagger
 }
 
 function LineText({ line }: { line: Line }) {
+  // Keep the citation with the last word so it never becomes an orphaned
+  // line. The chip itself is compact enough for the 320px layout.
+  const last = line.runs.at(-1);
+  const tail = line.cite && typeof last === "string" ? last.match(/\S+\s*$/)?.[0] : undefined;
+
   return (
     <>
-      {line.runs.map((run, index) => (typeof run === "string" ? run : <strong key={index}>{run.bold}</strong>))}
+      {line.runs.map((run, index) => {
+        if (typeof run !== "string") return <strong key={index}>{run.bold}</strong>;
+
+        return tail && index === line.runs.length - 1 ? run.slice(0, -tail.length) : run;
+      })}
       {line.cite && (
-        <>
+        <span className="aio-cite-tail">
+          {tail}
           {" "}
           <CiteChip cite={line.cite} />
-        </>
+        </span>
       )}
     </>
   );
@@ -672,10 +706,10 @@ function LineText({ line }: { line: Line }) {
 
 function CiteChip({ cite }: { cite: Cite }) {
   const sources = cite.sources.map((id) => SOURCES[id]);
-  const extra = (cite.more ?? 0) + Math.max(0, sources.length - 2);
-  const names = sources.slice(0, 2).map((source) => source.name);
-  const spoken = extra
-    ? `Sources: ${names.join(", ")} and ${extra} more`
+  const extra = (cite.more ?? 0) + sources.length - 1;
+  const names = sources.map((source) => source.name);
+  const spoken = cite.more
+    ? `Sources: ${names.join(", ")} and ${cite.more} more`
     : `Sources: ${names.join(" and ")}`;
 
   return (
@@ -683,15 +717,7 @@ function CiteChip({ cite }: { cite: Cite }) {
       <span className="sk-sr-only">{spoken}</span>
       <span className="aio-chip-visual" aria-hidden="true">
         <Favicon sourceId={sources[0].id} size={18} />
-        <span className="aio-chip-names">
-          {names.length > 1 ? (
-            <>
-              {names[0]} · <span className="aio-chip-second">{names[1]}</span>
-            </>
-          ) : (
-            names[0]
-          )}
-        </span>
+        <span className="aio-chip-names">{names[0]}</span>
         {extra > 0 && <span className="aio-chip-more">+{extra}</span>}
       </span>
     </span>
@@ -712,33 +738,82 @@ export function Favicon({ sourceId, size }: { sourceId: string; size: number }) 
   );
 }
 
-function SourcesPanel({ cards }: { cards: SourceCard[] }) {
+function SourcesPanel({ cards, topic, reducedMotion }: { cards: SourceCard[]; topic: Search["id"]; reducedMotion: boolean }) {
+  const [expanded, setExpanded] = useState(false);
+  const horizontal = useSyncExternalStore(subscribeSourcesRow, isSourcesRow, () => false);
+  const listId = useId();
+
   return (
-    <div className="aio-panel">
-      <ul className="aio-panel-list" aria-label="Sources">
-        {cards.map((card) => {
+    <div className="aio-panel" data-expanded={expanded ? "" : undefined}>
+      <ul className="aio-panel-list" id={listId} aria-label="Sources">
+        {cards.map((card, index) => {
           const source = SOURCES[card.source];
+          const visible = index < 2 || expanded || horizontal;
 
           return (
-            <li key={card.source} className="aio-card">
-              <div className="aio-card-site">
-                <Favicon sourceId={source.id} size={16} />
-                <span>{source.name}</span>
-                <MoreVertIcon size={18} className="aio-card-more" />
-              </div>
-              <div className="aio-card-row">
-                <div className="aio-card-text">
-                  <div className="aio-card-title">{card.title}</div>
-                  <div className="aio-card-description">{card.description}</div>
+            <motion.li
+              key={card.source}
+              className="aio-card"
+              initial={false}
+              animate={{ height: visible ? "auto" : 0, opacity: visible ? 1 : 0 }}
+              transition={reducedMotion ? { duration: 0 } : { duration: 0.25, ease: FOLD_EASE }}
+              inert={!visible}
+              aria-hidden={!visible ? true : undefined}
+            >
+              <div className="aio-card-inner">
+                <div className="aio-card-site">
+                  <Favicon sourceId={source.id} size={16} />
+                  <span>{source.name}</span>
+                  <MoreVertIcon size={18} className="aio-card-more" />
                 </div>
-                <div className="sk-thumb" style={{ ["--hue" as string]: source.hue }} aria-hidden="true" />
+                <div className="aio-card-row">
+                  <div className="aio-card-text">
+                    <div className="aio-card-title">{card.title}</div>
+                    <div className="aio-card-description">{card.description}</div>
+                  </div>
+                  <SourceThumbnail topic={topic} hue={source.hue} />
+                </div>
               </div>
-            </li>
+            </motion.li>
           );
         })}
       </ul>
-      <div className="aio-panel-fade" aria-hidden="true" />
+      <motion.button
+        type="button"
+        className="aio-sources-more"
+        aria-expanded={expanded}
+        aria-controls={listId}
+        onClick={() => setExpanded((value) => !value)}
+        whileTap={reducedMotion ? undefined : { scale: 0.96 }}
+      >
+        <span>{expanded ? "Show fewer sources" : `Show all ${cards.length} sources`}</span>
+        <ChevronDownIcon size={18} />
+      </motion.button>
     </div>
+  );
+}
+
+/** Small, original topic illustrations; no third-party images or branding. */
+function SourceThumbnail({ topic, hue }: { topic: Search["id"]; hue: number }) {
+  return (
+    <svg className="sk-thumb" viewBox="0 0 58 58" style={{ ["--hue" as string]: hue }} aria-hidden="true" focusable="false">
+      {topic === "egg" ? (
+        <g transform="rotate(-16 29 29)">
+          <path className="sk-thumb-paper" d="M42 32c0 10-6 16-13 16s-13-6-13-16S23 10 29 10s13 12 13 22Z" />
+          <circle className="sk-thumb-detail" cx="29" cy="33" r="7" />
+        </g>
+      ) : topic === "tomato" ? (
+        <>
+          <path className="sk-thumb-paper" d="M46 32c0 10-8 16-17 16s-17-6-17-16 7-17 17-14c10-3 17 4 17 14Z" />
+          <path className="sk-thumb-line" d="m29 22-9-7 9 3 7-5-3 8 7 4-11-3-7 4 3-6m4 0v-9" />
+        </>
+      ) : (
+        <>
+          <path className="sk-thumb-paper" d="M14 16h25v25a6 6 0 0 1-6 6H20a6 6 0 0 1-6-6Z" />
+          <path className="sk-thumb-line" d="M39 21h4a7 7 0 0 1 0 14h-4M20 23h6m-6 7h9m-9 7h6" />
+        </>
+      )}
+    </svg>
   );
 }
 
