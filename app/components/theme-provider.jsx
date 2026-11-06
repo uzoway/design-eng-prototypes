@@ -4,6 +4,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -44,20 +45,25 @@ export function ThemeProvider({ children }) {
 
   const transitionTimerRef = useRef(null);
   const hasExplicitThemeRef = useRef(false);
+  /* A page's own default, used until the visitor picks a theme. */
+  const pageDefaultRef = useRef(null);
+  const mediaQueryRef = useRef(null);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
     const storedTheme = getStoredTheme();
 
+    mediaQueryRef.current = mediaQuery;
     hasExplicitThemeRef.current = Boolean(storedTheme);
 
-    const initialTheme = storedTheme ?? getSystemTheme(mediaQuery);
+    const initialTheme =
+      storedTheme ?? pageDefaultRef.current ?? getSystemTheme(mediaQuery);
 
     applyTheme(initialTheme);
     setThemeState(initialTheme);
 
     function handleSystemThemeChange(event) {
-      if (hasExplicitThemeRef.current) return;
+      if (hasExplicitThemeRef.current || pageDefaultRef.current) return;
 
       const nextTheme = event.matches ? "dark" : "light";
 
@@ -102,10 +108,24 @@ export function ThemeProvider({ children }) {
     }
   }
 
+  /* Not stored: other pages keep following the system. */
+  function setPageDefault(pageTheme) {
+    pageDefaultRef.current = isValidTheme(pageTheme) ? pageTheme : null;
+
+    if (!mediaQueryRef.current || hasExplicitThemeRef.current) return;
+
+    const nextTheme =
+      pageDefaultRef.current ?? getSystemTheme(mediaQueryRef.current);
+
+    applyTheme(nextTheme);
+    setThemeState(nextTheme);
+  }
+
   const value = useMemo(
     () => ({
       theme,
       setTheme,
+      setPageDefault,
       isReady: theme !== null,
     }),
     [theme],
@@ -124,4 +144,20 @@ export function useTheme() {
   }
 
   return context;
+}
+
+/**
+ * Gives one page its own default theme (Figma's editor is dark) while the
+ * visitor hasn't picked one. Pair it with an inline script for first paint.
+ */
+export function usePageDefaultTheme(pageTheme) {
+  const { setPageDefault } = useTheme();
+
+  useLayoutEffect(() => {
+    setPageDefault(pageTheme);
+
+    return () => setPageDefault(null);
+    // setPageDefault only touches refs and state setters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageTheme]);
 }
