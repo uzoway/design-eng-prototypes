@@ -145,8 +145,8 @@ function LayerProps({ scene, id }: { scene: Scene; id: string }) {
       {component ? (
         <div className="fd-props-head">
           <div className="fd-props-title-row">
-            <h2 className="fd-props-title">
-              {component.name}
+            <h2 className="fd-props-title" title={component.name}>
+              <span className="fd-props-title-text">{component.name}</span>
               <ChevronDownIcon />
             </h2>
             <span className="fd-props-actions" aria-hidden="true">
@@ -162,7 +162,7 @@ function LayerProps({ scene, id }: { scene: Scene; id: string }) {
             </span>
           </div>
           <p className="fd-props-sub">
-            {component.library === "local" ? "From this file" : LIBRARY}
+            <span className="fd-props-sub-text">{component.library === "local" ? "From this file" : LIBRARY}</span>
             <InstanceIcon size={20} aria-hidden="true" />
           </p>
           <dl className="fd-variant-rows">

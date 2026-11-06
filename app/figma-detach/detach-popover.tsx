@@ -2,8 +2,8 @@
 
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useId, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
-import { capNote, cleanNote, noteLength, socialLine, truncateMiddle } from "./asking";
+import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { capNote, cleanNote, noteLength, shortSubjectOf, socialLine } from "./asking";
 import { LIBRARY, LIBRARY_TEAM, NOTE_LIMIT, REASONS, type ReasonId } from "./data";
 import { MoreIcon } from "./icons";
 import { detachList, detachSubject, type Detached } from "./scene";
@@ -32,9 +32,25 @@ const COUNT_FROM = 20;
 /**
  * Beside the layer, top-right of its bounds. Near the edges it flips left,
  * then below or above; near the bottom it grows upward from the layer's
- * bottom edge.
+ * bottom edge. The side is chosen from TALLEST so it doesn't jump while the
+ * note opens; the measured height then keeps it inside the canvas, even if
+ * that means covering part of a tall selection.
  */
-function place(anchor: Box, canvas: { width: number; height: number }) {
+function place(anchor: Box, canvas: { width: number; height: number }, height: number) {
+  const placement = side(anchor, canvas);
+  const style = placement.style;
+  const room = canvas.height - EDGE - height;
+
+  if ("bottom" in style) style.bottom = Math.max(EDGE, Math.min(style.bottom, room));
+  else style.top = Math.max(EDGE, Math.min(style.top, room));
+
+  return placement;
+}
+
+function side(
+  anchor: Box,
+  canvas: { width: number; height: number },
+): { style: { left: number; top: number } | { left: number; bottom: number }; origin: string } {
   const right = anchor.left + anchor.width + GAP;
   const left = anchor.left - GAP - WIDTH;
   const floor = canvas.height - FLOOR;
@@ -77,14 +93,27 @@ type DetachPopoverProps = {
 };
 
 export function DetachPopover({ ask, anchor, bounds, reducedMotion, onSend, onSkip, onDontAskToday }: DetachPopoverProps) {
+  const [height, setHeight] = useState(0);
   const visible = ask && anchor && bounds;
-  const placement = visible ? place(anchor, bounds) : null;
+  const placement = visible ? place(anchor, bounds, height) : null;
+
+  const measure = useCallback((node: HTMLDivElement | null) => {
+    if (!node) return;
+
+    // offsetHeight ignores the entrance scale, so this is the settled height.
+    const observer = new ResizeObserver(() => setHeight(node.offsetHeight));
+
+    observer.observe(node);
+
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <AnimatePresence>
       {visible && placement && (
         <motion.div
           key="popover"
+          ref={measure}
           className="fd-popover-position"
           data-canvas-ui
           style={{ ...placement.style, transformOrigin: placement.origin }}
@@ -139,7 +168,7 @@ function PopoverBody({ items, reducedMotion, onSend, onSkip, onDontAskToday }: P
   const countId = useId();
 
   const subject = detachSubject(items);
-  const shortSubject = truncateMiddle(subject, SUBJECT_MAX);
+  const shortSubject = shortSubjectOf(items, SUBJECT_MAX);
   const names = detachList(items);
   const social = socialLine(items);
   const remaining = NOTE_LIMIT - noteLength(note);

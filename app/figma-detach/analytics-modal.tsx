@@ -14,6 +14,7 @@ import {
   type SortDir,
   type SortKey,
 } from "./analytics";
+import { firstGrapheme, splitTail } from "./asking";
 import { LIBRARY, RANGES, STATS, TOP_TEAMS, type RangeId } from "./data";
 import { BackIcon, ChevronDownIcon, CloseIcon, InstanceIcon, LibraryIcon, SortIcon } from "./icons";
 
@@ -25,20 +26,6 @@ const REASON_COLORS: Record<string, string> = {
   spacing: "var(--reason-spacing)",
   content: "var(--reason-content)",
   broken: "var(--reason-broken)",
-};
-
-/** Figma's analytics count variants per component set; these are the Orbit sets' sizes. */
-const VARIANTS: Record<string, number> = {
-  button: 24,
-  input: 12,
-  icon: 186,
-  card: 6,
-  avatar: 8,
-  modal: 4,
-  tabs: 6,
-  tooltip: 8,
-  badge: 10,
-  divider: 2,
 };
 
 const COLUMNS: { key: SortKey; label: string; numeric?: boolean }[] = [
@@ -389,7 +376,9 @@ function TopTeams({ total }: { total: number }) {
       <ol>
         {TOP_TEAMS.map((team) => (
           <li key={team.name}>
-            <span className="fd-team-name">{team.name}</span>
+            <span className="fd-team-name" title={team.name}>
+              {team.name}
+            </span>
             <span className="fd-team-count">{formatCount(Math.round(total * team.share))}</span>
             <span className="fd-team-share">{Math.round(team.share * 100)}%</span>
           </li>
@@ -415,7 +404,7 @@ function TableRow({ row, onOpen }: { row: Row; onOpen: () => void }) {
           <span className="fd-table-name-text" title={row.name}>
             {row.name}
           </span>
-          <span className="fd-table-variants">{VARIANTS[row.id] ?? 1} variants</span>
+          <span className="fd-table-variants">{row.variants} {row.variants === 1 ? "variant" : "variants"}</span>
         </span>
       </th>
       <td data-numeric="">{formatCount(row.instances)}</td>
@@ -443,6 +432,27 @@ function TableRow({ row, onOpen }: { row: Row; onOpen: () => void }) {
         )}
       </td>
     </tr>
+  );
+}
+
+/**
+ * Truncates in the middle, so "…review" and "…review (copy)" stay apart. The
+ * head ellipsises and the tail always shows; when the text fits, they join up.
+ */
+function MiddleText({ text, className }: { text: string; className: string }) {
+  const [head, tail] = splitTail(text, 12);
+
+  return (
+    <span className={`fd-middle ${className}`} title={text}>
+      {/* Screen readers would read the two halves as separate lines, so they get the whole name. */}
+      <span className="fd-middle-head" aria-hidden="true">
+        {head}
+      </span>
+      <span className="fd-middle-tail" aria-hidden="true">
+        {tail}
+      </span>
+      <span className="fd-sr-only">{text}</span>
+    </span>
   );
 }
 
@@ -483,9 +493,7 @@ function DrillIn({
         <div className="fd-drill-title-wrap">
           <h3 className="fd-drill-title" id="fd-drill-title" ref={headingRef} tabIndex={-1}>
             <InstanceIcon aria-hidden="true" className="fd-drill-icon" />
-            <span className="fd-drill-name" title={row.name}>
-              {row.name}
-            </span>
+            <MiddleText className="fd-drill-name" text={row.name} />
           </h3>
           <p className="fd-muted">
             Why people detached · {rangeLabel.replace("Last", "last")}
@@ -498,14 +506,18 @@ function DrillIn({
           <p className="fd-empty">No detaches in the {rangeLabel.toLowerCase()}.</p>
         ) : row.reasonTotal === 0 ? (
           <p className="fd-empty">
-            {formatCount(row.detaches)} {row.detaches === 1 ? "detach" : "detaches"}, no reasons yet: reasons started Nov
+            {row.detaches.toLocaleString("en-US")} {row.detaches === 1 ? "detach" : "detaches"}, no reasons yet: reasons started Nov
             2026.
           </p>
         ) : (
           <>
             <p className="fd-drill-summary">
-              <strong>{formatCount(row.detaches)}</strong> detaches · <strong>{row.reasonTotal}</strong> with a reason
-              {unexplained > 0 && <span className="fd-muted"> · {formatCount(unexplained)} skipped or before Nov 2026</span>}
+              {/* The drill-in has room, so counts are exact here; the table abbreviates. */}
+              <strong>{row.detaches.toLocaleString("en-US")}</strong> {row.detaches === 1 ? "detach" : "detaches"} ·{" "}
+              <strong>{row.reasonTotal.toLocaleString("en-US")}</strong> with a reason
+              {unexplained > 0 && (
+                <span className="fd-muted"> · {unexplained.toLocaleString("en-US")} skipped or before Nov 2026</span>
+              )}
             </p>
 
             <ul className="fd-bars" aria-label="Reasons">
@@ -521,7 +533,7 @@ function DrillIn({
                       transition={{ duration: 0.22, ease: EASE, delay: reducedMotion ? 0 : 0.12 + index * 0.03 }}
                     />
                   </span>
-                  <span className="fd-bar-count">{part.count}</span>
+                  <span className="fd-bar-count">{part.count.toLocaleString("en-US")}</span>
                 </li>
               ))}
             </ul>
@@ -537,7 +549,7 @@ function DrillIn({
               {row.notes.slice(0, 5).map((note, index) => (
                 <li key={`${note.text}-${index}`} className="fd-note-item" data-mine={note.who === "You" ? "" : undefined}>
                   <span className="fd-avatar" aria-hidden="true">
-                    {note.who[0]}
+                    {firstGrapheme(note.who)}
                   </span>
                   <span className="fd-note-body">
                     <q dir="auto">{note.text}</q>
@@ -559,16 +571,16 @@ function DrillIn({
             <ul className="fd-files">
               {files.top.map((file) => (
                 <li key={file.name}>
-                  <span className="fd-file-row-name">{file.name}</span>
+                  <MiddleText className="fd-file-row-name" text={file.name} />
                   <span className="fd-file-row-count">
-                    {file.count}
-                    <span className="fd-sr-only"> detaches</span>
+                    {file.count.toLocaleString("en-US")}
+                    <span className="fd-sr-only"> {file.count === 1 ? "detach" : "detaches"}</span>
                   </span>
                 </li>
               ))}
               {files.more > 0 && (
                 <li className="fd-muted">
-                  {files.moreCount} more in {files.more} other {files.more === 1 ? "file" : "files"}
+                  {files.moreCount.toLocaleString("en-US")} more in {files.more} other {files.more === 1 ? "file" : "files"}
                 </li>
               )}
             </ul>

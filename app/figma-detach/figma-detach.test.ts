@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { breakdown, formatCount, insertSeries, sortRows, topReason, withSession } from "./analytics.ts";
-import { capNote, cleanNote, decide, endOfDay, noteLength, socialLine, truncateMiddle } from "./asking.ts";
-import { STATS } from "./data.ts";
+import { capNote, cleanNote, decide, endOfDay, noteLength, shortSubjectOf, socialLine, truncateMiddle } from "./asking.ts";
+import { COMPONENTS, STATS } from "./data.ts";
 import { absoluteBox, boundsOf, createScene, describe as describeDetach, detach, detachList, detachSubject } from "./scene.ts";
 
 const noOne = { asked: new Set<string>(), quietUntil: null };
@@ -62,6 +62,21 @@ describe("naming what was detached", () => {
 
     assert.equal(detachSubject(items), "3 components");
     assert.deepEqual(detachList(items), ["Button", "Card", "Badge"]);
+  });
+
+  it("doesn't pluralise a component path", () => {
+    const tabs = { id: "a", component: { ...COMPONENTS.tabs }, inside: null };
+
+    assert.equal(detachSubject([tabs, { ...tabs, id: "b" }]), "2 × Navigation / Tabs / Segmented / Small");
+  });
+
+  it("shortens a long title without mixing two names", () => {
+    const icon = { ...COMPONENTS.icon, name: "Icon / Payments / Credit card / 16" };
+    const nested = { id: "a", component: icon, inside: "Form field / Text input / With helper text" };
+
+    assert.equal(shortSubjectOf(named(["card-icon"]), 24), "Icon in Input");
+    assert.equal(shortSubjectOf([nested], 24), "Icon / Payme…t card / 16");
+    assert.equal(shortSubjectOf([nested, { ...nested, id: "b" }], 24), "2 × Icon / Pay…card / 16");
   });
 
   it("skips layers that aren't instances", () => {

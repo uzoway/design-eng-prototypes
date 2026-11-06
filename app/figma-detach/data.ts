@@ -4,9 +4,15 @@
  * invented. Northwind, Orbit and the people below don't exist.
  */
 
-export const LIBRARY = "Orbit Design System";
-export const LIBRARY_TEAM = "Orbit";
-export const FILE_NAME = "Checkout – Q4 refresh";
+import { WORST_CASE } from "./worst-case.ts";
+
+/** Dev only: `NEXT_PUBLIC_FIGMA_DETACH_DATA=worst npm run dev` swaps in the worst-case data. */
+const worst =
+  process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_FIGMA_DETACH_DATA === "worst" ? WORST_CASE : null;
+
+export const LIBRARY = worst?.library ?? "Orbit Design System";
+export const LIBRARY_TEAM = worst?.libraryTeam ?? "Orbit";
+export const FILE_NAME = worst?.fileName ?? "Checkout – Q4 refresh";
 
 export type ReasonId = "missing" | "spacing" | "content" | "broken" | "exploring";
 
@@ -33,7 +39,7 @@ export type Component = {
   props: { label: string; value: string }[];
 };
 
-export const COMPONENTS: Record<string, Component> = {
+const DEMO_COMPONENTS: Record<string, Component> = {
   button: {
     id: "button",
     name: "Button",
@@ -107,6 +113,13 @@ export const COMPONENTS: Record<string, Component> = {
   },
 };
 
+export const COMPONENTS: Record<string, Component> = Object.fromEntries(
+  Object.entries(DEMO_COMPONENTS).map(([id, component]) => [
+    id,
+    { ...component, name: worst?.componentNames[id] ?? component.name },
+  ]),
+);
+
 /* ------------------------------------------------------------------------ */
 /* The checkout file                                                         */
 /* ------------------------------------------------------------------------ */
@@ -133,7 +146,7 @@ export type SceneNode = {
  * Children are listed in paint order. The layers panel shows them reversed,
  * topmost first, as Figma does.
  */
-export const SCENE_NODES: SceneNode[] = [
+const DEMO_SCENE_NODES: SceneNode[] = [
   { id: "checkout", name: "Checkout", type: "frame", parent: null, x: 0, y: 0, w: 375, h: 812, open: true },
   { id: "top-bar", name: "Top bar", type: "frame", parent: "checkout", x: 0, y: 0, w: 375, h: 64 },
   { id: "logo", name: "Logo", type: "instance", componentId: "logo", parent: "top-bar", x: 24, y: 20, w: 92, h: 24 },
@@ -154,7 +167,9 @@ export const SCENE_NODES: SceneNode[] = [
 /* What others did this week (for the popover's social line)                 */
 /* ------------------------------------------------------------------------ */
 
-export const THIS_WEEK: Record<string, { others: number; top: ReasonId | null }> = {
+export const SCENE_NODES = DEMO_SCENE_NODES.map((node) => ({ ...node, name: worst?.layerNames[node.id] ?? node.name }));
+
+const DEMO_THIS_WEEK: Record<string, { others: number; top: ReasonId | null }> = {
   button: { others: 4, top: "missing" },
   input: { others: 2, top: "content" },
   card: { others: 1, top: "spacing" },
@@ -163,6 +178,8 @@ export const THIS_WEEK: Record<string, { others: number; top: ReasonId | null }>
   icon: { others: 6, top: "missing" },
   tabs: { others: 2, top: "missing" },
 };
+
+export const THIS_WEEK = worst?.thisWeek ?? DEMO_THIS_WEEK;
 
 /* ------------------------------------------------------------------------ */
 /* Library analytics, last 30 days                                           */
@@ -175,6 +192,8 @@ export type Note = { text: string; who: string; file: string; when: string };
 export type ComponentStats = {
   id: string;
   name: string;
+  /** Variants in the component set, which Figma's table shows beside the name. */
+  variants: number;
   /** Instances in use today. Not tied to the date range. */
   instances: number;
   /** Inserts and detaches over the last 30 days. */
@@ -186,10 +205,11 @@ export type ComponentStats = {
   files: { name: string; count: number }[];
 };
 
-export const STATS: ComponentStats[] = [
+const DEMO_STATS: ComponentStats[] = [
   {
     id: "button",
     name: "Button",
+    variants: 24,
     instances: 4812,
     inserts: 1206,
     detaches: 31,
@@ -211,6 +231,7 @@ export const STATS: ComponentStats[] = [
   {
     id: "input",
     name: "Input",
+    variants: 12,
     instances: 9140,
     inserts: 2388,
     detaches: 18,
@@ -228,6 +249,7 @@ export const STATS: ComponentStats[] = [
   {
     id: "icon",
     name: "Icon",
+    variants: 186,
     instances: 48213,
     inserts: 12406,
     detaches: 64,
@@ -245,6 +267,7 @@ export const STATS: ComponentStats[] = [
   {
     id: "card",
     name: "Card",
+    variants: 6,
     instances: 3402,
     inserts: 640,
     detaches: 12,
@@ -258,6 +281,7 @@ export const STATS: ComponentStats[] = [
   {
     id: "avatar",
     name: "Avatar",
+    variants: 8,
     instances: 2215,
     inserts: 512,
     detaches: 7,
@@ -268,6 +292,7 @@ export const STATS: ComponentStats[] = [
   {
     id: "modal",
     name: "Modal",
+    variants: 4,
     instances: 940,
     inserts: 188,
     detaches: 6,
@@ -278,6 +303,7 @@ export const STATS: ComponentStats[] = [
   {
     id: "tabs",
     name: "Navigation / Tabs / Segmented / Small",
+    variants: 6,
     instances: 1032,
     inserts: 210,
     detaches: 5,
@@ -288,6 +314,7 @@ export const STATS: ComponentStats[] = [
   {
     id: "tooltip",
     name: "Tooltip",
+    variants: 8,
     instances: 1880,
     inserts: 402,
     detaches: 4,
@@ -298,6 +325,7 @@ export const STATS: ComponentStats[] = [
   {
     id: "badge",
     name: "Badge",
+    variants: 10,
     instances: 5870,
     inserts: 1450,
     detaches: 3,
@@ -308,6 +336,7 @@ export const STATS: ComponentStats[] = [
   {
     id: "divider",
     name: "Divider",
+    variants: 2,
     instances: 7650,
     inserts: 1322,
     detaches: 0,
@@ -316,6 +345,8 @@ export const STATS: ComponentStats[] = [
     files: [],
   },
 ];
+
+export const STATS = worst?.stats ?? DEMO_STATS;
 
 export const RANGES = [
   { id: "30", label: "Last 30 days", scale: 1 },
@@ -326,7 +357,7 @@ export const RANGES = [
 
 export type RangeId = (typeof RANGES)[number]["id"];
 
-export const TOP_TEAMS = [
+const DEMO_TOP_TEAMS = [
   { name: "Payments", share: 0.31 },
   { name: "Growth", share: 0.24 },
   { name: "Platform", share: 0.19 },
@@ -335,7 +366,10 @@ export const TOP_TEAMS = [
 ];
 
 /** Daily inserts for the last 30 days, oldest first. Weekends dip. */
-export const DAILY_INSERTS = [
+const DEMO_DAILY_INSERTS = [
   880, 1040, 1120, 990, 1210, 380, 310, 1060, 1180, 1250, 1130, 1290, 420, 350, 1110, 1270, 1340, 1220,
   1380, 460, 390, 1190, 1300, 1420, 1290, 1460, 510, 430, 1330, 1480,
 ];
+
+export const TOP_TEAMS = worst?.topTeams ?? DEMO_TOP_TEAMS;
+export const DAILY_INSERTS = worst?.dailyInserts ?? DEMO_DAILY_INSERTS;

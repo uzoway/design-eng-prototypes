@@ -177,8 +177,8 @@ export function LayersPanel({
     <section className="fd-left" aria-label="Layers and pages">
       <header className="fd-file">
         <div className="fd-file-text">
-          <span className="fd-file-name">
-            {FILE_NAME}
+          <span className="fd-file-name" title={FILE_NAME}>
+            <span className="fd-file-name-text">{FILE_NAME}</span>
             <ChevronDownIcon className="fd-file-chevron" />
           </span>
           <span className="fd-file-team">Northwind · Payments</span>

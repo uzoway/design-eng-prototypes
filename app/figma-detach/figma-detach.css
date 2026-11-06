@@ -266,6 +266,17 @@ html[data-theme="dark"] :is([data-fd-page], .fd-menu) {
   font-weight: 550;
   letter-spacing: -0.032px;
   white-space: nowrap;
+  min-width: 0;
+}
+
+.fd-file-name-text,
+.fd-props-title-text,
+.fd-props-sub-text,
+.fd-team-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .fd-file-chevron {
@@ -989,12 +1000,14 @@ html[data-theme="dark"] :is([data-fd-page], .fd-menu) {
   display: flex;
   align-items: center;
   gap: 2px;
+  min-width: 0;
   height: 16px;
   color: var(--color-text-secondary);
   font-weight: 450;
 }
 
 .fd-props-sub svg {
+  flex: none;
   color: var(--color-icon-secondary);
 }
 
@@ -1849,7 +1862,7 @@ html[data-theme="dark"] :is([data-fd-page], .fd-menu) {
 
 .fd-teams li {
   display: grid;
-  grid-template-columns: 1fr auto 36px;
+  grid-template-columns: minmax(0, 1fr) auto 36px;
   gap: 8px;
   height: 24px;
   align-items: center;
@@ -2056,12 +2069,6 @@ html[data-theme="dark"] :is([data-fd-page], .fd-menu) {
   color: var(--color-text-component);
 }
 
-.fd-drill-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .fd-drill-body {
   flex: 1;
   min-height: 0;
@@ -2158,12 +2165,23 @@ html[data-theme="dark"] :is([data-fd-page], .fd-menu) {
   border-bottom: 1px solid var(--color-border);
 }
 
-.fd-file-row-name {
+/* Middle truncation: the head ellipsises, the tail always shows. */
+.fd-middle {
+  display: flex;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.fd-middle-head {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
 }
+
+.fd-middle-tail {
+  flex: none;
+}
+
 
 .fd-file-row-count {
   font-variant-numeric: tabular-nums;

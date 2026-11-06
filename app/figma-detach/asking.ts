@@ -4,7 +4,7 @@
  */
 
 import { REASONS, THIS_WEEK, type Component } from "./data.ts";
-import { type Detached } from "./scene.ts";
+import { detachSubject, type Detached } from "./scene.ts";
 
 export type AskState = {
   /** Components already asked about this session. */
@@ -90,6 +90,34 @@ export function truncateMiddle(text: string, max: number) {
   const tail = max - 1 - head;
 
   return `${graphemes.slice(0, head).join("").trimEnd()}…${graphemes.slice(-tail).join("").trimStart()}`;
+}
+
+/**
+ * The popover title's subject, cut to fit. A long nested subject drops
+ * "in Input" for the component's own name, since cutting across both reads
+ * as one name.
+ */
+export function shortSubjectOf(items: Detached[], max: number) {
+  const subject = detachSubject(items);
+
+  if (noteLength(subject) <= max) return subject;
+  if (new Set(items.map((item) => item.component.id)).size > 1) return truncateMiddle(subject, max);
+
+  const count = items.length > 1 ? `${items.length} × ` : "";
+
+  return count + truncateMiddle(items[0].component.name, max - count.length);
+}
+
+/** Splits off the last few characters, for CSS that truncates in the middle. */
+export function splitTail(text: string, tail: number) {
+  const graphemes = splitGraphemes(text);
+  const at = Math.max(0, graphemes.length - tail);
+
+  return [graphemes.slice(0, at).join(""), graphemes.slice(at).join("")] as const;
+}
+
+export function firstGrapheme(text: string) {
+  return splitGraphemes(text)[0] ?? "";
 }
 
 export function noteLength(text: string) {

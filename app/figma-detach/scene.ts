@@ -131,7 +131,8 @@ export function detachSubject(items: Detached[]) {
 
   if (names.size === 1) {
     const [first] = items;
-    const many = plural(first.component.name);
+    // "3 Inputs", but a path like "Navigation / Tabs / Small" can't take a plural.
+    const many = first.component.name.includes("/") ? `× ${first.component.name}` : plural(first.component.name);
 
     return `${items.length} ${first.inside ? `${many} in ${first.inside}` : many}`;
   }
