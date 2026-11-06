@@ -31,7 +31,8 @@ const COUNT_FROM = 20;
 
 /**
  * Beside the layer, top-right of its bounds. Near the edges it flips left,
- * then below; near the bottom it grows upward from the layer's bottom edge.
+ * then below or above; near the bottom it grows upward from the layer's
+ * bottom edge.
  */
 function place(anchor: Box, canvas: { width: number; height: number }) {
   const right = anchor.left + anchor.width + GAP;
@@ -52,11 +53,16 @@ function place(anchor: Box, canvas: { width: number; height: number }) {
     return { style: { left: x, bottom: canvas.height - Math.max(bottom, EDGE + 160) }, origin: `${originX} 100%` };
   }
 
-  const x = Math.min(Math.max(anchor.left, EDGE), canvas.width - WIDTH - EDGE);
+  // No room beside it: below the size pill if that fits, otherwise above the layer.
+  const x = Math.min(Math.max(anchor.left + anchor.width - WIDTH, EDGE), canvas.width - WIDTH - EDGE);
+  const originX = `${anchor.left + anchor.width / 2 - x}px`;
+  const below = anchor.top + anchor.height + PILL;
+
+  if (below + TALLEST <= floor) return { style: { left: x, top: below }, origin: `${originX} 0%` };
 
   return {
-    style: { left: x, top: Math.min(anchor.top + anchor.height + PILL, floor - 200) },
-    origin: `${anchor.left + anchor.width / 2 - x}px 0%`,
+    style: { left: x, bottom: canvas.height - Math.max(anchor.top - GAP, EDGE + 160) },
+    origin: `${originX} 100%`,
   };
 }
 

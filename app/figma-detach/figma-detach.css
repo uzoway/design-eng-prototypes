@@ -2189,3 +2189,89 @@ html[data-theme="dark"] :is([data-fd-page], .fd-menu) {
 .fd-request:focus-visible + .fd-request-tip {
   opacity: 1;
 }
+
+/* ------------------------------------------------------------------------ */
+/* Small screens: an honest note and a clip, not a squeezed editor           */
+/* ------------------------------------------------------------------------ */
+
+.fd-small {
+  display: none;
+}
+
+@media (max-width: 899px) {
+  .fd-app {
+    display: none;
+  }
+
+  .fd-small {
+    display: block;
+    max-width: 480px;
+    margin: 0 auto;
+    padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(32px, env(safe-area-inset-bottom))
+      max(16px, env(safe-area-inset-left));
+    color: var(--color-text);
+    font-size: 13px;
+    line-height: 20px;
+    letter-spacing: -0.0025em;
+  }
+}
+
+.fd-small-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 40px;
+  margin-bottom: 16px;
+}
+
+.fd-small-mark {
+  width: 14px;
+  height: 21px;
+}
+
+.fd-small .fd-tooltip {
+  top: calc(100% + 6px);
+  bottom: auto;
+}
+
+.fd-small-title {
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.fd-small-text {
+  margin-top: 8px;
+  color: var(--color-text-secondary);
+}
+
+.fd-small-clip {
+  margin: 24px 0;
+}
+
+.fd-small-clip video {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 704 / 1290;
+  border-radius: var(--radius-large);
+  background: var(--color-bg-menu);
+  box-shadow: 0 0 0 1px var(--color-border);
+}
+
+.fd-small-clip figcaption {
+  margin-top: 8px;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.fd-small-note {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text-tertiary);
+  font-size: 11px;
+  line-height: 16px;
+}

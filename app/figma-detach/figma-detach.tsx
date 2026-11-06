@@ -24,6 +24,7 @@ import {
   type Scene,
 } from "./scene";
 import { getQuietUntil, getServerQuietUntil, setQuietUntil, subscribeQuietUntil } from "./settings";
+import { SmallScreen } from "./small-screen";
 import { ThemeToggle } from "./theme-toggle";
 import { Toast, type ToastState } from "./toast";
 import "./figma-detach.css";
@@ -435,105 +436,109 @@ export function FigmaDetach() {
   const canvasColor = theme === "light" ? "#F5F5F5" : "#1E1E1E";
 
   return (
-    <div className="fd-app">
-      <div className="fd-editor">
-        <Rail />
+    <>
+      <SmallScreen />
 
-        <LayersPanel
-          scene={scene}
-          selection={selection}
-          expanded={expanded}
-          hover={hover}
-          onSelect={select}
-          onToggle={toggle}
-          onHover={setHover}
-          onContextMenu={openMenuAt}
-        />
+      <div className="fd-app">
+        <div className="fd-editor">
+          <Rail />
 
-        <Canvas
-          canvasRef={canvasRef}
-          scene={scene}
-          geometry={geometry}
-          selection={selection}
-          hover={hover}
-          scope={scope}
-          onSelect={(id, { additive, scope: nextScope }) => {
-            // Clicking the canvas counts as a skip. Nothing is sent.
-            if (ask) skip(false);
-            setScope(nextScope);
-            select(id, additive);
-          }}
-          onHover={setHover}
-          onEnter={(parent, child) => {
-            setScope(parent);
-            select(child);
-          }}
-          onContextMenu={(id, x, y, nextScope) => {
-            if (ask) skip(false);
-            setScope(nextScope);
-            openMenuAt(id, x, y);
-          }}
-        >
-          <DetachPopover
-            ask={ask?.shown && anchor ? ask : null}
-            anchor={anchor}
-            bounds={geometry}
-            reducedMotion={reducedMotion}
-            onSend={send}
-            onSkip={() => skip()}
-            onDontAskToday={dontAskToday}
+          <LayersPanel
+            scene={scene}
+            selection={selection}
+            expanded={expanded}
+            hover={hover}
+            onSelect={select}
+            onToggle={toggle}
+            onHover={setHover}
+            onContextMenu={openMenuAt}
           />
-          <Toast toast={toast} reducedMotion={reducedMotion} onDone={() => setToast(null)} />
-        </Canvas>
 
-        <PropertiesPanel
-          scene={scene}
-          selection={selection}
-          zoom={geometry?.zoom ?? 1}
-          canvasColor={canvasColor}
-        />
-      </div>
+          <Canvas
+            canvasRef={canvasRef}
+            scene={scene}
+            geometry={geometry}
+            selection={selection}
+            hover={hover}
+            scope={scope}
+            onSelect={(id, { additive, scope: nextScope }) => {
+              // Clicking the canvas counts as a skip. Nothing is sent.
+              if (ask) skip(false);
+              setScope(nextScope);
+              select(id, additive);
+            }}
+            onHover={setHover}
+            onEnter={(parent, child) => {
+              setScope(parent);
+              select(child);
+            }}
+            onContextMenu={(id, x, y, nextScope) => {
+              if (ask) skip(false);
+              setScope(nextScope);
+              openMenuAt(id, x, y);
+            }}
+          >
+            <DetachPopover
+              ask={ask?.shown && anchor ? ask : null}
+              anchor={anchor}
+              bounds={geometry}
+              reducedMotion={reducedMotion}
+              onSend={send}
+              onSkip={() => skip()}
+              onDontAskToday={dontAskToday}
+            />
+            <Toast toast={toast} reducedMotion={reducedMotion} onDone={() => setToast(null)} />
+          </Canvas>
 
-      <ContextMenu
-        menu={menu}
-        hasInstance={hasInstance}
-        onClose={() => setMenu(null)}
-        onDetach={detachSelection}
-        onCloseFocus={(reason) => {
-          if (reason === "detach" || menuKeyboardRef.current) focusSelectedLayer();
-        }}
-      />
+          <PropertiesPanel
+            scene={scene}
+            selection={selection}
+            zoom={geometry?.zoom ?? 1}
+            canvasColor={canvasColor}
+          />
+        </div>
 
-      <div className="fd-sr-only" aria-live="polite" aria-atomic="true">
-        {announcement}
-      </div>
-
-      <AnalyticsModal
-        open={analyticsOpen}
-        opener={ctaRef}
-        session={session}
-        reducedMotion={reducedMotion}
-        onClose={() => setAnalyticsOpen(false)}
-      />
-
-      <footer className="fd-demo-bar">
-        <p className="fd-demo-note">A concept by Uzo Okafor. Not affiliated with Figma.</p>
-        <button type="button" className="fd-demo-link" onClick={reset}>
-          Reset concept
-        </button>
-        <button
-          ref={ctaRef}
-          type="button"
-          className="fd-demo-cta"
-          onClick={() => {
-            if (ask) skip(false);
-            setAnalyticsOpen(true);
+        <ContextMenu
+          menu={menu}
+          hasInstance={hasInstance}
+          onClose={() => setMenu(null)}
+          onDetach={detachSelection}
+          onCloseFocus={(reason) => {
+            if (reason === "detach" || menuKeyboardRef.current) focusSelectedLayer();
           }}
-        >
-          See what the {LIBRARY_TEAM} team sees →
-        </button>
-        <ThemeToggle />
-      </footer>
-    </div>
+        />
+
+        <div className="fd-sr-only" aria-live="polite" aria-atomic="true">
+          {announcement}
+        </div>
+
+        <AnalyticsModal
+          open={analyticsOpen}
+          opener={ctaRef}
+          session={session}
+          reducedMotion={reducedMotion}
+          onClose={() => setAnalyticsOpen(false)}
+        />
+
+        <footer className="fd-demo-bar">
+          <p className="fd-demo-note">A concept by Uzo Okafor. Not affiliated with Figma.</p>
+          <button type="button" className="fd-demo-link" onClick={reset}>
+            Reset concept
+          </button>
+          <button
+            ref={ctaRef}
+            type="button"
+            className="fd-demo-cta"
+            onClick={() => {
+              if (ask) skip(false);
+              setAnalyticsOpen(true);
+            }}
+          >
+            See what the {LIBRARY_TEAM} team sees →
+          </button>
+          <ThemeToggle />
+        </footer>
+      </div>
+    </>
   );
 }
