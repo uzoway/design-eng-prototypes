@@ -46,6 +46,11 @@
   --color-field-menu-border: #444444;
   --color-brand-menu: #0d99ff;
 
+  --reason-missing: #0d99ff;
+  --reason-spacing: #9747ff;
+  --reason-content: #14ae5c;
+  --reason-broken: #f24822;
+
   --radius-small: 2px;
   --radius-medium: 5px;
   --radius-large: 13px;
@@ -1133,6 +1138,32 @@ html[data-theme="dark"] :is([data-fd-page], .fd-menu) {
   color: var(--color-text-secondary);
 }
 
+.fd-demo-link,
+.fd-demo-cta {
+  height: 24px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--radius-medium);
+  background: transparent;
+  font-weight: 450;
+  cursor: pointer;
+}
+
+.fd-demo-link {
+  color: var(--color-text-secondary);
+}
+
+.fd-demo-cta {
+  background: var(--color-bg-brand);
+  color: #ffffff;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .fd-demo-link:hover {
+    color: var(--color-text);
+  }
+}
+
 .fd-theme {
   position: relative;
   visibility: hidden;
@@ -1558,4 +1589,603 @@ html[data-theme="dark"] :is([data-fd-page], .fd-menu) {
 .fd-toast :focus-visible {
   outline: 2px solid var(--color-brand-menu);
   outline-offset: 1px;
+}
+
+/* ------------------------------------------------------------------------ */
+/* Library analytics modal                                                   */
+/* Not measured (analytics need an Organization plan), so it's built from   */
+/* Figma's modal language: panel bg, radius 13, menu shadow, 32px rows.      */
+/* ------------------------------------------------------------------------ */
+
+.fd-modal {
+  width: min(920px, calc(100vw - 48px));
+  max-width: none;
+  height: min(680px, calc(100dvh - 48px));
+  max-height: none;
+  margin: auto;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-large);
+  background: var(--color-bg);
+  box-shadow: var(--shadow-menu);
+  color: var(--color-text);
+  overflow: hidden;
+}
+
+.fd-modal::backdrop {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.fd-modal-frame {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.fd-modal-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 48px;
+  padding: 0 12px 0 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.fd-modal-icon {
+  color: var(--color-icon-secondary);
+}
+
+.fd-modal-title {
+  font-size: 13px;
+  line-height: 22px;
+  font-weight: 550;
+  letter-spacing: -0.032px;
+}
+
+.fd-modal-by {
+  flex: 1;
+  margin-left: 4px;
+  color: var(--color-text-secondary);
+}
+
+.fd-modal-close:hover {
+  background: var(--color-bg-hover);
+}
+
+.fd-modal-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.fd-modal-tabs .fd-tab {
+  border: 0;
+  background: transparent;
+  cursor: default;
+}
+
+.fd-modal-tabs .fd-tab[data-active] {
+  background: var(--color-bg-secondary);
+}
+
+.fd-modal-body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.fd-muted {
+  color: var(--color-text-secondary);
+  font-weight: 450;
+}
+
+.fd-empty {
+  padding: 32px 16px;
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+/* ---- Overview ---------------------------------------------------------- */
+
+.fd-overview {
+  padding: 16px;
+}
+
+.fd-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.fd-card {
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-medium);
+}
+
+.fd-card dt {
+  color: var(--color-text-secondary);
+  font-weight: 450;
+}
+
+.fd-card dd {
+  margin-top: 4px;
+  font-size: 13px;
+  line-height: 22px;
+  font-weight: 550;
+}
+
+/* ---- Analytics --------------------------------------------------------- */
+
+.fd-analytics {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+}
+
+.fd-analytics-main {
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 12px 16px 16px;
+}
+
+.fd-filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.fd-select {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.fd-select select {
+  height: 24px;
+  padding: 0 24px 0 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-medium);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+  letter-spacing: inherit;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.fd-select svg {
+  position: absolute;
+  right: 0;
+  pointer-events: none;
+  color: var(--color-icon-secondary);
+}
+
+.fd-insights {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.fd-graph {
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-medium);
+}
+
+.fd-graph figcaption {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.fd-graph-total {
+  font-size: 13px;
+  font-weight: 550;
+  font-variant-numeric: tabular-nums;
+}
+
+.fd-graph svg {
+  display: block;
+  width: 100%;
+  height: 120px;
+}
+
+.fd-graph-grid {
+  stroke: var(--color-border);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.fd-graph-area {
+  fill: color-mix(in srgb, var(--color-bg-brand) 14%, transparent);
+}
+
+.fd-graph-line {
+  fill: none;
+  stroke: var(--color-bg-brand);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+
+.fd-graph-axis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+  color: var(--color-text-tertiary);
+}
+
+.fd-teams {
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-medium);
+}
+
+.fd-teams ol {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fd-teams li {
+  display: grid;
+  grid-template-columns: 1fr auto 36px;
+  gap: 8px;
+  height: 24px;
+  align-items: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.fd-team-count,
+.fd-team-share {
+  text-align: right;
+}
+
+.fd-team-share {
+  color: var(--color-text-secondary);
+}
+
+.fd-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.fd-table th,
+.fd-table td {
+  height: 32px;
+  padding: 0 8px;
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.fd-table [data-numeric] {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.fd-table thead th {
+  color: var(--color-text-secondary);
+  font-weight: 450;
+}
+
+.fd-table thead th[data-col="name"] {
+  width: auto;
+}
+
+.fd-table thead th[data-col="instances"],
+.fd-table thead th[data-col="inserts"],
+.fd-table thead th[data-col="detaches"] {
+  width: 96px;
+}
+
+.fd-table thead th[data-col="reasons"] {
+  width: 112px;
+}
+
+.fd-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  margin: 0 -4px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: var(--radius-medium);
+  background: transparent;
+  color: inherit;
+  font-weight: inherit;
+  cursor: default;
+}
+
+.fd-table th[aria-sort="ascending"] .fd-sort,
+.fd-table th[aria-sort="descending"] .fd-sort {
+  color: var(--color-text);
+}
+
+.fd-table tbody tr {
+  cursor: default;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .fd-table tbody tr:hover {
+    background: var(--color-bg-hover);
+  }
+
+  .fd-sort:hover {
+    color: var(--color-text);
+  }
+}
+
+.fd-table-name {
+  overflow: hidden;
+}
+
+.fd-table-name-inner {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--color-text);
+}
+
+.fd-table-icon {
+  flex: none;
+  margin-left: -6px;
+  color: var(--color-text-component);
+}
+
+.fd-table-name-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fd-table-variants {
+  flex: none;
+  margin-left: 8px;
+  color: var(--color-text-tertiary);
+}
+
+.fd-count {
+  height: 24px;
+  margin-right: -6px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: var(--radius-medium);
+  background: transparent;
+  color: var(--color-bg-brand);
+  font-variant-numeric: tabular-nums;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .fd-count:hover {
+    text-decoration-color: currentColor;
+  }
+}
+
+.fd-mine {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-left: 6px;
+  border-radius: 50%;
+  background: var(--color-bg-component);
+  vertical-align: middle;
+}
+
+.fd-stack {
+  display: flex;
+  gap: 1px;
+  width: 72px;
+  height: 6px;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+/* ---- Drill-in ------------------------------------------------------------ */
+
+.fd-drill {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  width: min(400px, 100%);
+  border-left: 1px solid var(--color-border);
+  background: var(--color-bg);
+  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.18);
+}
+
+.fd-drill-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 12px 16px 12px 8px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.fd-drill-head .fd-icon-button:hover {
+  background: var(--color-bg-hover);
+}
+
+.fd-drill-title-wrap {
+  min-width: 0;
+}
+
+.fd-drill-title {
+  display: flex;
+  align-items: center;
+  height: 24px;
+  font-size: 13px;
+  line-height: 22px;
+  font-weight: 550;
+  letter-spacing: -0.032px;
+  outline: none;
+}
+
+.fd-drill-icon {
+  flex: none;
+  margin-left: -4px;
+  color: var(--color-text-component);
+}
+
+.fd-drill-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fd-drill-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 16px;
+}
+
+.fd-drill-summary strong {
+  font-weight: 550;
+}
+
+.fd-bars {
+  display: grid;
+  gap: 4px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fd-bar-row {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr) 28px;
+  align-items: center;
+  gap: 8px;
+  height: 24px;
+}
+
+.fd-bar-track {
+  height: 8px;
+  border-radius: 2px;
+  background: var(--color-bg-secondary);
+  overflow: hidden;
+}
+
+.fd-bar {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.fd-bar-count {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.fd-drill-section {
+  margin-top: 20px;
+}
+
+.fd-notes,
+.fd-files {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fd-note-item {
+  display: flex;
+  gap: 8px;
+  padding: 6px 0;
+}
+
+.fd-note-item[data-mine] q {
+  color: var(--color-text-component);
+}
+
+.fd-avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--color-bg-component-tertiary);
+  color: var(--color-text-component);
+  font-size: 10px;
+  font-weight: 550;
+}
+
+.fd-note-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.fd-files li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  height: 28px;
+  align-items: center;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.fd-file-row-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fd-file-row-count {
+  font-variant-numeric: tabular-nums;
+}
+
+.fd-drill-foot {
+  position: relative;
+  margin-top: 20px;
+}
+
+.fd-request {
+  height: 24px;
+  padding: 0 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-medium);
+  background: transparent;
+  color: var(--color-text);
+  font-weight: 450;
+  cursor: default;
+}
+
+.fd-request-tip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  padding: 4px 8px;
+  border-radius: var(--radius-medium);
+  background: var(--color-bg-menu);
+  box-shadow: var(--shadow-menu);
+  color: var(--color-text-menu);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 100ms ease-out;
+}
+
+.fd-request:hover + .fd-request-tip,
+.fd-request:focus-visible + .fd-request-tip {
+  opacity: 1;
 }

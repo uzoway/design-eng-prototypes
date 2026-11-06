@@ -121,6 +121,9 @@ function PopoverBody({ items, reducedMotion, onSend, onSkip, onDontAskToday }: P
   const [overflowOpen, setOverflowOpen] = useState(false);
 
   const chipRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const noteRef = useRef<HTMLInputElement>(null);
+  /* A number key or a click goes on to the note; arrows stay in the list. */
+  const toNoteRef = useRef(false);
   const leavingRef = useRef(false);
 
   const titleId = useId();
@@ -141,11 +144,22 @@ function PopoverBody({ items, reducedMotion, onSend, onSkip, onDontAskToday }: P
     chipRefs.current[0]?.focus({ preventScroll: true });
   }, []);
 
-  function pick(index: number) {
+  function pick(index: number, toNote = false) {
     setReason(REASONS[index].id);
     setFocused(index);
-    chipRefs.current[index]?.focus();
+    toNoteRef.current = toNote && REASONS[index].id !== "exploring";
+
+    if (toNoteRef.current && noteRef.current) noteRef.current.focus({ preventScroll: true });
+    else chipRefs.current[index]?.focus();
   }
+
+  // The note mounts after the first pick, so focus follows once it exists.
+  useEffect(() => {
+    if (!toNoteRef.current) return;
+
+    noteRef.current?.focus({ preventScroll: true });
+    toNoteRef.current = false;
+  }, [reason]);
 
   function send() {
     if (!reason) return;
@@ -180,7 +194,7 @@ function PopoverBody({ items, reducedMotion, onSend, onSkip, onDontAskToday }: P
 
     if (!event.metaKey && !event.ctrlKey && !event.altKey && digit >= 1 && digit <= REASONS.length) {
       event.preventDefault();
-      pick(digit - 1);
+      pick(digit - 1, true);
     }
   }
 
@@ -312,7 +326,7 @@ function PopoverBody({ items, reducedMotion, onSend, onSkip, onDontAskToday }: P
               aria-keyshortcuts={String(index + 1)}
               tabIndex={index === tabStop ? 0 : -1}
               className="fd-chip"
-              onClick={() => pick(index)}
+              onClick={(event) => pick(index, event.detail > 0)}
               onFocus={() => setFocused(index)}
               onKeyDown={(event) => onChipKeyDown(event, index)}
             >
@@ -352,6 +366,7 @@ function PopoverBody({ items, reducedMotion, onSend, onSkip, onDontAskToday }: P
                 What did you need? (optional)
               </label>
               <input
+                ref={noteRef}
                 id={`${countId}-input`}
                 className="fd-note-input"
                 type="text"

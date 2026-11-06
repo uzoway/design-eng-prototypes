@@ -3,8 +3,9 @@
 import { useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { usePageDefaultTheme, useTheme } from "../components/theme-provider";
-import { type SentReason } from "./analytics";
-import { decide, endOfDay } from "./asking";
+import { type Session, type SentReason } from "./analytics";
+import { AnalyticsModal } from "./analytics-modal";
+import { decide, endOfDay, fromLibrary } from "./asking";
 import { Canvas, geometryFor, ROOT, screenBox, type Geometry } from "./canvas";
 import { ContextMenu, type MenuState } from "./context-menu";
 import { LIBRARY, LIBRARY_TEAM, type ReasonId } from "./data";
@@ -60,8 +61,10 @@ export function FigmaDetach() {
   const [asked, setAsked] = useState<ReadonlySet<string>>(() => new Set());
   const [toast, setToast] = useState<ToastState | null>(null);
   const [announcement, setAnnouncement] = useState("");
+  const [analyticsOpen, setAnalyticsOpen] = useState(false);
 
   const canvasRef = useRef<HTMLDivElement>(null);
+  const ctaRef = useRef<HTMLButtonElement>(null);
   /* Whether the open menu came from the keyboard, still known after it closes. */
   const menuKeyboardRef = useRef(false);
   const askTimerRef = useRef(0);
@@ -320,6 +323,29 @@ export function FigmaDetach() {
     announce("Won't ask again today.");
   }, [ask, closeAsk, focusSelectedLayer, showToast, announce, openAsk]);
 
+  const reset = useCallback(() => {
+    closeAsk();
+    setScene(createScene());
+    setRecords([]);
+    setAsked(new Set());
+    setSelection([]);
+    setScope(ROOT);
+    setToast(null);
+    setQuietUntil(null);
+    announce("Concept reset. The file is back to its first state.");
+  }, [closeAsk, announce]);
+
+  /* What the Orbit team sees: every library detach this session, and the reasons sent. */
+  const session = useMemo<Session>(
+    () => ({
+      detaches: records.flatMap((record) =>
+        record.items.filter((item) => fromLibrary(item.component)).map((item) => item.component.id),
+      ),
+      reasons: records.flatMap((record) => record.sent),
+    }),
+    [records],
+  );
+
   /* ---------------------------------------------------------------------- */
   /* Menus and shortcuts                                                    */
   /* ---------------------------------------------------------------------- */
@@ -342,7 +368,7 @@ export function FigmaDetach() {
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      if (event.defaultPrevented || menu) return;
+      if (event.defaultPrevented || menu || analyticsOpen) return;
 
       const typing = (event.target as HTMLElement).closest("input, textarea, [contenteditable]");
       const mod = event.metaKey || event.ctrlKey;
@@ -385,7 +411,7 @@ export function FigmaDetach() {
     window.addEventListener("keydown", onKeyDown);
 
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [menu, selection, scene, select, detachSelection, undo, openMenuForSelection]);
+  }, [menu, analyticsOpen, selection, scene, select, detachSelection, undo, openMenuForSelection]);
 
   function openMenuAt(id: string | null, x: number, y: number) {
     if (!id) {
@@ -482,8 +508,30 @@ export function FigmaDetach() {
         {announcement}
       </div>
 
+      <AnalyticsModal
+        open={analyticsOpen}
+        opener={ctaRef}
+        session={session}
+        reducedMotion={reducedMotion}
+        onClose={() => setAnalyticsOpen(false)}
+      />
+
       <footer className="fd-demo-bar">
         <p className="fd-demo-note">A concept by Uzo Okafor. Not affiliated with Figma.</p>
+        <button type="button" className="fd-demo-link" onClick={reset}>
+          Reset concept
+        </button>
+        <button
+          ref={ctaRef}
+          type="button"
+          className="fd-demo-cta"
+          onClick={() => {
+            if (ask) skip(false);
+            setAnalyticsOpen(true);
+          }}
+        >
+          See what the {LIBRARY_TEAM} team sees →
+        </button>
         <ThemeToggle />
       </footer>
     </div>
