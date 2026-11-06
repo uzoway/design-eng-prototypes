@@ -120,13 +120,13 @@ export function DetachPopover({ ask, anchor, bounds, reducedMotion, onSend, onSk
           initial={reducedMotion ? { opacity: 0 } : { opacity: 0, transform: "translateY(4px) scale(0.98)" }}
           animate={
             reducedMotion
-              ? { opacity: 1, transition: { duration: 0.12, ease: "easeOut" } }
+              ? { opacity: 1, transition: { duration: 0.12, ease: EASE } }
               : { opacity: 1, transform: "translateY(0px) scale(1)", transition: { duration: 0.16, ease: EASE } }
           }
           exit={
             reducedMotion
-              ? { opacity: 0, transition: { duration: 0.12, ease: "easeOut" } }
-              : { opacity: 0, transform: "translateY(0px) scale(0.98)", transition: { duration: 0.12, ease: "easeOut" } }
+              ? { opacity: 0, transition: { duration: 0.12, ease: EASE } }
+              : { opacity: 0, transform: "translateY(0px) scale(0.98)", transition: { duration: 0.12, ease: EASE } }
           }
         >
           {/* Keyed by the detach: a second detach swaps the content without replaying the entrance. */}
@@ -382,19 +382,19 @@ function PopoverBody({ items, reducedMotion, onSend, onSkip, onDontAskToday }: P
             initial={reducedMotion ? { height: "auto", opacity: 0 } : { height: 0 }}
             animate={
               reducedMotion
-                ? { height: "auto", opacity: 1, transition: { duration: 0.12, ease: "easeOut" } }
+                ? { height: "auto", opacity: 1, transition: { duration: 0.12, ease: EASE } }
                 : { height: "auto", transition: NOTE_SPRING }
             }
             exit={
               reducedMotion
                 ? { opacity: 0, transition: { duration: 0.12 } }
-                : { height: 0, transition: { duration: 0.12, ease: "easeOut" } }
+                : { height: 0, transition: { duration: 0.12, ease: EASE } }
             }
           >
             <motion.div
               className="fd-note"
               initial={reducedMotion ? false : { opacity: 0 }}
-              animate={{ opacity: 1, transition: { duration: 0.12, delay: reducedMotion ? 0 : 0.05, ease: "easeOut" } }}
+              animate={{ opacity: 1, transition: { duration: 0.12, delay: reducedMotion ? 0 : 0.05, ease: EASE } }}
               exit={{ opacity: 0, transition: { duration: 0.08 } }}
             >
               <label className="fd-sr-only" htmlFor={`${countId}-input`}>

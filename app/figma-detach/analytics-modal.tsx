@@ -217,9 +217,17 @@ function Analytics({
     onDrill(id);
   }
 
-  // Back from the drill-in, focus returns to the count that opened it.
+  // Into the drill-in, focus goes to its heading, even when a panel still sliding
+  // out is reused. The panel starts off to the right, so focusing without
+  // preventScroll would scroll the whole analytics view sideways to reveal it.
+  // Back out, focus returns to the count that opened it.
   useEffect(() => {
-    if (drill || !openerRef.current) return;
+    if (drill) {
+      document.getElementById("fd-drill-title")?.focus({ preventScroll: true });
+      return;
+    }
+
+    if (!openerRef.current) return;
 
     document.querySelector<HTMLElement>(`[data-drill="${openerRef.current}"]`)?.focus();
     openerRef.current = null;
@@ -295,16 +303,17 @@ function Analytics({
             initial={reducedMotion ? { opacity: 0 } : { transform: "translateX(100%)" }}
             animate={
               reducedMotion
-                ? { opacity: 1, transition: { duration: 0.12, ease: "easeOut" } }
+                ? { opacity: 1, transition: { duration: 0.12, ease: EASE } }
                 : { transform: "translateX(0%)", transition: { duration: 0.22, ease: EASE } }
             }
             exit={
               reducedMotion
-                ? { opacity: 0, transition: { duration: 0.12, ease: "easeOut" } }
+                ? { opacity: 0, transition: { duration: 0.12, ease: EASE } }
                 : { transform: "translateX(100%)", transition: { duration: 0.16, ease: EASE } }
             }
           >
-            <DrillIn row={drilled} rangeLabel={rangeLabel} reducedMotion={reducedMotion} onBack={() => onDrill(null)} />
+            {/* Keyed by row, so another component's bars grow from zero rather than morphing. */}
+            <DrillIn key={drilled.id} row={drilled} rangeLabel={rangeLabel} reducedMotion={reducedMotion} onBack={() => onDrill(null)} />
           </motion.section>
         )}
       </AnimatePresence>
@@ -471,18 +480,11 @@ function DrillIn({
   reducedMotion: boolean;
   onBack: () => void;
 }) {
-  const headingRef = useRef<HTMLHeadingElement>(null);
   const tipId = useId();
   const parts = breakdown(row.reasons);
   const max = Math.max(1, ...parts.map((part) => part.count));
   const files = filesSummary(row.files);
   const unexplained = row.detaches - row.reasonTotal;
-
-  // The panel is still off to the right when this runs, so focusing without
-  // preventScroll would scroll the whole analytics view sideways to reveal it.
-  useEffect(() => {
-    headingRef.current?.focus({ preventScroll: true });
-  }, []);
 
   return (
     <>
@@ -491,7 +493,7 @@ function DrillIn({
           <BackIcon />
         </button>
         <div className="fd-drill-title-wrap">
-          <h3 className="fd-drill-title" id="fd-drill-title" ref={headingRef} tabIndex={-1}>
+          <h3 className="fd-drill-title" id="fd-drill-title" tabIndex={-1}>
             <InstanceIcon aria-hidden="true" className="fd-drill-icon" />
             <MiddleText className="fd-drill-name" text={row.name} />
           </h3>

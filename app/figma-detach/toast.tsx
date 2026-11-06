@@ -23,10 +23,13 @@ export function Toast({
   toast,
   reducedMotion,
   onDone,
+  onAction,
 }: {
   toast: ToastState | null;
   reducedMotion: boolean;
   onDone: () => void;
+  /** The pill is about to be replaced, so focus needs somewhere to go. */
+  onAction: () => void;
 }) {
   const timerRef = useRef(0);
   const holdRef = useRef(false);
@@ -40,6 +43,8 @@ export function Toast({
   useEffect(() => {
     if (!toast) return;
 
+    // A hold belongs to the toast that was hovered, not the one that replaced it.
+    holdRef.current = false;
     timerRef.current = window.setTimeout(() => {
       if (!holdRef.current) doneRef.current();
     }, VISIBLE_MS);
@@ -66,10 +71,10 @@ export function Toast({
           initial={reducedMotion ? { opacity: 0 } : { opacity: 0, transform: "translateY(8px)" }}
           animate={
             reducedMotion
-              ? { opacity: 1, transition: { duration: 0.12, ease: "easeOut" } }
+              ? { opacity: 1, transition: { duration: 0.12, ease: EASE } }
               : { opacity: 1, transform: "translateY(0px)", transition: { duration: 0.16, ease: EASE } }
           }
-          exit={{ opacity: 0, transition: { duration: 0.12, ease: "easeOut" } }}
+          exit={{ opacity: 0, transition: { duration: 0.12, ease: EASE } }}
           onPointerEnter={() => hold(true)}
           onPointerLeave={() => hold(false)}
           onFocus={() => hold(true)}
@@ -83,6 +88,7 @@ export function Toast({
               onClick={() => {
                 holdRef.current = false;
                 toast.action?.run();
+                onAction();
               }}
             >
               {toast.action.label}

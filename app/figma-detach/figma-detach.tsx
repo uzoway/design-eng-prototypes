@@ -230,6 +230,9 @@ export function FigmaDetach() {
     setScene(last.before);
     setRecords((current) => current.slice(0, -1));
 
+    // ⌘Z from inside the popover or toast closes it, so focus goes back to the layer.
+    const focusLeaves = document.activeElement?.closest("[data-canvas-ui]") != null;
+
     // Undone before answering, so it never really asked: the next detach can.
     if (ask?.recordId === last.id) {
       closeAsk();
@@ -243,6 +246,7 @@ export function FigmaDetach() {
     }
 
     if (toast?.recordId === last.id) setToast(null);
+    if (focusLeaves) focusSelectedLayer();
 
     const subject = detachSubject(last.items);
 
@@ -251,7 +255,7 @@ export function FigmaDetach() {
         last.sent.length > 0 ? " The reason was taken back." : ""
       }`,
     );
-  }, [records, ask, toast, announce, closeAsk]);
+  }, [records, ask, toast, announce, closeAsk, focusSelectedLayer]);
 
   /* ---------------------------------------------------------------------- */
   /* Answering                                                              */
@@ -487,7 +491,12 @@ export function FigmaDetach() {
               onSkip={() => skip()}
               onDontAskToday={dontAskToday}
             />
-            <Toast toast={toast} reducedMotion={reducedMotion} onDone={() => setToast(null)} />
+            <Toast
+              toast={toast}
+              reducedMotion={reducedMotion}
+              onDone={() => setToast(null)}
+              onAction={focusSelectedLayer}
+            />
           </Canvas>
 
           <PropertiesPanel
