@@ -9,10 +9,37 @@ const inter = Inter({
   display: "swap",
 });
 
+const description =
+  "A concept for Figma: when you detach a library component, a small popover asks why, and the design system team sees the reasons in library analytics.";
+
+/* A page's openGraph and twitter replace the site's rather than merge, so they're complete here. */
+const image = {
+  url: "/figma-detach/og.png",
+  width: 2400,
+  height: 1260,
+  alt: "A concept of Figma's editor with a Button just detached and a popover beside it asking why, with Missing a variant picked.",
+};
+
 export const metadata: Metadata = {
   title: "Why are you detaching?",
-  description:
-    "A concept for Figma: when you detach a library component, a small popover asks why, and the design system team sees the reasons in library analytics.",
+  description,
+  alternates: { canonical: "/figma-detach" },
+  openGraph: {
+    title: "Why are you detaching? A Figma concept",
+    description,
+    type: "website",
+    url: "/figma-detach",
+    siteName: "Uzo Okafor",
+    locale: "en_US",
+    images: [image],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Why are you detaching? A Figma concept",
+    description,
+    creator: "@uzodev",
+    images: [image.url],
+  },
 };
 
 /*
