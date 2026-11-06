@@ -43,15 +43,16 @@ export const metadata: Metadata = {
 
   creator: "Uzo Okafor",
 
-  alternates: {
-    canonical: "/",
-  },
+  /*
+   * No canonical or og:url here: every page inherits the layout's metadata, so
+   * "/" would tell search engines and link previews that each prototype is the
+   * home page. Without them, a page counts as its own canonical.
+   */
 
   openGraph: {
     title,
     description,
     type: "website",
-    url: "/",
     siteName: "Uzo Okafor",
     locale: "en_US",
     images: [
