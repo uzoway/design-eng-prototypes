@@ -465,6 +465,7 @@ html[data-theme="dark"] :is([data-fd-page], .fd-menu) {
   background: var(--color-canvas);
   cursor: default;
   touch-action: none;
+  container-type: inline-size;
 }
 
 .fd-frame-label {
@@ -850,6 +851,18 @@ html[data-theme="dark"] :is([data-fd-page], .fd-menu) {
 .fd-mode[data-active] {
   background: color-mix(in srgb, var(--color-bg-brand) 22%, transparent);
   color: var(--color-bg-brand);
+}
+
+/* On a narrow canvas the toolbar drops its mode switcher and menus rather than overflow. */
+@container (max-width: 600px) {
+  .fd-toolbar {
+    width: auto;
+  }
+
+  .fd-toolbar-modes,
+  .fd-tool-more {
+    display: none;
+  }
 }
 
 /* ------------------------------------------------------------------------ */

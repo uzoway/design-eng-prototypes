@@ -227,6 +227,7 @@ export function LayersPanel({
               <div
                 key={node.id}
                 role="treeitem"
+                aria-label={`${node.name}, ${TYPE_NAMES[node.type]}`}
                 aria-level={depth + 1}
                 aria-selected={selected.has(node.id)}
                 aria-expanded={hasChildren ? isOpen : undefined}
@@ -275,7 +276,6 @@ export function LayersPanel({
                   </span>
 
                   <span className="fd-layer-name">{node.name}</span>
-                  <span className="fd-sr-only">, {TYPE_NAMES[node.type]}</span>
 
                   <span className="fd-layer-tools" aria-hidden="true">
                     <LockIcon />
