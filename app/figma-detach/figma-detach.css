@@ -1468,13 +1468,14 @@ html[data-theme="dark"] :is([data-fd-page], .fd-menu) {
   outline-offset: 1px;
 }
 
+/* clip: Safari scrolls a hidden box to show the focused field, which made it jitter as it opened. */
 .fd-note-wrap {
-  overflow: hidden;
+  overflow: clip;
 }
 
 .fd-note {
   position: relative;
-  padding-top: 8px;
+  padding-block: 8px;
 }
 
 .fd-note-input {

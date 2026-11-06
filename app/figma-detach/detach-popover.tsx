@@ -2,7 +2,7 @@
 
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { AnimatePresence, motion } from "motion/react";
-import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { memo, useCallback, useEffect, useId, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { capNote, cleanNote, noteLength, shortSubjectOf, socialLine } from "./asking";
 import { LIBRARY, LIBRARY_TEAM, NOTE_LIMIT, REASONS, type ReasonId } from "./data";
 import { MoreIcon } from "./icons";
@@ -23,7 +23,12 @@ const FLOOR = 84;
 const PILL = 28;
 
 const EASE: [number, number, number, number] = [0.2, 0, 0, 1];
-const NOTE_SPRING = { type: "spring" as const, stiffness: 157.91, damping: 25.13 };
+/*
+ * The note opens on a tween, not the brief's spring: that spring is critically
+ * damped and took ~600ms, creeping through its last pixel while it uncovered
+ * the field's bottom border, which shimmered.
+ */
+const NOTE_OPEN = { duration: 0.2, ease: EASE };
 
 /** The subject can carry 24 characters before the title wraps. */
 const SUBJECT_MAX = 24;
@@ -148,7 +153,8 @@ export function DetachPopover({ ask, anchor, bounds, reducedMotion, onSend, onSk
 
 type PopoverBodyProps = Omit<DetachPopoverProps, "ask" | "anchor" | "bounds"> & { items: Detached[] };
 
-function PopoverBody({ items, reducedMotion, onSend, onSkip, onDontAskToday }: PopoverBodyProps) {
+// Memoised: the popover re-measures every frame while the note opens, and the body needn't re-render for it.
+const PopoverBody = memo(function PopoverBody({ items, reducedMotion, onSend, onSkip, onDontAskToday }: PopoverBodyProps) {
   const [reason, setReason] = useState<ReasonId | null>(null);
   const [focused, setFocused] = useState(0);
   const [note, setNote] = useState("");
@@ -379,16 +385,21 @@ function PopoverBody({ items, reducedMotion, onSend, onSkip, onDontAskToday }: P
           <motion.div
             key="note"
             className="fd-note-wrap"
-            initial={reducedMotion ? { height: "auto", opacity: 0 } : { height: 0 }}
+            /*
+             * The wrap carries 8px of empty space below the field and gives it back
+             * with a negative margin, so the slow end of the reveal uncovers that
+             * space, not the field's border.
+             */
+            initial={reducedMotion ? { height: "auto", marginBottom: -8, opacity: 0 } : { height: 0, marginBottom: 0 }}
             animate={
               reducedMotion
-                ? { height: "auto", opacity: 1, transition: { duration: 0.12, ease: EASE } }
-                : { height: "auto", transition: NOTE_SPRING }
+                ? { height: "auto", marginBottom: -8, opacity: 1, transition: { duration: 0.12, ease: EASE } }
+                : { height: "auto", marginBottom: -8, transition: NOTE_OPEN }
             }
             exit={
               reducedMotion
-                ? { opacity: 0, transition: { duration: 0.12 } }
-                : { height: 0, transition: { duration: 0.12, ease: EASE } }
+                ? { opacity: 0, transition: { duration: 0.12, ease: EASE } }
+                : { height: 0, marginBottom: 0, transition: { duration: 0.12, ease: EASE } }
             }
           >
             <motion.div
@@ -445,4 +456,4 @@ function PopoverBody({ items, reducedMotion, onSend, onSkip, onDontAskToday }: P
       </div>
     </div>
   );
-}
+});
