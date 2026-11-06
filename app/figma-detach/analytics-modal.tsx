@@ -468,8 +468,10 @@ function DrillIn({
   const files = filesSummary(row.files);
   const unexplained = row.detaches - row.reasonTotal;
 
+  // The panel is still off to the right when this runs, so focusing without
+  // preventScroll would scroll the whole analytics view sideways to reveal it.
   useEffect(() => {
-    headingRef.current?.focus();
+    headingRef.current?.focus({ preventScroll: true });
   }, []);
 
   return (

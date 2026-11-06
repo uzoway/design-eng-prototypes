@@ -461,7 +461,7 @@ html[data-theme="dark"] :is([data-fd-page], .fd-menu) {
 .fd-canvas {
   position: relative;
   min-width: 0;
-  overflow: hidden;
+  overflow: clip;
   background: var(--color-canvas);
   cursor: default;
   touch-action: none;
@@ -1622,7 +1622,7 @@ html[data-theme="dark"] :is([data-fd-page], .fd-menu) {
   background: var(--color-bg);
   box-shadow: var(--shadow-menu);
   color: var(--color-text);
-  overflow: hidden;
+  overflow: clip;
 }
 
 .fd-modal::backdrop {
@@ -1732,10 +1732,11 @@ html[data-theme="dark"] :is([data-fd-page], .fd-menu) {
 
 /* ---- Analytics --------------------------------------------------------- */
 
+/* clip, not hidden: a hidden box can still be scrolled by focus(), which slid the table sideways. */
 .fd-analytics {
   position: relative;
   height: 100%;
-  overflow: hidden;
+  overflow: clip;
 }
 
 .fd-analytics-main {
