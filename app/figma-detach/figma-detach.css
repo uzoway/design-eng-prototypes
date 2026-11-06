@@ -12,7 +12,9 @@
   initial-value: #0d99ff;
 }
 
-[data-fd-page] {
+/* Menus are portaled to <body>, so they carry the tokens too. */
+[data-fd-page],
+.fd-menu {
   --color-bg: #ffffff;
   --color-bg-secondary: #f5f5f5;
   --color-bg-hover: #f5f5f5;
@@ -58,7 +60,7 @@
   color-scheme: light;
 }
 
-html[data-theme="dark"] [data-fd-page] {
+html[data-theme="dark"] :is([data-fd-page], .fd-menu) {
   --color-bg: #2c2c2c;
   --color-bg-secondary: #383838;
   --color-bg-hover: #383838;
@@ -624,6 +626,31 @@ html[data-theme="dark"] [data-fd-page] {
   font-weight: 650;
 }
 
+.o-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+  height: 100%;
+  padding: 2px;
+  border-radius: 8px;
+  background: #f1f3f9;
+}
+
+.o-tab {
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  color: var(--o-muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.o-tab[data-on] {
+  background: #ffffff;
+  color: var(--o-ink);
+  box-shadow: 0 1px 2px rgba(17, 19, 24, 0.1);
+}
+
 .o-field {
   display: flex;
   flex-direction: column;
@@ -1156,4 +1183,379 @@ html[data-theme="dark"] [data-fd-page] {
 
 .fd-layer:focus-visible {
   outline: none;
+}
+
+/* ------------------------------------------------------------------------ */
+/* Context menu (role="menu")                                                */
+/* ------------------------------------------------------------------------ */
+
+.fd-menu-anchor {
+  position: fixed;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Portaled to <body>, so it carries its own type. Figma's menus open instantly. */
+.fd-menu {
+  z-index: 100;
+  width: 200px;
+  max-height: var(--radix-dropdown-menu-content-available-height);
+  padding: 8px;
+  overflow-y: auto;
+  border-radius: var(--radius-large);
+  background: var(--color-bg-menu);
+  box-shadow: var(--shadow-menu);
+  color: var(--color-text-menu);
+  font-family: var(--font);
+  font-size: 11px;
+  line-height: 24px;
+  letter-spacing: 0.055px;
+  -webkit-font-smoothing: antialiased;
+  outline: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.fd-menu-small {
+  width: 184px;
+}
+
+.fd-menu-item {
+  display: flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: var(--radius-medium);
+  outline: none;
+  cursor: default;
+}
+
+.fd-menu-item[data-highlighted] {
+  background: var(--color-bg-menu-selected);
+}
+
+.fd-menu-label {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fd-menu-keys {
+  display: flex;
+  gap: 1px;
+  color: var(--color-text-menu-secondary);
+  font-size: 12px;
+  letter-spacing: 0.96px;
+}
+
+.fd-menu-chevron {
+  width: 16px;
+  height: 16px;
+  margin-right: -4px;
+  color: var(--color-text-menu-secondary);
+}
+
+.fd-menu-item[data-highlighted] :is(.fd-menu-keys, .fd-menu-chevron) {
+  color: var(--color-text-menu);
+}
+
+.fd-menu-separator {
+  height: 1px;
+  margin: 4px -8px;
+  background: var(--color-border-menu);
+}
+
+/* ------------------------------------------------------------------------ */
+/* Reason popover                                                            */
+/* ------------------------------------------------------------------------ */
+
+.fd-popover-position {
+  position: absolute;
+  z-index: 3;
+  width: 280px;
+}
+
+.fd-popover {
+  padding: 12px;
+  border-radius: var(--radius-large);
+  background: var(--color-bg-menu);
+  box-shadow: var(--shadow-menu);
+  color: var(--color-text-menu);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.fd-popover-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.fd-popover-title {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  padding-top: 4px;
+  font-weight: 550;
+}
+
+.fd-popover-more {
+  margin: 0 -4px 0 0;
+  color: var(--color-text-menu-secondary);
+}
+
+.fd-popover-more:hover,
+.fd-popover-more[data-state="open"] {
+  background: var(--color-bg-menu-hover);
+  color: var(--color-text-menu);
+}
+
+.fd-popover-tip {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: -4px;
+  z-index: 1;
+  padding: 4px 8px;
+  border-radius: var(--radius-medium);
+  background: #000000;
+  color: var(--color-text-menu);
+  font-weight: 450;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 100ms ease-out;
+}
+
+.fd-popover-title:hover .fd-popover-tip {
+  opacity: 1;
+  transition-delay: 400ms;
+}
+
+.fd-popover-sub,
+.fd-popover-names,
+.fd-popover-why,
+.fd-popover-social {
+  color: var(--color-text-menu-secondary);
+  font-weight: 450;
+}
+
+.fd-popover-names {
+  margin-top: 4px;
+  color: var(--color-text-menu);
+}
+
+.fd-popover-why {
+  margin-top: 8px;
+  padding: 8px;
+  border-radius: var(--radius-medium);
+  background: var(--color-field-menu);
+}
+
+/* A list of 24px rows, like menu items: two per row truncated "Spacing doesn't fit" at 280px. */
+.fd-chips {
+  display: grid;
+  gap: 4px;
+  margin-top: 12px;
+}
+
+.fd-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  height: 24px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--radius-medium);
+  background: var(--color-bg-menu-hover);
+  color: var(--color-text-menu);
+  font-weight: 400;
+  text-align: left;
+  cursor: default;
+  transition: background-color 100ms ease-out;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .fd-chip:hover {
+    background: #444444;
+  }
+}
+
+.fd-chip[aria-checked="true"] {
+  background: var(--color-brand-menu);
+}
+
+.fd-chip-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fd-chip-key {
+  flex: none;
+  color: var(--color-text-menu-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.fd-chip[aria-checked="true"] .fd-chip-key {
+  color: var(--color-text-menu-secondary);
+}
+
+.fd-popover :focus-visible {
+  outline: 2px solid var(--color-brand-menu);
+  outline-offset: 1px;
+}
+
+.fd-note-wrap {
+  overflow: hidden;
+}
+
+.fd-note {
+  position: relative;
+  padding-top: 8px;
+}
+
+.fd-note-input {
+  display: block;
+  width: 100%;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--color-field-menu-border);
+  border-radius: var(--radius-medium);
+  background: var(--color-field-menu);
+  color: var(--color-text-menu);
+  font: inherit;
+  letter-spacing: inherit;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.fd-note-input::placeholder {
+  color: var(--color-text-menu-tertiary);
+}
+
+.fd-popover .fd-note-input:focus-visible,
+.fd-note-input:focus {
+  border-color: var(--color-brand-menu);
+  outline: none;
+}
+
+/* Room for the counter once it shows. */
+.fd-note:has(.fd-note-count) .fd-note-input {
+  padding-inline-end: 32px;
+}
+
+.fd-note-count {
+  position: absolute;
+  right: 8px;
+  bottom: 6px;
+  color: var(--color-text-menu-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.fd-note-count[data-empty] {
+  color: var(--color-text-menu-secondary);
+}
+
+.fd-popover-social {
+  margin-top: 12px;
+}
+
+.fd-popover-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 12px;
+}
+
+.fd-text-button,
+.fd-send {
+  height: 24px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--radius-medium);
+  font-weight: 450;
+  cursor: default;
+}
+
+.fd-text-button {
+  background: transparent;
+  color: var(--color-text-menu-secondary);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .fd-text-button:hover {
+    color: var(--color-text-menu);
+  }
+}
+
+.fd-send {
+  min-width: 48px;
+  background: var(--color-brand-menu);
+  color: #ffffff;
+}
+
+.fd-send[aria-disabled="true"] {
+  background: var(--color-bg-menu-hover);
+  color: var(--color-text-menu-tertiary);
+}
+
+/* ------------------------------------------------------------------------ */
+/* Toast (Figma's "visual bell")                                             */
+/* ------------------------------------------------------------------------ */
+
+.fd-toast {
+  position: absolute;
+  right: 0;
+  bottom: 81px;
+  left: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: max-content;
+  max-width: calc(100% - 32px);
+  height: 40px;
+  margin: 0 auto;
+  padding: 0 8px 0 16px;
+  border-radius: var(--radius-large);
+  background: var(--color-bg-menu);
+  box-shadow: var(--shadow-menu);
+  color: var(--color-text-menu);
+  font-weight: 450;
+}
+
+.fd-toast:not(:has(.fd-toast-action)) {
+  padding-right: 16px;
+}
+
+.fd-toast-text {
+  white-space: nowrap;
+}
+
+.fd-toast-action {
+  height: 24px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--radius-medium);
+  background: var(--color-bg-menu-hover);
+  color: var(--color-text-menu);
+  font-weight: 450;
+  cursor: default;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .fd-toast-action:hover {
+    background: #444444;
+  }
+}
+
+.fd-toast :focus-visible {
+  outline: 2px solid var(--color-brand-menu);
+  outline-offset: 1px;
 }

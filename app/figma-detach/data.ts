@@ -90,6 +90,15 @@ export const COMPONENTS: Record<string, Component> = {
       { label: "Size", value: "16" },
     ],
   },
+  tabs: {
+    id: "tabs",
+    name: "Navigation / Tabs / Segmented / Small",
+    library: "orbit",
+    props: [
+      { label: "Items", value: "3" },
+      { label: "Selected", value: "1" },
+    ],
+  },
   logo: {
     id: "logo",
     name: "Logo",
@@ -133,10 +142,11 @@ export const SCENE_NODES: SceneNode[] = [
   { id: "badge", name: "Badge", type: "instance", componentId: "badge", parent: "checkout", x: 289, y: 94, w: 62, h: 20 },
   { id: "card", name: "Order summary", type: "instance", componentId: "card", parent: "checkout", x: 24, y: 140, w: 327, h: 164 },
   { id: "payment", name: "Payment", type: "text", parent: "checkout", x: 24, y: 332, w: 327, h: 20 },
-  { id: "email", name: "Email", type: "instance", componentId: "input", parent: "checkout", x: 24, y: 364, w: 327, h: 66 },
-  { id: "card-number", name: "Card number", type: "instance", componentId: "input", parent: "checkout", x: 24, y: 446, w: 327, h: 66 },
+  { id: "method", name: "Payment method", type: "instance", componentId: "tabs", parent: "checkout", x: 24, y: 364, w: 327, h: 32 },
+  { id: "email", name: "Email", type: "instance", componentId: "input", parent: "checkout", x: 24, y: 412, w: 327, h: 66 },
+  { id: "card-number", name: "Card number", type: "instance", componentId: "input", parent: "checkout", x: 24, y: 494, w: 327, h: 66 },
   { id: "card-icon", name: "Icon", type: "instance", componentId: "icon", parent: "card-number", x: 14, y: 36, w: 16, h: 16 },
-  { id: "name-on-card", name: "Name on card", type: "instance", componentId: "input", parent: "checkout", x: 24, y: 528, w: 327, h: 66 },
+  { id: "name-on-card", name: "Name on card", type: "instance", componentId: "input", parent: "checkout", x: 24, y: 576, w: 327, h: 66 },
   { id: "button", name: "Button", type: "instance", componentId: "button", parent: "checkout", x: 24, y: 716, w: 327, h: 48 },
 ];
 
@@ -151,6 +161,7 @@ export const THIS_WEEK: Record<string, { others: number; top: ReasonId | null }>
   badge: { others: 0, top: null },
   avatar: { others: 3, top: "spacing" },
   icon: { others: 6, top: "missing" },
+  tabs: { others: 2, top: "missing" },
 };
 
 /* ------------------------------------------------------------------------ */

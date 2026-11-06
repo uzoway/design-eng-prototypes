@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { breakdown, formatCount, insertSeries, sortRows, topReason, withSession } from "./analytics.ts";
-import { cleanNote, decide, endOfDay, noteLength, socialLine } from "./asking.ts";
+import { capNote, cleanNote, decide, endOfDay, noteLength, socialLine, truncateMiddle } from "./asking.ts";
 import { STATS } from "./data.ts";
 import { absoluteBox, boundsOf, createScene, describe as describeDetach, detach, detachList, detachSubject } from "./scene.ts";
 
@@ -35,8 +35,8 @@ describe("scene", () => {
   it("adds up parent offsets for page boxes", () => {
     const scene = createScene();
 
-    assert.deepEqual(absoluteBox(scene, "card-icon"), { x: 38, y: 482, w: 16, h: 16 });
-    assert.deepEqual(boundsOf(scene, ["email", "button"]), { x: 24, y: 364, w: 327, h: 400 });
+    assert.deepEqual(absoluteBox(scene, "card-icon"), { x: 38, y: 530, w: 16, h: 16 });
+    assert.deepEqual(boundsOf(scene, ["email", "button"]), { x: 24, y: 412, w: 327, h: 352 });
   });
 });
 
@@ -135,6 +135,16 @@ describe("notes", () => {
     assert.equal(cleanNote("  need a loading state  ", 140), "need a loading state");
     assert.equal(noteLength("👩🏽‍💻 ok"), 4);
     assert.equal(cleanNote("👩🏽‍💻👩🏽‍💻👩🏽‍💻", 2), "👩🏽‍💻👩🏽‍💻");
+  });
+
+  it("caps while typing without trimming", () => {
+    assert.equal(capNote("ab ", 140), "ab ");
+    assert.equal(capNote("abcdef", 4), "abcd");
+  });
+
+  it("truncates long names in the middle", () => {
+    assert.equal(truncateMiddle("Button", 24), "Button");
+    assert.equal(truncateMiddle("Navigation / Tabs / Segmented / Small", 24), "Navigation /…ted / Small");
   });
 
   it("keeps right-to-left text intact", () => {

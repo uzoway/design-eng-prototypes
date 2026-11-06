@@ -287,6 +287,16 @@ function NodeContent({ node }: { node: SceneNode }) {
       );
     case "payment":
       return <span className="o-section">Payment</span>;
+    case "method":
+      return (
+        <span className="o-tabs">
+          <span className="o-tab" data-on="">
+            Card
+          </span>
+          <span className="o-tab">Apple Pay</span>
+          <span className="o-tab">PayPal</span>
+        </span>
+      );
     case "email":
       return <Field label="Email" value="sam.lee@example.com" />;
     case "card-number":

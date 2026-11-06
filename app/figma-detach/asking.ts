@@ -73,6 +73,25 @@ export function cleanNote(text: string, limit: number) {
   return graphemes.slice(0, limit).join("");
 }
 
+/** Caps a note while it's typed, without trimming what's there. */
+export function capNote(text: string, limit: number) {
+  const graphemes = splitGraphemes(text);
+
+  return graphemes.length > limit ? graphemes.slice(0, limit).join("") : text;
+}
+
+/** "Navigation /…ted / Small": keeps both ends, which carry the meaning. */
+export function truncateMiddle(text: string, max: number) {
+  const graphemes = splitGraphemes(text);
+
+  if (graphemes.length <= max) return text;
+
+  const head = Math.ceil((max - 1) / 2);
+  const tail = max - 1 - head;
+
+  return `${graphemes.slice(0, head).join("").trimEnd()}…${graphemes.slice(-tail).join("").trimStart()}`;
+}
+
 export function noteLength(text: string) {
   return splitGraphemes(text).length;
 }
