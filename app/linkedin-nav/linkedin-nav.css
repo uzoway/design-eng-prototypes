@@ -1,0 +1,670 @@
+/*
+ * LinkedIn's top nav. Every value was measured on linkedin.com (Nov 2026,
+ * Chrome, 1710px wide, DPR 2) or read from the owner's screenshots; the
+ * phone bar's from the iOS app at 3×. The font stack is LinkedIn's own.
+ */
+
+[data-ln-page] {
+  --ln-font: system-ui, -apple-system, "system-ui", "Segoe UI", Roboto, Ubuntu, Oxygen, Cantarell, "Fira Sans",
+    "Droid Sans", "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+
+  --ln-page: #f4f2ee;
+  --ln-bar: #fff;
+  --ln-border: rgba(140, 140, 140, 0.2);
+  --ln-rest: rgba(0, 0, 0, 0.75);
+  --ln-strong: rgba(0, 0, 0, 0.9);
+  /*
+   * The selected line is LinkedIn's rgba(0,0,0,.9), pre-blended over the bar
+   * (top pixel) and over the bar's border (bottom pixel, which it covers).
+   * Opaque, so the hover line beneath it disappears instead of darkening it.
+   */
+  --ln-underline-top: rgb(26, 26, 26);
+  --ln-underline-edge: rgb(23, 23, 23);
+  --ln-hover-line: rgba(0, 0, 0, 0.28);
+  --ln-badge: #cb112d;
+  --ln-blue: #0a66c2;
+  --ln-menu-shadow: 0 0 0 1px rgba(140, 140, 140, 0.2), 0 4px 12px rgba(0, 0, 0, 0.12);
+
+  /* The iOS app's bottom bar. Rest is lighter there than on desktop. */
+  --ln-phone-bar: #fff;
+  --ln-phone-hairline: #b2b2b2;
+  --ln-phone-rest: #656565;
+  --ln-phone-selected: #181818;
+  --ln-phone-indicator: #191919;
+
+  /* The demo's own controls, not LinkedIn's. */
+  --ln-control-text: rgba(0, 0, 0, 0.62);
+  --ln-control-border: rgba(0, 0, 0, 0.12);
+  --ln-control-hover: rgba(0, 0, 0, 0.05);
+  --ln-control-on: rgba(0, 0, 0, 0.08);
+  --ln-control-on-text: rgba(0, 0, 0, 0.9);
+
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--ln-page);
+  color: var(--ln-strong);
+  font-family: var(--ln-font);
+}
+
+html[data-theme="dark"] [data-ln-page] {
+  --ln-page: #000;
+  --ln-bar: #1b1f23;
+  --ln-border: rgba(140, 140, 140, 0.25);
+  --ln-rest: rgba(255, 255, 255, 0.75);
+  --ln-strong: rgba(255, 255, 255, 0.9);
+  --ln-underline-top: rgb(232, 233, 233);
+  --ln-underline-edge: rgb(235, 235, 236);
+  --ln-hover-line: rgba(255, 255, 255, 0.3);
+  --ln-blue: #71b7fb;
+  --ln-menu-shadow: 0 0 0 1px rgba(140, 140, 140, 0.25), 0 4px 12px rgba(0, 0, 0, 0.5);
+
+  --ln-phone-bar: #1b1f23;
+  --ln-phone-hairline: #3c4043;
+  --ln-phone-rest: #a6a7ab;
+  --ln-phone-selected: #e9eaec;
+  --ln-phone-indicator: #e9e9e9;
+
+  --ln-control-text: rgba(255, 255, 255, 0.62);
+  --ln-control-border: rgba(255, 255, 255, 0.14);
+  --ln-control-hover: rgba(255, 255, 255, 0.07);
+  --ln-control-on: rgba(255, 255, 255, 0.12);
+  --ln-control-on-text: rgba(255, 255, 255, 0.92);
+}
+
+/* LinkedIn swaps themes instantly; the site's colour tween stays off here. */
+html[data-theme-transitioning="true"] body [data-ln-page] *,
+html[data-theme-transitioning="true"] body [data-ln-page] *::before,
+html[data-theme-transitioning="true"] body [data-ln-page] *::after {
+  transition: none !important;
+}
+
+.ln-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Desktop                                                                    */
+/* -------------------------------------------------------------------------- */
+
+.ln-desktop {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* Centred on whole pixels, so the icons' part seams land on pixel edges. */
+.ln-stage {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(50% - 26px * var(--ln-zoom));
+  top: round(down, 50% - 26px * var(--ln-zoom), 1px);
+}
+
+/* 2× scales the vectors themselves, so they stay crisp in a recording. */
+.ln-zoom {
+  zoom: var(--ln-zoom);
+}
+
+/* The site sets antialiased smoothing; LinkedIn keeps the default, which is heavier. */
+.ln-bar,
+.ln-phone-bar {
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
+}
+
+.ln-bar {
+  box-sizing: border-box;
+  height: 52px;
+  background: var(--ln-bar);
+  border-bottom: 1px solid var(--ln-border);
+}
+
+/* Six 80px items; the nav overlaps the border, as the selected line does on LinkedIn. */
+.ln-nav {
+  position: relative;
+  width: 480px;
+  height: 52px;
+  margin-left: calc(50% - 240px);
+  margin-left: round(down, 50% - 240px, 1px);
+}
+
+.ln-items {
+  display: flex;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ln-li {
+  position: relative;
+  width: 80px;
+}
+
+.ln-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+  width: 80px;
+  height: 52px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--ln-rest);
+  font: 400 12px/15px var(--ln-font);
+  cursor: pointer;
+  transition: color 167ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ln-item:hover,
+.ln-item:focus-visible,
+.ln-item:active,
+.ln-item[aria-current="page"],
+.ln-item[aria-expanded="true"] {
+  color: var(--ln-strong);
+}
+
+.ln-item:focus {
+  outline: none;
+}
+
+/* LinkedIn shows no ring on click; the keyboard gets an inset 2px one. */
+.ln-item:focus-visible {
+  outline: 2px solid var(--ln-strong);
+  outline-offset: -2px;
+  border-radius: 4px;
+}
+
+.ln-icon-box {
+  position: relative;
+  display: block;
+  width: 24px;
+  height: 24px;
+  margin-top: 6px;
+}
+
+.ln-icon {
+  display: block;
+  overflow: visible;
+}
+
+.ln-xfade {
+  transition: opacity 120ms linear;
+}
+
+.ln-label {
+  display: block;
+  height: 16px;
+  white-space: nowrap;
+}
+
+.ln-avatar {
+  display: block;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.ln-me-label {
+  display: flex;
+  align-items: flex-start;
+}
+
+.ln-caret {
+  display: block;
+  flex: none;
+  overflow: visible;
+}
+
+/* The two lines live in the nav, not the items, so a glide is never clipped. */
+.ln-underline,
+.ln-hover-line {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 80px;
+  height: 2px;
+  pointer-events: none;
+}
+
+.ln-hover-line {
+  background: var(--ln-hover-line);
+  opacity: 0;
+}
+
+.ln-underline {
+  background: linear-gradient(var(--ln-underline-top) 0 1px, var(--ln-underline-edge) 1px 2px);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Badges                                                                     */
+/* -------------------------------------------------------------------------- */
+
+.ln-badge {
+  position: absolute;
+  top: -2px;
+  left: 16px;
+  display: block;
+  box-sizing: border-box;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 12px;
+  background: var(--ln-badge);
+  color: #fff;
+  font: 600 12px/16px var(--ln-font);
+  pointer-events: none;
+}
+
+.ln-badge-dot {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #fff;
+}
+
+.ln-badge-window {
+  position: absolute;
+  inset: 0;
+  overflow: clip;
+  border-radius: inherit;
+}
+
+.ln-badge-count {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ln-badge-sizer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 0 4px;
+  white-space: nowrap;
+  visibility: hidden;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Me menu                                                                    */
+/* -------------------------------------------------------------------------- */
+
+.ln-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 2;
+  box-sizing: border-box;
+  width: 264px;
+  padding: 12px 0 8px;
+  border-radius: 8px;
+  background: var(--ln-bar);
+  box-shadow: var(--ln-menu-shadow);
+  transform-origin: top right;
+  text-align: left;
+}
+
+.ln-menu-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+}
+
+.ln-menu-avatar {
+  flex: none;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+}
+
+.ln-menu-name {
+  margin: 0;
+  color: var(--ln-strong);
+  font: 600 16px/20px var(--ln-font);
+}
+
+.ln-menu-headline {
+  margin: 0;
+  color: var(--ln-rest);
+  font: 400 14px/20px var(--ln-font);
+}
+
+.ln-menu-pill {
+  display: block;
+  box-sizing: border-box;
+  width: calc(100% - 24px);
+  height: 24px;
+  margin: 12px 12px 0;
+  padding: 0 12px;
+  border: 1px solid var(--ln-blue);
+  border-radius: 24px;
+  background: none;
+  color: var(--ln-blue);
+  font: 600 14px/20px var(--ln-font);
+  cursor: pointer;
+}
+
+.ln-menu-pill:hover {
+  box-shadow: inset 0 0 0 1px var(--ln-blue);
+}
+
+.ln-menu-rule {
+  margin: 12px 0 4px;
+  border-top: 1px solid var(--ln-border);
+}
+
+.ln-menu-row {
+  display: block;
+  width: 100%;
+  padding: 4px 12px;
+  border: 0;
+  background: none;
+  color: var(--ln-rest);
+  font: 400 14px/20px var(--ln-font);
+  text-align: left;
+  cursor: pointer;
+}
+
+.ln-menu-row:hover {
+  text-decoration: underline;
+}
+
+.ln-menu-pill:focus,
+.ln-menu-row:focus {
+  outline: none;
+}
+
+.ln-menu-pill:focus-visible,
+.ln-menu-row:focus-visible {
+  outline: 2px solid var(--ln-strong);
+  outline-offset: -2px;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Demo controls                                                              */
+/* -------------------------------------------------------------------------- */
+
+.ln-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px 20px;
+  margin-top: 72px;
+  padding: 0 16px;
+  font-family: var(--font-geist-sans), var(--ln-font);
+}
+
+.ln-control-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.ln-control-label {
+  margin-right: 2px;
+  color: var(--ln-control-text);
+  font-size: 13px;
+}
+
+.ln-control {
+  display: inline-grid;
+  place-items: center;
+  box-sizing: border-box;
+  min-width: 32px;
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--ln-control-border);
+  border-radius: 8px;
+  background: none;
+  color: var(--ln-control-text);
+  font: 500 13px/1 var(--font-geist-sans), var(--ln-font);
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .ln-control:hover {
+    background: var(--ln-control-hover);
+    color: var(--ln-control-on-text);
+  }
+}
+
+.ln-control:active {
+  background: var(--ln-control-on);
+}
+
+.ln-control[aria-pressed="true"] {
+  background: var(--ln-control-on);
+  color: var(--ln-control-on-text);
+}
+
+.ln-control:focus {
+  outline: none;
+}
+
+.ln-control:focus-visible {
+  outline: 2px solid var(--ln-control-on-text);
+  outline-offset: 2px;
+}
+
+.ln-theme {
+  width: 30px;
+  padding: 0;
+  visibility: hidden;
+}
+
+.ln-theme[data-ready] {
+  visibility: visible;
+}
+
+.ln-theme > svg {
+  grid-area: 1 / 1;
+}
+
+.ln-footer {
+  position: absolute;
+  right: 0;
+  bottom: 24px;
+  left: 0;
+  margin: 0;
+  padding: 0 16px;
+  color: var(--ln-control-text);
+  font: 400 12px/16px var(--font-geist-sans), var(--ln-font);
+  text-align: center;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Phone: LinkedIn's iOS tab bar                                              */
+/* -------------------------------------------------------------------------- */
+
+.ln-phone {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .ln-desktop {
+    display: none;
+  }
+
+  .ln-phone {
+    display: block;
+  }
+
+  .ln-footer {
+    bottom: calc(56px + env(safe-area-inset-bottom) + 20px);
+  }
+}
+
+.ln-phone-frame {
+  position: relative;
+  max-width: 430px;
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0 auto;
+}
+
+.ln-phone-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  box-sizing: border-box;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 32px 16px calc(56px + env(safe-area-inset-bottom) + 72px);
+}
+
+.ln-phone-content .ln-controls {
+  margin-top: 0;
+}
+
+/* The phone has no Messaging tab and no need for 2×. */
+.ln-phone-content [data-event="message"],
+.ln-phone-content .ln-size {
+  display: none;
+}
+
+.ln-phone-intro {
+  max-width: 300px;
+  margin: 0;
+  color: var(--ln-control-text);
+  font: 400 15px/22px var(--font-geist-sans), var(--ln-font);
+  text-align: center;
+  text-wrap: pretty;
+}
+
+.ln-phone-bar {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1;
+  max-width: 430px;
+  margin: 0 auto;
+  padding-bottom: env(safe-area-inset-bottom);
+  background: var(--ln-phone-bar);
+}
+
+/* One device pixel, whatever the screen's density. */
+.ln-phone-bar::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: var(--ln-phone-hairline);
+  transform-origin: top;
+}
+
+@media (min-resolution: 2dppx) {
+  .ln-phone-bar::before {
+    transform: scaleY(0.5);
+  }
+}
+
+@media (min-resolution: 3dppx) {
+  .ln-phone-bar::before {
+    transform: scaleY(0.3334);
+  }
+}
+
+.ln-phone-items {
+  display: flex;
+  height: 56px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ln-phone-li {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.ln-phone-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  min-height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ln-phone-rest);
+  font: 400 12px/15px var(--ln-font);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.ln-phone-item[aria-current="page"] {
+  color: var(--ln-phone-selected);
+}
+
+.ln-phone-item:focus {
+  outline: none;
+}
+
+.ln-phone-item:focus-visible {
+  outline: 2px solid var(--ln-phone-selected);
+  outline-offset: -2px;
+  border-radius: 4px;
+}
+
+.ln-phone-item .ln-icon-box {
+  margin-top: 6px;
+}
+
+.ln-phone-label {
+  display: block;
+  max-width: 100%;
+  margin-top: 4px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* 73 of each 78pt tab, centred: 2.5pt in from each side. */
+.ln-phone-indicator {
+  position: absolute;
+  top: 0;
+  left: 2.5px;
+  width: calc(20% - 5px);
+  height: 2px;
+  background: var(--ln-phone-indicator);
+  pointer-events: none;
+}
