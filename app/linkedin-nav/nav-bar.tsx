@@ -22,7 +22,8 @@ type NavBarProps = {
   reduced: boolean;
   onSelect: (tab: Tab) => void;
   iconRef: (tab: Tab) => (handle: IconHandle | null) => void;
-  hint: (tab: Tab) => void;
+  hint: (tab: Tab, direction: number) => void;
+  press: (tab: Tab, down: boolean) => void;
 };
 
 /**
@@ -30,7 +31,7 @@ type NavBarProps = {
  * selected line, solid, which only moves on click, and a faint hover line
  * that follows the pointer and keyboard focus between tabs.
  */
-export function NavBar({ state, reduced, onSelect, iconRef, hint }: NavBarProps) {
+export function NavBar({ state, reduced, onSelect, iconRef, hint, press }: NavBarProps) {
   const selectedIndex = TABS.indexOf(state.selected);
 
   const underlineX = useMotionValue(selectedIndex * ITEM_WIDTH);
@@ -41,6 +42,9 @@ export function NavBar({ state, reduced, onSelect, iconRef, hint }: NavBarProps)
 
   const pointerAt = useRef<number | null>(null);
   const focusAt = useRef<number | null>(null);
+  const lastFocus = useRef<number | null>(null);
+  const pressedAt = useRef<number | null>(null);
+  const navRef = useRef<HTMLElement>(null);
   const lineShown = useRef(false);
 
   const [menuOpen, setMenuOpen] = useState(false);
@@ -91,15 +95,47 @@ export function NavBar({ state, reduced, onSelect, iconRef, hint }: NavBarProps)
     if (event.pointerType === "touch") return;
 
     const index = indexOf(event);
+    const box = event.currentTarget.getBoundingClientRect();
+    // Came in from the left half: the pointer is travelling right.
+    const direction = event.clientX < box.left + box.width / 2 ? 1 : -1;
 
     pointerAt.current = index;
     placeLine();
 
     if (index === ME) caretRef.current?.nudge();
-    else hint(TABS[index]);
+    else hint(TABS[index], direction);
+  };
+
+  /*
+   * Pressing sinks the icon and darkens the hover line; letting go pops it
+   * back out. Dragging off before letting go cancels, as a button should,
+   * and the icon comes back without a selection.
+   */
+  const setPressed = (index: number | null) => {
+    pressedAt.current = index;
+    navRef.current?.toggleAttribute("data-pressed", index !== null && index !== ME);
+  };
+
+  const down = (event: PointerEvent<HTMLButtonElement>) => {
+    if (event.button !== 0) return;
+
+    const index = indexOf(event);
+
+    setPressed(index);
+    if (index !== ME) press(TABS[index], true);
+  };
+
+  const up = () => {
+    const index = pressedAt.current;
+
+    if (index === null) return;
+
+    setPressed(null);
+    if (index !== ME) press(TABS[index], false);
   };
 
   const leave = (event: PointerEvent) => {
+    up();
     if (event.pointerType === "touch") return;
 
     pointerAt.current = null;
@@ -110,15 +146,18 @@ export function NavBar({ state, reduced, onSelect, iconRef, hint }: NavBarProps)
     if (!event.currentTarget.matches(":focus-visible")) return;
 
     const index = indexOf(event);
+    // Shift-Tab and arrows back play the hint the other way.
+    const direction = lastFocus.current !== null && index < lastFocus.current ? -1 : 1;
 
     focusAt.current = index;
+    lastFocus.current = index;
     placeLine();
 
     // The pointer's already played the hint if it's resting here.
     if (pointerAt.current === index) return;
 
     if (index === ME) caretRef.current?.nudge();
-    else hint(TABS[index]);
+    else hint(TABS[index], direction);
   };
 
   const blur = () => {
@@ -133,7 +172,7 @@ export function NavBar({ state, reduced, onSelect, iconRef, hint }: NavBarProps)
 
   return (
     <div className="ln-bar">
-      <nav className="ln-nav" aria-label="Primary">
+      <nav ref={navRef} className="ln-nav" aria-label="Primary">
         <ul className="ln-items" onPointerLeave={leave}>
           {TABS.map((tab, index) => {
             const selected = tab === state.selected;
@@ -149,6 +188,10 @@ export function NavBar({ state, reduced, onSelect, iconRef, hint }: NavBarProps)
                   onClick={() => onSelect(tab)}
                   data-index={index}
                   onPointerEnter={enter}
+                  onPointerDown={down}
+                  onPointerUp={up}
+                  onPointerCancel={up}
+                  onPointerLeave={up}
                   onFocus={focus}
                   onBlur={blur}
                 >
@@ -177,6 +220,10 @@ export function NavBar({ state, reduced, onSelect, iconRef, hint }: NavBarProps)
               onClick={() => setMenuOpen((open) => !open)}
               data-index={ME}
               onPointerEnter={enter}
+              onPointerDown={down}
+              onPointerUp={up}
+              onPointerCancel={up}
+              onPointerLeave={up}
               onFocus={focus}
               onBlur={blur}
             >
@@ -197,7 +244,11 @@ export function NavBar({ state, reduced, onSelect, iconRef, hint }: NavBarProps)
         </ul>
 
         {/* Drawn under the selected line, so a click reads as the two merging. */}
-        <motion.span className="ln-hover-line" aria-hidden="true" style={{ transform: hoverTransform, opacity: hoverOpacity }} />
+        <motion.span
+          className="ln-hover-line"
+          aria-hidden="true"
+          style={{ transform: hoverTransform, opacity: hoverOpacity }}
+        />
         <motion.span className="ln-underline" aria-hidden="true" style={{ transform: underlineTransform }} />
       </nav>
     </div>

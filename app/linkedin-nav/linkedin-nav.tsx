@@ -87,9 +87,9 @@ export function LinkedInNav() {
   const select = (tab: Tab) => {
     const previous = selectedRef.current;
 
-    // Already here: a small "yep, you're here".
+    // Already here: Home hops back to the top, the rest give a small "yep, you're here".
     if (tab === previous) {
-      each(tab, (handle) => handle.hint());
+      each(tab, (handle) => handle.reselect());
       return;
     }
 
@@ -110,23 +110,32 @@ export function LinkedInNav() {
     dispatch({ type: "select", tab });
   };
 
-  const hint = (tab: Tab) => {
-    const handle = handles.current.get(`desktop:${tab}`);
-
-    handle?.hint();
+  /** Hover and focus hints only exist on the desktop bar. */
+  const hint = (tab: Tab, direction: number) => {
+    handles.current.get(`desktop:${tab}`)?.hint(direction);
   };
+
+  /** Press feedback goes to the icon under the finger only, not its twin in the other layout. */
+  const press = useCallback(
+    (layout: Layout) => (tab: Tab, down: boolean) => {
+      const handle = handles.current.get(`${layout}:${tab}`);
+
+      if (down) handle?.press();
+      else handle?.release();
+    },
+    [],
+  );
 
   const simulate = (event: Simulated) => {
     const tab = TARGET[event];
 
-    if (event !== "post") each(tab, (handle) => handle.alert());
+    // A new post lands in the feed, so Home stirs; everything else alerts its own tab.
+    each(tab, (handle) => handle.alert());
 
     timers.current.push(window.setTimeout(() => dispatch({ type: "simulate", event }), BADGE_AFTER));
 
     // A trailing no-break space makes a repeat announcement a new string, so it's read again.
-    setAnnouncement((current) =>
-      current === ANNOUNCEMENT[event] ? `${ANNOUNCEMENT[event]} ` : ANNOUNCEMENT[event],
-    );
+    setAnnouncement((current) => (current === ANNOUNCEMENT[event] ? `${ANNOUNCEMENT[event]} ` : ANNOUNCEMENT[event]));
   };
 
   return (
@@ -134,7 +143,14 @@ export function LinkedInNav() {
       <div className="ln-desktop">
         <div className="ln-stage" style={{ "--ln-zoom": zoom } as React.CSSProperties}>
           <div className="ln-zoom">
-            <NavBar state={state} reduced={reduced} onSelect={select} iconRef={iconRef("desktop")} hint={hint} />
+            <NavBar
+              state={state}
+              reduced={reduced}
+              onSelect={select}
+              iconRef={iconRef("desktop")}
+              hint={hint}
+              press={press("desktop")}
+            />
           </div>
           <Controls zoom={zoom} reduced={reduced} onZoom={setZoom} onSimulate={simulate} />
         </div>
@@ -143,10 +159,18 @@ export function LinkedInNav() {
       <div className="ln-phone">
         <div className="ln-phone-frame">
           <div className="ln-phone-content">
-            <p className="ln-phone-intro">Tap a tab to see its icon move, or simulate a notification and watch the bell ring.</p>
+            <p className="ln-phone-intro">
+              Tap a tab to see its icon move, or simulate a notification and watch the bell ring.
+            </p>
             <Controls zoom={1} reduced={reduced} onZoom={setZoom} onSimulate={simulate} />
           </div>
-          <PhoneBar state={state} reduced={reduced} onSelect={select} iconRef={iconRef("phone")} />
+          <PhoneBar
+            state={state}
+            reduced={reduced}
+            onSelect={select}
+            iconRef={iconRef("phone")}
+            press={press("phone")}
+          />
         </div>
       </div>
 

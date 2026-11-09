@@ -13,6 +13,10 @@
   --ln-border: rgba(140, 140, 140, 0.2);
   --ln-rest: rgba(0, 0, 0, 0.75);
   --ln-strong: rgba(0, 0, 0, 0.9);
+  /* The same two colours, split into solid ink and alpha for the icons (see .ln-icon). */
+  --ln-ink: #000;
+  --ln-rest-alpha: 0.75;
+  --ln-strong-alpha: 0.9;
   /*
    * The selected line is LinkedIn's rgba(0,0,0,.9), pre-blended over the bar
    * (top pixel) and over the bar's border (bottom pixel, which it covers).
@@ -53,6 +57,7 @@ html[data-theme="dark"] [data-ln-page] {
   --ln-border: rgba(140, 140, 140, 0.25);
   --ln-rest: rgba(255, 255, 255, 0.75);
   --ln-strong: rgba(255, 255, 255, 0.9);
+  --ln-ink: #fff;
   --ln-underline-top: rgb(232, 233, 233);
   --ln-underline-edge: rgb(235, 235, 236);
   --ln-hover-line: rgba(255, 255, 255, 0.3);
@@ -198,9 +203,29 @@ html[data-theme-transitioning="true"] body [data-ln-page] *::after {
   margin-top: 6px;
 }
 
+/*
+ * An icon is drawn in solid ink and faded as a whole, never in a translucent
+ * colour: while it moves, its halves overlap a hair at each cut, and a
+ * translucent fill would darken there. At rest it's the same colour as the
+ * label, pixel for pixel.
+ */
 .ln-icon {
   display: block;
   overflow: visible;
+}
+
+.ln-item .ln-icon {
+  color: var(--ln-ink);
+  opacity: var(--ln-rest-alpha);
+  transition: opacity 167ms ease;
+}
+
+.ln-item:hover .ln-icon,
+.ln-item:focus-visible .ln-icon,
+.ln-item:active .ln-icon,
+.ln-item[aria-current="page"] .ln-icon,
+.ln-item[aria-expanded="true"] .ln-icon {
+  opacity: var(--ln-strong-alpha);
 }
 
 .ln-xfade {

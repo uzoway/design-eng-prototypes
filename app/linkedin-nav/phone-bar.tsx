@@ -17,6 +17,7 @@ type PhoneBarProps = {
   reduced: boolean;
   onSelect: (tab: Tab) => void;
   iconRef: (tab: Tab) => (handle: IconHandle | null) => void;
+  press: (tab: Tab, down: boolean) => void;
 };
 
 /**
@@ -24,12 +25,27 @@ type PhoneBarProps = {
  * line at the top of the bar, under the hairline. A tap plays the tab's full
  * animation; there's no hover here.
  */
-export function PhoneBar({ state, reduced, onSelect, iconRef }: PhoneBarProps) {
+export function PhoneBar({ state, reduced, onSelect, iconRef, press }: PhoneBarProps) {
   const index = PHONE_TABS.indexOf(state.selected as PhoneTab);
   const position = useMotionValue(Math.max(0, index));
   // Each step is one tab: the indicator's own width plus the 5pt of inset around it.
   const transform = useTransform(position, (value) => `translateX(calc(${value} * (100% + 5px)))`);
   const visible = index >= 0;
+
+  // A finger sinks the icon; lifting it (or sliding off) pops it back.
+  const pressed = useRef<Tab | null>(null);
+  const down = (event: React.PointerEvent<HTMLButtonElement>) => {
+    if (event.button !== 0) return;
+
+    const tab = event.currentTarget.dataset.tab as Tab;
+
+    pressed.current = tab;
+    press(tab, true);
+  };
+  const up = () => {
+    if (pressed.current) press(pressed.current, false);
+    pressed.current = null;
+  };
 
   useEffect(() => {
     if (index < 0) return;
@@ -54,12 +70,22 @@ export function PhoneBar({ state, reduced, onSelect, iconRef }: PhoneBarProps) {
                 aria-current={tab === state.selected ? "page" : undefined}
                 aria-label={tabName(tab, state.counts[tab])}
                 onClick={() => onSelect(tab)}
+                data-tab={tab}
+                onPointerDown={down}
+                onPointerUp={up}
+                onPointerCancel={up}
+                onPointerLeave={up}
               >
                 <span className="ln-icon-box">
                   <NavIcon tab={tab} selected={tab === state.selected} handle={iconRef(tab)} reduced={reduced} />
                   <AnimatePresence initial={false}>
                     {state.counts[tab] > 0 && (
-                      <Badge key="badge" kind={tab === "home" ? "dot" : "count"} count={state.counts[tab]} reduced={reduced} />
+                      <Badge
+                        key="badge"
+                        kind={tab === "home" ? "dot" : "count"}
+                        count={state.counts[tab]}
+                        reduced={reduced}
+                      />
                     )}
                   </AnimatePresence>
                 </span>
@@ -69,11 +95,7 @@ export function PhoneBar({ state, reduced, onSelect, iconRef }: PhoneBarProps) {
           ),
         )}
       </ul>
-      <motion.span
-        className="ln-phone-indicator"
-        aria-hidden="true"
-        style={{ transform, opacity: visible ? 1 : 0 }}
-      />
+      <motion.span className="ln-phone-indicator" aria-hidden="true" style={{ transform, opacity: visible ? 1 : 0 }} />
     </nav>
   );
 }
@@ -95,7 +117,11 @@ function PostButton({ reduced }: { reduced: boolean }) {
     if (reduced) return;
 
     // A quarter turn looks the same at the end, so each tap can add another.
-    animate(turn, Math.round(turn.get() / 90) * 90 + 90, { type: "spring", stiffness: 380, damping: 26 });
+    animate(turn, Math.round(turn.get() / 90) * 90 + 90, {
+      type: "spring",
+      stiffness: 380,
+      damping: 26,
+    });
   };
 
   return (
@@ -107,7 +133,15 @@ function PostButton({ reduced }: { reduced: boolean }) {
       transition={{ type: "spring", stiffness: 600, damping: 30 }}
     >
       <span className="ln-icon-box">
-        <svg className="ln-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true" focusable="false">
+        <svg
+          className="ln-icon"
+          viewBox="0 0 24 24"
+          width="24"
+          height="24"
+          fill="none"
+          aria-hidden="true"
+          focusable="false"
+        >
           <path fill="currentColor" fillRule="evenodd" clipRule="evenodd" d={POST.square} />
           <path ref={plusRef} fill="currentColor" d={POST.plus} />
         </svg>
