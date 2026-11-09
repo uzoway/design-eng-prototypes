@@ -10,6 +10,8 @@ import { LABELS, TABS, tabName, type NavState, type Tab } from "./state";
 /** Every item is 80px wide, edge to edge, as measured on linkedin.com. */
 export const ITEM_WIDTH = 80;
 const ME = TABS.length;
+/** Where linkedin-nav.css swaps to the phone bar. */
+const PHONE_LAYOUT = "(max-width: 640px)";
 
 /** The hover line: snappy, critically damped, retargeted from its current velocity. */
 const HOVER_SPRING = { type: "spring", stiffness: 520, damping: 46 } as const;
@@ -57,6 +59,9 @@ export function NavBar({ state, reduced, onSelect, iconRef, hint, press }: NavBa
   const lineShown = useRef(false);
 
   const [menuOpen, setMenuOpen] = useState(false);
+  // Each opening is a new menu, so one reopened while the last is still
+  // leaving mounts afresh and takes focus, instead of reviving the old one.
+  const [menuSerial, setMenuSerial] = useState(0);
   const meRef = useRef<HTMLButtonElement>(null);
   const caretRef = useRef<CaretHandle>(null);
   const menuId = useId();
@@ -184,6 +189,20 @@ export function NavBar({ state, reduced, onSelect, iconRef, hint, press }: NavBa
     placeLine();
   };
 
+  /* The phone layout has no Me tab, so its menu can't be left open behind it. */
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    const phone = window.matchMedia(PHONE_LAYOUT);
+    const close = () => {
+      if (phone.matches) setMenuOpen(false);
+    };
+
+    phone.addEventListener("change", close);
+
+    return () => phone.removeEventListener("change", close);
+  }, [menuOpen]);
+
   const closeMenu = useCallback((returnFocus: boolean) => {
     setMenuOpen(false);
     if (returnFocus) meRef.current?.focus();
@@ -242,7 +261,10 @@ export function NavBar({ state, reduced, onSelect, iconRef, hint, press }: NavBa
               aria-haspopup="menu"
               aria-expanded={menuOpen}
               aria-controls={menuOpen ? menuId : undefined}
-              onClick={() => setMenuOpen((open) => !open)}
+              onClick={() => {
+                if (!menuOpen) setMenuSerial((serial) => serial + 1);
+                setMenuOpen(!menuOpen);
+              }}
               data-index={ME}
               onPointerEnter={enter}
               onPointerDown={down}
@@ -263,7 +285,9 @@ export function NavBar({ state, reduced, onSelect, iconRef, hint, press }: NavBa
             </button>
 
             <AnimatePresence>
-              {menuOpen && <MeMenu id={menuId} reduced={reduced} triggerRef={meRef} onClose={closeMenu} />}
+              {menuOpen && (
+                <MeMenu key={menuSerial} id={menuId} reduced={reduced} triggerRef={meRef} onClose={closeMenu} />
+              )}
             </AnimatePresence>
           </li>
         </ul>

@@ -255,19 +255,22 @@ html[data-theme-transitioning="true"] body [data-ln-page] *::after {
   height: 24px;
   border-radius: 50%;
   object-fit: cover;
+}
+
+/* Me presses in like the other tabs; its menu is the rest of the answer. */
+.ln-me .ln-icon-box {
   /* Let go: back out with a little overshoot, like the icons. */
   transition: transform 320ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* Me presses in like the other tabs; its menu is the rest of the answer. */
-.ln-item:active .ln-avatar {
+.ln-me .ln-item:active .ln-icon-box {
   transform: scale(0.88);
   transition: transform 120ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ln-avatar,
-  .ln-item:active .ln-avatar {
+  .ln-me .ln-icon-box,
+  .ln-me .ln-item:active .ln-icon-box {
     transform: none;
     transition: none;
   }

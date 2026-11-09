@@ -78,9 +78,21 @@ export function MeMenu({ id, reduced, triggerRef, onClose }: MenuProps) {
       onClose(false);
     };
 
-    document.addEventListener("pointerdown", onPointerDown);
+    // Escape closes it wherever focus is, even if it's still on Me.
+    const onEscape = (event: globalThis.KeyboardEvent) => {
+      if (event.key !== "Escape") return;
 
-    return () => document.removeEventListener("pointerdown", onPointerDown);
+      event.preventDefault();
+      onClose(true);
+    };
+
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onEscape);
+
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onEscape);
+    };
   }, [onClose, triggerRef]);
 
   const onKeyDown = (event: KeyboardEvent) => {
@@ -100,9 +112,6 @@ export function MeMenu({ id, reduced, triggerRef, onClose }: MenuProps) {
         return move(0);
       case "End":
         return move(list.length - 1);
-      case "Escape":
-        event.preventDefault();
-        return onClose(true);
       case "Tab":
         return onClose(false);
     }
