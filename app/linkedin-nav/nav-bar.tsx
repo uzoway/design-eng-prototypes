@@ -14,8 +14,13 @@ const ME = TABS.length;
 /** The hover line: snappy, critically damped, retargeted from its current velocity. */
 const HOVER_SPRING = { type: "spring", stiffness: 520, damping: 46 } as const;
 const HOVER_FADE = { duration: 0.12, ease: "easeOut" } as const;
-/** One underline glides between tabs on LinkedIn's curve, given room to travel. */
-const UNDERLINE_GLIDE = { duration: 0.26, ease: LINKEDIN_EASE };
+/*
+ * The selected line moves on LinkedIn's curve, but not as a rigid bar: its
+ * leading edge sets off for the new tab first and the trailing edge follows,
+ * so it stretches on the way and lands at its own width.
+ */
+const LEAD = { duration: 0.2, ease: LINKEDIN_EASE };
+const TRAIL = { duration: 0.3, ease: LINKEDIN_EASE };
 
 type NavBarProps = {
   state: NavState;
@@ -34,10 +39,14 @@ type NavBarProps = {
 export function NavBar({ state, reduced, onSelect, iconRef, hint, press }: NavBarProps) {
   const selectedIndex = TABS.indexOf(state.selected);
 
-  const underlineX = useMotionValue(selectedIndex * ITEM_WIDTH);
+  const lineLeft = useMotionValue(selectedIndex * ITEM_WIDTH);
+  const lineRight = useMotionValue((selectedIndex + 1) * ITEM_WIDTH);
   const hoverX = useMotionValue(selectedIndex * ITEM_WIDTH);
   const hoverOpacity = useMotionValue(0);
-  const underlineTransform = useTransform(underlineX, (x) => `translateX(${x}px)`);
+  const underlineTransform = useTransform(
+    [lineLeft, lineRight],
+    ([left, right]: number[]) => `translateX(${left}px) scaleX(${(right - left) / ITEM_WIDTH})`,
+  );
   const hoverTransform = useTransform(hoverX, (x) => `translateX(${x}px)`);
 
   const pointerAt = useRef<number | null>(null);
@@ -52,13 +61,23 @@ export function NavBar({ state, reduced, onSelect, iconRef, hint, press }: NavBa
   const caretRef = useRef<CaretHandle>(null);
   const menuId = useId();
 
-  /* The selected line glides on every change; on first load it's already in place. */
+  /* The selected line moves on every change; on first load it's already in place. */
   useEffect(() => {
-    const x = selectedIndex * ITEM_WIDTH;
+    const left = selectedIndex * ITEM_WIDTH;
+    const right = left + ITEM_WIDTH;
 
-    if (reduced) underlineX.jump(x);
-    else animate(underlineX, x, UNDERLINE_GLIDE);
-  }, [selectedIndex, reduced, underlineX]);
+    if (reduced) {
+      lineLeft.jump(left);
+      lineRight.jump(right);
+
+      return;
+    }
+
+    const rightwards = left > lineLeft.get();
+
+    animate(lineLeft, left, rightwards ? TRAIL : LEAD);
+    animate(lineRight, right, rightwards ? LEAD : TRAIL);
+  }, [selectedIndex, reduced, lineLeft, lineRight]);
 
   /*
    * The hover line goes wherever the pointer is, else wherever keyboard
