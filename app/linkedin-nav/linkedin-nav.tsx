@@ -34,6 +34,8 @@ function useReduced() {
 
 /** A simulated event's motion leads; its badge follows a beat later. */
 const BADGE_AFTER = 120;
+/** When Home's hop touches down again. */
+const RESELECT_LANDS = 280;
 
 /**
  * Both layouts are always rendered and CSS picks one, so crossing 640px
@@ -90,6 +92,12 @@ export function LinkedInNav() {
     // Already here: Home hops back to the top, the rest give a small "yep, you're here".
     if (tab === previous) {
       each(tab, (handle) => handle.reselect());
+
+      // Back at the top you've seen what's new, so the badge goes in as the house lands.
+      if (state.counts[tab] > 0) {
+        timers.current.push(window.setTimeout(() => dispatch({ type: "clear", tab }), RESELECT_LANDS));
+      }
+
       return;
     }
 
