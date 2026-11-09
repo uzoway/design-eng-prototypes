@@ -1,7 +1,6 @@
 "use client";
 
-import { useReducedMotion } from "motion/react";
-import { useCallback, useEffect, useReducer, useRef, useState } from "react";
+import { useCallback, useEffect, useReducer, useRef, useState, useSyncExternalStore } from "react";
 import { Controls } from "./controls";
 import type { IconHandle } from "./icons";
 import { NavBar } from "./nav-bar";
@@ -10,6 +9,28 @@ import { ANNOUNCEMENT, INITIAL, navReducer, TARGET, type Simulated, type Tab } f
 import "./linkedin-nav.css";
 
 type Layout = "desktop" | "phone";
+
+const REDUCE = "(prefers-reduced-motion: reduce)";
+
+function subscribeReduced(listener: () => void) {
+  const query = window.matchMedia(REDUCE);
+
+  query.addEventListener("change", listener);
+
+  return () => query.removeEventListener("change", listener);
+}
+
+/*
+ * The server can't know the setting, so it renders the animated icons and
+ * the static ones take over right after hydration, without a mismatch.
+ */
+function useReduced() {
+  return useSyncExternalStore(
+    subscribeReduced,
+    () => window.matchMedia(REDUCE).matches,
+    () => false,
+  );
+}
 
 /** A simulated event's motion leads; its badge follows a beat later. */
 const BADGE_AFTER = 120;
@@ -20,7 +41,7 @@ const BADGE_AFTER = 120;
  * icons, so whichever you see next is already in the right state.
  */
 export function LinkedInNav() {
-  const reduced = useReducedMotion() ?? false;
+  const reduced = useReduced();
   const [state, dispatch] = useReducer(navReducer, INITIAL);
   const [zoom, setZoom] = useState<1 | 2>(1);
   const [announcement, setAnnouncement] = useState("");

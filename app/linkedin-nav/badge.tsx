@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { LINKEDIN_EASE } from "./icons";
 import { formatCount } from "./state";
 
@@ -25,12 +25,15 @@ export function Badge({ kind, count, reduced }: BadgeProps) {
   const sizerRef = useRef<HTMLSpanElement>(null);
   const [width, setWidth] = useState(16);
 
-  // Two digits widen the pill; it eases there instead of jumping.
+  // Two digits widen the pill; it eases there instead of jumping. offsetWidth
+  // ignores the pop's scale, so a count arriving mid-pop measures true.
   useLayoutEffect(() => {
     if (kind !== "count" || !sizerRef.current) return;
 
-    setWidth(Math.max(16, Math.ceil(sizerRef.current.getBoundingClientRect().width)));
+    setWidth(Math.max(16, sizerRef.current.offsetWidth));
   }, [kind, label]);
+
+  const target = useMemo(() => ({ opacity: 1, scale: 1, width }), [width]);
 
   return (
     <motion.span
@@ -38,7 +41,7 @@ export function Badge({ kind, count, reduced }: BadgeProps) {
       data-kind={kind}
       aria-hidden="true"
       initial={reduced ? { opacity: 0, scale: 1, width } : { opacity: 0, scale: 0.3, width }}
-      animate={{ opacity: 1, scale: 1, width }}
+      animate={target}
       exit={
         reduced
           ? { opacity: 0, transition: { duration: 0.15 } }

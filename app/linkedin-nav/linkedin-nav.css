@@ -542,7 +542,13 @@ html[data-theme-transitioning="true"] body [data-ln-page] *::after {
 }
 
 .ln-phone-content .ln-controls {
+  gap: 8px;
   margin-top: 0;
+}
+
+/* The group keeps its name for screen readers; on a phone the buttons say enough. */
+.ln-phone-content .ln-control-label {
+  display: none;
 }
 
 /* The phone has no Messaging tab and no need for 2×. */

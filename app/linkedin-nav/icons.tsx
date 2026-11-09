@@ -159,6 +159,7 @@ export function HouseIcon({ selected, handle }: IconProps) {
   const playback = usePlayback();
 
   const roofRef = useRef<SVGGElement>(null);
+  const roofClipRef = useRef<SVGRectElement>(null);
   const wallsRef = useRef<SVGGElement>(null);
   const outlineRef = useRef<SVGRectElement>(null);
   const fillRef = useRef<SVGRectElement>(null);
@@ -166,6 +167,9 @@ export function HouseIcon({ selected, handle }: IconProps) {
   // The roof rides on the walls, so a squash lowers it too.
   const roof = () => `translate(0 ${round(lift.get() + (1 - squash.get()) * (21 - HOUSE_CUT))})`;
   const walls = () => `translate(0 21) scale(1 ${round(squash.get())}) translate(0 -21)`;
+  // While the walls squash the roof reaches half a unit into them, so the
+  // seam never shows as a hairline. At rest the parts meet exactly.
+  const roofReach = () => String(HOUSE_CUT + 8 + (lift.get() === 0 && squash.get() === 1 ? 0 : 0.5));
   const outlineHeight = () => String(round(water.get() + 8));
   const fillTop = () => String(round(water.get()));
 
@@ -173,6 +177,7 @@ export function HouseIcon({ selected, handle }: IconProps) {
     [lift, squash, water],
     [
       [roofRef, "transform", roof],
+      [roofClipRef, "height", roofReach],
       [wallsRef, "transform", walls],
       [outlineRef, "height", outlineHeight],
       [fillRef, "y", fillTop],
@@ -221,7 +226,9 @@ export function HouseIcon({ selected, handle }: IconProps) {
   return (
     <IconSvg>
       <defs>
-        <Band id={`${id}-roof`} top={-8} bottom={HOUSE_CUT} />
+        <clipPath id={`${id}-roof`}>
+          <rect ref={roofClipRef} x="-8" y="-8" width="40" height={roofReach()} />
+        </clipPath>
         <Band id={`${id}-walls`} top={HOUSE_CUT} bottom={32} />
         <clipPath id={`${id}-outline`}>
           <rect ref={outlineRef} x="-8" y="-8" width="40" height={outlineHeight()} />
@@ -249,59 +256,59 @@ export function HouseIcon({ selected, handle }: IconProps) {
 const PEOPLE_CUT = 14;
 /** The small person's feet, for the lean. */
 const FEET = "18 21";
-/** Where the small person steps to while the gap opens. */
-const STEP = { x: 1, y: 0.5 };
-/** How much the big person grows into the filled composition. */
-const GROW = 0.04;
+/** How far the small person steps out to make room, before settling into the gap. */
+const STEP = { x: 1.25, y: 0.6 };
+/** How much the big person grows as the small one steps away. */
+const GROW = 0.05;
+/** Bodies fill up from the feet: the flood line runs from below them to above their shoulders. */
+const BODY_FEET = 21.5;
+const BODY_SHOULDERS = 11;
 
 export function PeopleIcon({ selected, handle }: IconProps) {
   const id = useSvgId();
   const lean = useMotionValue(0);
-  const step = useMotionValue(selected ? 1 : 0);
+  const step = useMotionValue(0);
   const fill = useMotionValue(selected ? 1 : 0);
   const playback = usePlayback();
 
+  const bigRef = useRef<SVGGElement>(null);
   const smallRef = useRef<SVGGElement>(null);
-  const outlineBigRef = useRef<SVGGElement>(null);
-  const outlineSmallRef = useRef<SVGGElement>(null);
+  const outlineBigRef = useRef<SVGPathElement>(null);
+  const outlineSmallRef = useRef<SVGPathElement>(null);
   const fillBigRef = useRef<SVGGElement>(null);
   const fillSmallRef = useRef<SVGGElement>(null);
   const bigHeadRef = useRef<SVGPathElement>(null);
   const smallHeadRef = useRef<SVGPathElement>(null);
+  const floodRef = useRef<SVGRectElement>(null);
 
-  const small = () => `rotate(${round(lean.get())} ${FEET})`;
-  const grow = (amount: number) => `translate(8.25 21) scale(${round(1 + GROW * amount)}) translate(-8.25 -21)`;
-  const move = (amount: number) => `translate(${round(STEP.x * amount)} ${round(STEP.y * amount)})`;
-  // The outline steps out of the way while the fill steps into its place.
-  const outlineBig = () => grow(step.get());
-  const outlineSmall = () => move(step.get());
-  const fillBig = () => grow(step.get() - 1);
-  const fillSmall = () => move(step.get() - 1);
-  const outlineOpacity = () => String(round(1 - clamp01((fill.get() - 0.3) / 0.7)));
-  const fillOpacity = () => String(round(clamp01(fill.get() / 0.5)));
-  // Heads fill from the middle of each ring.
+  // Outline and fill move together; the step is a there-and-back that ends at rest.
+  const big = () => `translate(8.25 21) scale(${round(1 + GROW * step.get())}) translate(-8.25 -21)`;
+  const small = () =>
+    `translate(${round(STEP.x * step.get())} ${round(STEP.y * step.get())}) rotate(${round(lean.get())} ${FEET})`;
+  // The fill is solid from its first frame: heads grow inside their rings, bodies fill from the feet.
+  const fillOpacity = () => (fill.get() > 0.001 ? "1" : "0");
+  const outlineOpacity = () => String(round(1 - clamp01((fill.get() - 0.6) / 0.4)));
   const head = (cx: number, cy: number) => () => {
-    const scale = round(0.6 + 0.4 * fill.get());
+    const scale = round(0.3 + 0.7 * clamp01(fill.get()));
 
     return `translate(${cx} ${cy}) scale(${scale}) translate(${-cx} ${-cy})`;
   };
   const bigHead = head(8.25, 7);
   const smallHead = head(17.5, 9.75);
+  const floodTop = () => String(round(BODY_FEET - (BODY_FEET - BODY_SHOULDERS) * clamp01(fill.get())));
 
   useBindings(
     [lean, step, fill],
     [
+      [bigRef, "transform", big],
       [smallRef, "transform", small],
-      [outlineBigRef, "transform", outlineBig],
-      [outlineSmallRef, "transform", outlineSmall],
-      [fillBigRef, "transform", fillBig],
-      [fillSmallRef, "transform", fillSmall],
       [outlineBigRef, "opacity", outlineOpacity],
       [outlineSmallRef, "opacity", outlineOpacity],
       [fillBigRef, "opacity", fillOpacity],
       [fillSmallRef, "opacity", fillOpacity],
       [bigHeadRef, "transform", bigHead],
       [smallHeadRef, "transform", smallHead],
+      [floodRef, "y", floodTop],
     ],
   );
 
@@ -318,9 +325,13 @@ export function PeopleIcon({ selected, handle }: IconProps) {
 
       playback.hold(0.5);
       animate(lean, 0, SETTLE);
-      // An underdamped spring, so the gap opens a little too far and settles.
-      animate(step, 1, { type: "spring", stiffness: 420, damping: 20 });
-      animate(fill, 1, { delay: 0.04, duration: 0.26, ease: LINKEDIN_EASE }).then(() => {
+      // Out to make room, a touch too far back, then still.
+      animate(step, [step.get(), 1, -0.12, 0], {
+        duration: 0.5,
+        times: [0, 0.32, 0.68, 1],
+        ease: ["easeOut", "easeInOut", "easeInOut"],
+      });
+      animate(fill, 1, { delay: 0.04, duration: 0.24, ease: LINKEDIN_EASE }).then(() => {
         if (playback.current(run)) onFilled?.();
       });
     },
@@ -345,28 +356,39 @@ export function PeopleIcon({ selected, handle }: IconProps) {
         <clipPath id={`${id}-small`}>
           <rect x={PEOPLE_CUT} y="-8" width="40" height="40" />
         </clipPath>
+        <clipPath id={`${id}-flood`}>
+          <rect ref={floodRef} x="-8" y={floodTop()} width="40" height="40" />
+        </clipPath>
       </defs>
 
-      <g ref={outlineBigRef} transform={outlineBig()} opacity={outlineOpacity()}>
-        <path fill="currentColor" fillRule="evenodd" clipRule="evenodd" d={PEOPLE.outline} clipPath={`url(#${id}-big)`} />
-      </g>
-      <g ref={fillBigRef} transform={fillBig()} opacity={fillOpacity()}>
-        <path fill="currentColor" d={PEOPLE.fillBigBody} />
-        <path ref={bigHeadRef} fill="currentColor" d={PEOPLE.fillBigHead} transform={bigHead()} />
+      <g ref={bigRef} transform={big()}>
+        <path
+          ref={outlineBigRef}
+          fill="currentColor"
+          fillRule="evenodd"
+          clipRule="evenodd"
+          d={PEOPLE.outline}
+          clipPath={`url(#${id}-big)`}
+          opacity={outlineOpacity()}
+        />
+        <g ref={fillBigRef} opacity={fillOpacity()}>
+          <path fill="currentColor" d={PEOPLE.fillBigBody} clipPath={`url(#${id}-flood)`} />
+          <path ref={bigHeadRef} fill="currentColor" d={PEOPLE.fillBigHead} transform={bigHead()} />
+        </g>
       </g>
 
       <g ref={smallRef} transform={small()}>
-        <g ref={outlineSmallRef} transform={outlineSmall()} opacity={outlineOpacity()}>
-          <path
-            fill="currentColor"
-            fillRule="evenodd"
-            clipRule="evenodd"
-            d={PEOPLE.outline}
-            clipPath={`url(#${id}-small)`}
-          />
-        </g>
-        <g ref={fillSmallRef} transform={fillSmall()} opacity={fillOpacity()}>
-          <path fill="currentColor" d={PEOPLE.fillSmallBody} />
+        <path
+          ref={outlineSmallRef}
+          fill="currentColor"
+          fillRule="evenodd"
+          clipRule="evenodd"
+          d={PEOPLE.outline}
+          clipPath={`url(#${id}-small)`}
+          opacity={outlineOpacity()}
+        />
+        <g ref={fillSmallRef} opacity={fillOpacity()}>
+          <path fill="currentColor" d={PEOPLE.fillSmallBody} clipPath={`url(#${id}-flood)`} />
           <path ref={smallHeadRef} fill="currentColor" d={PEOPLE.fillSmallHead} transform={smallHead()} />
         </g>
       </g>
@@ -507,9 +529,9 @@ export function BriefcaseIcon({ selected, handle }: IconProps) {
 
 /** The bubble's tail, where the pop grows from. */
 const TAIL = { x: 10.25, y: 20.95 };
-/** The fill grows out from the middle of the bubble. */
-const BUBBLE_CENTER = { x: 12, y: 9.75 };
-const BUBBLE_FULL = 13;
+/** The fill sweeps out from the tail, where the pop grows from too. */
+const BUBBLE_CENTER = TAIL;
+const BUBBLE_FULL = 21;
 const DOT_X = [8, 12, 16];
 
 export function MessageIcon({ selected, handle }: IconProps) {
@@ -589,7 +611,7 @@ export function MessageIcon({ selected, handle }: IconProps) {
       playback.hold(0.44);
       animate(pop, [pop.get(), 0.92, 1.04, 1], { duration: 0.4, times: [0, 0.25, 0.6, 1], ease: ["easeOut", "easeOut", "easeInOut"] });
       wave(0.08, 0.22);
-      animate(reveal, BUBBLE_FULL, { delay: 0.06, duration: 0.22, ease: LINKEDIN_EASE }).then(() => {
+      animate(reveal, BUBBLE_FULL, { delay: 0.04, duration: 0.24, ease: LINKEDIN_EASE }).then(() => {
         if (playback.current(run)) onFilled?.();
       });
     },
