@@ -114,14 +114,15 @@ export function MeMenu({ id, reduced, triggerRef, onClose }: MenuProps) {
       id={id}
       className="ln-menu"
       role="menu"
-      aria-label="Me"
+      aria-label="Uzo Okafor"
       onKeyDown={onKeyDown}
       initial={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.97, y: -4 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.97, y: -4, transition: { duration: 0.1, ease: "easeOut" } }}
       transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
     >
-      <div className="ln-menu-head">
+      {/* A menu holds only its items; the header is the menu's name instead. */}
+      <div className="ln-menu-head" aria-hidden="true">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img className="ln-menu-avatar" src="/linkedin-nav/me.jpg" width="56" height="56" alt="" />
         <div>
