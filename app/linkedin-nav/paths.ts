@@ -20,8 +20,7 @@ export const PEOPLE = {
     "M8.25 2.5a4.5 4.5 0 0 1 2.69 8.107 6.27 6.27 0 0 1 3.093 3.273 4.5 4.5 0 0 1 1.163-.996 3.5 3.5 0 1 1 4.606 0A4.5 4.5 0 0 1 22 16.75V21H2v-4.75a6.250 6.25 0 0 1 3.559-5.643A4.5 4.5 0 0 1 8.25 2.5m0 9a4.75 4.75 0 0 0-4.75 4.75v3.25H13v-3.25a4.75 4.75 0 0 0-4.75-4.75m9.25 2.25a3 3 0 0 0-3 3v2.75h6v-2.75a3 3 0 0 0-3-3m0-5.5a2 2 0 1 0 0 4 2 2 0 0 0 0-4M8.25 4a3 3 0 1 0 0 6 3 3 0 0 0 0-6",
   /* The shipped fill is one path of four separate shapes. */
   fillBigBody: "M8.25 11.75A6.25 6.25 0 0 1 14.5 18v3H2v-3a6.25 6.25 0 0 1 6.25-6.25",
-  fillSmallBody:
-    "M17.499 13.75a4.5 4.5 0 0 1 4.5 4.5V21h-6v-3c0-1.29-.317-2.504-.874-3.573a4.5 4.5 0 0 1 2.374-.677",
+  fillSmallBody: "M17.499 13.75a4.5 4.5 0 0 1 4.5 4.5V21h-6v-3c0-1.29-.317-2.504-.874-3.573a4.5 4.5 0 0 1 2.374-.677",
   fillSmallHead: "M17.5 6.5a3.25 3.25 0 1 1 0 6.5 3.25 3.25 0 0 1 0-6.5",
   fillBigHead: "M8.25 3a4 4 0 1 1 0 8 4 4 0 0 1 0-8",
 };
@@ -62,6 +61,14 @@ export const MESSAGE_FILL = `${MESSAGE.fillContour}${MESSAGE.outlineDots}`;
 export const BELL = {
   outline:
     "M12 2.5a6.75 6.75 0 0 1 6.75 6.75v2.365a4.4 4.4 0 0 0 1.29 3.114l.96.96V18h-5.259a3.75 3.75 0 0 1-7.482 0H3v-2.31l.96-.961a4.4 4.4 0 0 0 1.29-3.114V9.25A6.75 6.75 0 0 1 12 2.5M9.765 18a2.25 2.25 0 0 0 4.47 0zM12 4a5.25 5.25 0 0 0-5.250 5.25v2.365a5.9 5.9 0 0 1-1.729 4.174l-.521.522v.189h15v-.19l-.521-.52a5.9 5.9 0 0 1-1.729-4.175V9.25C17.25 6.350 14.9 4 12 4",
+  /**
+   * The outline's clapper on its own: the ring below the rim, cut from the
+   * same arcs. Drawn as a path rather than as the outline clipped below the
+   * rim, because the rim's bottom edge sits exactly on that cut, and once the
+   * clapper swings at an angle the edge and the clip each antialias the same
+   * pixels and leave a faint copy of the rim trailing behind.
+   */
+  outlineClapper: "M15.741 18a3.75 3.75 0 0 1-7.482 0zM9.765 18a2.25 2.25 0 0 0 4.47 0z",
   fillClapper: "M15.675 18.5a3.751 3.751 0 0 1-7.35 0z",
   fillBody:
     "M12 2.5A6.5 6.5 0 0 1 18.5 9v2.418a3.98 3.98 0 0 0 1.357 2.992l.887.775.256.225V17H3v-1.59l.256-.225.887-.775A3.98 3.98 0 0 0 5.5 11.418V9A6.5 6.5 0 0 1 12 2.5",

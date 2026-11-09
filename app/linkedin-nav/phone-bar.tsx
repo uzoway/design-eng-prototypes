@@ -84,6 +84,7 @@ export function PhoneBar({ state, reduced, onSelect, iconRef, press }: PhoneBarP
                         key="badge"
                         kind={tab === "home" ? "dot" : "count"}
                         count={state.counts[tab]}
+                        pulse={state.pulses[tab]}
                         reduced={reduced}
                       />
                     )}

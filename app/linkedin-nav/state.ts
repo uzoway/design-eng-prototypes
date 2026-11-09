@@ -34,17 +34,18 @@ export const ANNOUNCEMENT: Record<Simulated, string> = {
 export type NavState = {
   selected: Tab;
   counts: Record<Tab, number>;
+  /** One more for every event a tab is flagged for, so a badge can bump even when its count can't change. */
+  pulses: Record<Tab, number>;
 };
 
 export type NavAction =
-  | { type: "select"; tab: Tab }
-  | { type: "clear"; tab: Tab }
-  | { type: "simulate"; event: Simulated };
+  { type: "select"; tab: Tab } | { type: "clear"; tab: Tab } | { type: "simulate"; event: Simulated };
 
 /** As the owner's screenshot: Home selected, Home's dot showing, nothing else. */
 export const INITIAL: NavState = {
   selected: "home",
   counts: { home: 1, network: 0, jobs: 0, messaging: 0, notifications: 0 },
+  pulses: { home: 0, network: 0, jobs: 0, messaging: 0, notifications: 0 },
 };
 
 export function navReducer(state: NavState, action: NavAction): NavState {
@@ -67,7 +68,11 @@ export function navReducer(state: NavState, action: NavAction): NavState {
       // Home shows a dot, never a number, so it only needs to be on.
       const next = tab === "home" ? 1 : state.counts[tab] + 1;
 
-      return { ...state, counts: { ...state.counts, [tab]: next } };
+      return {
+        ...state,
+        counts: { ...state.counts, [tab]: next },
+        pulses: { ...state.pulses, [tab]: state.pulses[tab] + 1 },
+      };
     }
   }
 }

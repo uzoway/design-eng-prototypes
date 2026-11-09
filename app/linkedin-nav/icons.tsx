@@ -996,7 +996,6 @@ export function BellIcon({ selected, handle }: IconProps) {
       />
       <g clipPath={`url(#${id}-fill)`}>
         <path fill="currentColor" d={BELL.fillBody} />
-        <path fill="currentColor" d={BELL.fillClapper} />
       </g>
     </g>
   );
@@ -1007,7 +1006,6 @@ export function BellIcon({ selected, handle }: IconProps) {
         <clipPath id={`${id}-bell`}>
           <rect ref={bellClipRef} x="-8" y="-8" width="40" height={bellReach()} />
         </clipPath>
-        <Band id={`${id}-clapper`} top={CLAPPER_CUT} bottom={32} />
         <clipPath id={`${id}-outline`}>
           <rect ref={outlineRef} x="-8" y={outlineTop()} width="40" height="48" />
         </clipPath>
@@ -1017,7 +1015,14 @@ export function BellIcon({ selected, handle }: IconProps) {
       </defs>
 
       <g ref={clapperRef} transform={clapperTransform()}>
-        {layers(`${id}-clapper`)}
+        <path
+          fill="currentColor"
+          fillRule="evenodd"
+          clipRule="evenodd"
+          d={BELL.outlineClapper}
+          clipPath={`url(#${id}-outline)`}
+        />
+        <path fill="currentColor" d={BELL.fillClapper} clipPath={`url(#${id}-fill)`} />
       </g>
       <g ref={bellRef} transform={bell()}>
         {layers(`${id}-bell`)}

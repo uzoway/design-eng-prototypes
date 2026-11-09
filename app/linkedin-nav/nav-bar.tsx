@@ -199,7 +199,13 @@ export function NavBar({ state, reduced, onSelect, iconRef, hint, press }: NavBa
                     <NavIcon tab={tab} selected={selected} handle={iconRef(tab)} reduced={reduced} />
                     <AnimatePresence initial={false}>
                       {count > 0 && (
-                        <Badge key="badge" kind={tab === "home" ? "dot" : "count"} count={count} reduced={reduced} />
+                        <Badge
+                          key="badge"
+                          kind={tab === "home" ? "dot" : "count"}
+                          count={count}
+                          pulse={state.pulses[tab]}
+                          reduced={reduced}
+                        />
                       )}
                     </AnimatePresence>
                   </span>

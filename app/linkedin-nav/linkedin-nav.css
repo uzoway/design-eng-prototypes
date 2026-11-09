@@ -281,10 +281,17 @@ html[data-theme-transitioning="true"] body [data-ln-page] *::after {
 /* Badges                                                                     */
 /* -------------------------------------------------------------------------- */
 
-.ln-badge {
+/* Placed by the slot, which also carries the badge in and out of its icon. */
+.ln-badge-slot {
   position: absolute;
   top: -2px;
   left: 16px;
+  display: block;
+  pointer-events: none;
+}
+
+.ln-badge {
+  position: relative;
   display: block;
   box-sizing: border-box;
   min-width: 16px;
@@ -306,11 +313,16 @@ html[data-theme-transitioning="true"] body [data-ln-page] *::after {
   background: #fff;
 }
 
+/*
+ * The digits roll on their own layers; a clip-path holds them inside the
+ * pill even while it bumps, where overflow with a radius let them show
+ * above and below it in both engines.
+ */
 .ln-badge-window {
   position: absolute;
   inset: 0;
   overflow: clip;
-  border-radius: inherit;
+  clip-path: inset(0 round 8px);
 }
 
 .ln-badge-count {

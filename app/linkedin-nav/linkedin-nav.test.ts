@@ -53,6 +53,8 @@ describe("navReducer", () => {
     state = navReducer(state, { type: "simulate", event: "post" });
 
     assert.equal(state.counts.home, 1);
+    // The dot can't change, so each post still pulses it.
+    assert.equal(state.pulses.home, 2);
   });
 
   it("doesn't badge the tab you're already on", () => {
