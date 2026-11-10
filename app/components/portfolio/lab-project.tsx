@@ -277,8 +277,7 @@ function PrototypeVideo({ slug, title }: PrototypeVideoProps) {
 
 type LabProjectProps = {
   prototype: Prototype;
-  // The prototype's place in the full, newest-first list, so its number is
-  // the same wherever the card appears.
+  // The card's place in the list it's shown in, counted from 0.
   index: number;
 };
 

@@ -7,8 +7,8 @@ export type Prototype = {
   featured: boolean;
 };
 
-// Newest first. A prototype's number comes from its place in this list, so
-// it matches on the homepage and on /lab.
+// The order on /lab, newest first, except where a piece is placed by hand.
+// The homepage shows the featured ones, numbered 01–06 in this order.
 export const prototypes: Prototype[] = [
   {
     slug: "time-away",
@@ -16,6 +16,14 @@ export const prototypes: Prototype[] = [
     description:
       "A GitHub concept that lets you drag across the quiet weeks in your contribution graph and mark them as time away, with a short note on why.",
     disciplines: ["Product UI", "Interaction", "Accessibility"],
+    featured: true,
+  },
+  {
+    slug: "figma-detach",
+    title: "Figma detach reasons",
+    description:
+      "A Figma concept that asks why when you detach a library component, then shows the design system team those reasons, grouped by component, in library analytics.",
+    disciplines: ["Product UI", "Design systems", "Accessibility"],
     featured: true,
   },
   {
@@ -66,7 +74,7 @@ export const prototypes: Prototype[] = [
     description:
       "A file upload that stays clear and recoverable through slow networks, offline pauses, and failed transfers, with motion tuned to every state change.",
     disciplines: ["Interaction", "Motion"],
-    featured: true,
+    featured: false,
   },
   {
     slug: "unified-connection",

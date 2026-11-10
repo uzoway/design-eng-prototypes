@@ -60,6 +60,11 @@ const websites = [
   },
 ];
 
+// Numbered 01–06 here. On /lab every prototype is numbered in the full list.
+const featuredPrototypes = prototypes.filter(function isFeatured(prototype) {
+  return prototype.featured;
+});
+
 const techStack = [
   "TypeScript",
   "React / Next.js",
@@ -303,11 +308,7 @@ export default function Home() {
           </div>
 
           <div className="grid gap-x-6 gap-y-14 md:grid-cols-2">
-            {prototypes.map(function renderPrototype(prototype, index) {
-              if (!prototype.featured) {
-                return null;
-              }
-
+            {featuredPrototypes.map(function renderPrototype(prototype, index) {
               return (
                 <LabProject
                   key={prototype.slug}
