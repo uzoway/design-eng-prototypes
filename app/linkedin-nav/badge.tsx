@@ -2,7 +2,6 @@
 
 import { animate, AnimatePresence, motion, useMotionValue } from "motion/react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { LINKEDIN_EASE } from "./icons";
 import { formatCount } from "./state";
 
 type BadgeProps = {
@@ -13,10 +12,21 @@ type BadgeProps = {
   reduced: boolean;
 };
 
-/** A pop with a little overshoot. */
-const POP = { type: "spring", stiffness: 640, damping: 24 } as const;
 /** Strong ease-out: quick to react, soft to land. */
 const EASE_OUT: [number, number, number, number] = [0.23, 1, 0.32, 1];
+/** Arriving: it travels out of the icon on a plain ease-out and lands without drifting past its spot. */
+const TRAVEL = { duration: 0.22, ease: EASE_OUT };
+/** Its size alone gets a small overshoot, so it pops rather than wobbles. */
+const POP = { type: "spring", duration: 0.3, bounce: 0.3 } as const;
+/**
+ * Another event knocks the pill outwards from wherever it is: a spring
+ * kicked with velocity, so events in quick succession build on each other
+ * instead of restarting a keyframe. Peaks about 10% bigger, back in ~150ms.
+ */
+const KNOCK = { type: "spring", stiffness: 600, damping: 28, velocity: 5 } as const;
+const KNOCK_PEAK = 1.1;
+/** A new number rolls in; it's a response to the event, so it moves on arrival, not after a wind-up. */
+const ROLL = { duration: 0.2, ease: EASE_OUT };
 
 /*
  * The badge belongs to its icon, so it comes out of the icon and goes back
@@ -54,7 +64,13 @@ export function Badge({ kind, count, pulse, reduced }: BadgeProps) {
     if (pulse === seenPulse.current) return;
 
     seenPulse.current = pulse;
-    if (!reduced) animate(bump, [bump.get(), 1.18, 1], { duration: 0.3, times: [0, 0.35, 1], ease: EASE_OUT });
+    // Kick only by the room left below one knock's peak, so a burst keeps
+    // the pill swollen instead of pumping it ever bigger.
+    if (!reduced) {
+      const room = Math.min(Math.max((KNOCK_PEAK - bump.get()) / (KNOCK_PEAK - 1), 0), 1.2);
+
+      animate(bump, 1, { ...KNOCK, velocity: bump.getVelocity() * 0.5 + KNOCK.velocity * room });
+    }
   }, [pulse, reduced, bump]);
 
   const pill = useMemo(() => ({ width }), [width]);
@@ -78,8 +94,10 @@ export function Badge({ kind, count, pulse, reduced }: BadgeProps) {
             }
       }
       transition={{
-        default: POP,
-        opacity: { duration: reduced ? 0.15 : 0.08 },
+        x: TRAVEL,
+        y: TRAVEL,
+        scale: POP,
+        opacity: { duration: reduced ? 0.15 : 0.1, ease: EASE_OUT },
       }}
     >
       <motion.span
@@ -88,7 +106,8 @@ export function Badge({ kind, count, pulse, reduced }: BadgeProps) {
         style={{ scale: bump }}
         initial={pill}
         animate={pill}
-        transition={{ width: { duration: reduced ? 0 : 0.2, ease: LINKEDIN_EASE } }}
+        // Widens with the roll that needs the room, on the same curve.
+        transition={{ width: reduced ? { duration: 0 } : ROLL }}
       >
         {kind === "dot" ? (
           <motion.span
@@ -108,8 +127,13 @@ export function Badge({ kind, count, pulse, reduced }: BadgeProps) {
                 className="ln-badge-count"
                 initial={reduced ? { opacity: 0, y: "0%" } : { y: "100%" }}
                 animate={{ opacity: 1, y: "0%" }}
-                exit={reduced ? { opacity: 0, y: "0%" } : { y: "-100%" }}
-                transition={{ duration: reduced ? 0.12 : 0.2, ease: LINKEDIN_EASE }}
+                // The old number also fades as it leaves, so two half-digits never share the pill for long.
+                exit={
+                  reduced
+                    ? { opacity: 0, y: "0%" }
+                    : { y: "-100%", opacity: 0, transition: { ...ROLL, opacity: { duration: 0.1, ease: EASE_OUT } } }
+                }
+                transition={reduced ? { duration: 0.12, ease: EASE_OUT } : ROLL}
               >
                 {label}
               </motion.span>
