@@ -9,7 +9,42 @@ import { SiteFooter } from "./components/portfolio/site-footer";
 import { SiteHeader } from "./components/portfolio/site-header";
 import { prototypes } from "./lab/prototypes";
 
-const websites = [
+type Studio = {
+  name: string;
+  href: string;
+};
+
+const BUNSEN: Studio = {
+  name: "Bunsen Studio",
+  href: "https://www.bunsenstudio.com/",
+};
+
+const THINKSEB: Studio = {
+  name: "ThinkSeb",
+  href: "https://thinkseb.com/",
+};
+
+const AVENUE_WEST: Studio = {
+  name: "Avenue West",
+  href: "https://www.avenuewest.design/",
+};
+
+type Website = {
+  slug: string;
+  href: string;
+  title: string;
+  description: string;
+  disciplines: string[];
+  // Who I made it with and what they did. I handled the development on all of them.
+  credit: {
+    studio: Studio;
+    theirWork: string;
+  };
+  // Kept here but not shown on the site.
+  draft?: boolean;
+};
+
+const websites: Website[] = [
   {
     slug: "inductive-bio",
     href: "https://inductive.bio/",
@@ -17,6 +52,10 @@ const websites = [
     description:
       "A science-led website bringing product, research, news, and technical content into one clear system.",
     disciplines: ["Web development", "Biotech"],
+    credit: {
+      studio: BUNSEN,
+      theirWork: "Design and motion",
+    },
   },
   {
     slug: "oun-homes",
@@ -25,14 +64,22 @@ const websites = [
     description:
       "A product marketing site for an AI real estate platform, turning a complex transaction workflow into a focused story.",
     disciplines: ["Product marketing", "Proptech"],
+    credit: {
+      studio: THINKSEB,
+      theirWork: "Design",
+    },
   },
   {
-    slug: "hyperspectral-ai",
-    href: "https://www.hyperspectral.ai/",
-    title: "HyperSpectral AI",
+    slug: "numenos",
+    href: "https://www.numenos.ai/",
+    title: "Numenos",
     description:
-      "An AI and life sciences site built around spectral intelligence, layered visuals, and technical storytelling.",
-    disciplines: ["Interaction", "AI / Life sciences"],
+      "A site for a frontier AI lab, walking through how it models patient biology in three steps, told with scientific illustration and scroll-led motion.",
+    disciplines: ["Interaction", "AI / Biotech"],
+    credit: {
+      studio: BUNSEN,
+      theirWork: "Design and motion",
+    },
   },
   {
     slug: "genyro",
@@ -41,6 +88,11 @@ const websites = [
     description:
       "A biotech site that explains programmable DNA construction through structured storytelling and restrained motion.",
     disciplines: ["Interaction", "Biotech"],
+    credit: {
+      studio: BUNSEN,
+      theirWork: "Design and motion",
+    },
+    draft: true,
   },
   {
     slug: "mailata-family-foundation",
@@ -49,6 +101,10 @@ const websites = [
     description:
       "A story-led nonprofit site bringing the foundation's mission, programmes, and community work together.",
     disciplines: ["Storytelling", "Nonprofit"],
+    credit: {
+      studio: AVENUE_WEST,
+      theirWork: "Design and photography",
+    },
   },
   {
     slug: "dti-global",
@@ -57,8 +113,21 @@ const websites = [
     description:
       "A CMS-driven manufacturing site organizing dense technical content for automotive tooling customers.",
     disciplines: ["Web systems", "Automotive"],
+    credit: {
+      studio: THINKSEB,
+      theirWork: "Design",
+    },
   },
 ];
+
+const publishedWork = websites.filter(function isPublished(project) {
+  return !project.draft;
+});
+
+// The first three show straight away; the rest open with "Show more".
+const primaryWork = publishedWork.slice(0, 3);
+
+const additionalWork = publishedWork.slice(3);
 
 // Numbered 01–06 here. On /lab every prototype is numbered in the full list.
 const featuredPrototypes = prototypes.filter(function isFeatured(prototype) {
@@ -79,9 +148,11 @@ const techStack = [
 type ProjectImageProps = {
   slug: string;
   title: string;
+  // The first cover is in view when the page opens, so it shouldn't wait to lazy-load.
+  priority?: boolean;
 };
 
-function ProjectImage({ slug, title }: ProjectImageProps) {
+function ProjectImage({ slug, title, priority = false }: ProjectImageProps) {
   const [failed, setFailed] = useState(false);
 
   const attachImage = useCallback(function attachImage(
@@ -101,7 +172,8 @@ function ProjectImage({ slug, title }: ProjectImageProps) {
           ref={attachImage}
           src={`/portfolio/work/${slug}/cover.webp`}
           alt={`${title} website preview`}
-          loading="lazy"
+          loading={priority ? "eager" : "lazy"}
+          fetchPriority={priority ? "high" : "auto"}
           decoding="async"
           onError={function handleError() {
             setFailed(true);
@@ -116,20 +188,22 @@ function ProjectImage({ slug, title }: ProjectImageProps) {
 }
 
 type WorkProjectProps = {
-  project: (typeof websites)[number];
+  project: Website;
   index: number;
 };
 
 function WorkProject({ project, index }: WorkProjectProps) {
   return (
     <article className="border-t border-black/[0.07] py-10 first:border-t-0 first:pt-0 sm:py-14">
-      <a
-        href={project.href}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="group block rounded-[10px] sm:rounded-[16px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-5 focus-visible:ring-offset-[#f4f4f1]"
-      >
-        <ProjectImage slug={project.slug} title={project.title} />
+      {/* The title's link stretches over the whole card, so the credit can
+          hold its own link (one link can't sit inside another) and still
+          read straight after the description. */}
+      <div className="group relative">
+        <ProjectImage
+          slug={project.slug}
+          title={project.title}
+          priority={index === 0}
+        />
 
         <div className="mt-4 grid gap-4 sm:grid-cols-[1fr_auto] sm:items-start">
           <div>
@@ -142,18 +216,40 @@ function WorkProject({ project, index }: WorkProjectProps) {
               </span>
 
               <h3 className="text-[16px] font-medium tracking-[-0.025em] text-[#111]">
-                {project.title}
+                <a
+                  href={project.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="after:absolute after:-inset-[5px] after:rounded-[15px] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-black sm:after:rounded-[21px]"
+                >
+                  {project.title}
+                  <span className="sr-only"> (opens in a new tab)</span>
+                </a>
               </h3>
             </div>
 
             <p className="ml-[29px] mt-2 max-w-[610px] text-[13px] leading-[1.65] text-[#5f5f5b]">
               {project.description}
             </p>
+
+            <p className="relative z-10 ml-[29px] mt-2 max-w-[610px] text-[12px] leading-[1.65] text-[#686864]">
+              {project.credit.theirWork} by{" "}
+              <a
+                href={project.credit.studio.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="-mx-[3px] rounded-[4px] px-[3px] font-medium text-[#3b3b38] underline decoration-black/25 underline-offset-[3px] transition-[text-decoration-color] duration-200 hover:decoration-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black motion-reduce:transition-none"
+              >
+                {project.credit.studio.name}
+                <span className="sr-only"> (opens in a new tab)</span>
+              </a>
+              . I handled the development.
+            </p>
           </div>
 
           <Metadata disciplines={project.disciplines} />
         </div>
-      </a>
+      </div>
     </article>
   );
 }
@@ -162,10 +258,6 @@ export default function Home() {
   const reducedMotion = Boolean(useReducedMotion());
 
   const [showAllWork, setShowAllWork] = useState(false);
-
-  const primaryWork = websites.slice(0, 3);
-
-  const additionalWork = websites.slice(3);
 
   return (
     <main className="min-h-screen bg-[#f4f4f1] font-sans text-[#111] selection:bg-black selection:text-white">
@@ -202,7 +294,9 @@ export default function Home() {
               Selected Work
             </h2>
 
-            <span className="text-[11px] text-[#686864]">6 projects</span>
+            <span className="text-[11px] text-[#686864]">
+              {publishedWork.length} projects
+            </span>
           </div>
 
           <div>
@@ -263,7 +357,7 @@ export default function Home() {
                       <WorkProject
                         key={project.slug}
                         project={project}
-                        index={index + 3}
+                        index={index + primaryWork.length}
                       />
                     );
                   })}
@@ -283,7 +377,11 @@ export default function Home() {
                 }}
                 className="min-h-10 cursor-pointer rounded-[11px] border border-black/[0.065] bg-white/65 px-4 text-[11px] font-medium text-[#444440] shadow-[0_1px_2px_rgba(0,0,0,.025),0_4px_14px_rgba(0,0,0,.025)] backdrop-blur-xl transition-[background-color,box-shadow,transform] duration-200 hover:bg-white hover:shadow-[0_1px_2px_rgba(0,0,0,.04),0_6px_20px_rgba(0,0,0,.04)] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-3 focus-visible:ring-offset-[#f4f4f1] motion-reduce:transition-none motion-reduce:active:scale-100"
               >
-                {showAllWork ? "Show less" : "Show 3 more projects"}
+                {showAllWork
+                  ? "Show less"
+                  : `Show ${additionalWork.length} more ${
+                      additionalWork.length === 1 ? "project" : "projects"
+                    }`}
               </button>
             </div>
           </div>
