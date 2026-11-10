@@ -218,11 +218,26 @@ function PrototypeVideo({ slug, title }: PrototypeVideoProps) {
       ref={containerRef}
       className="group/video relative aspect-video overflow-hidden rounded-[16px] border border-black/[0.045] bg-[#e9e9e6] transition-[box-shadow,border-color] duration-300 hover:border-black/[0.08] hover:shadow-[0_12px_40px_-28px_rgba(0,0,0,.32)]"
     >
+      {/* The poster is its own layer under the video, not the video's poster
+          attribute. Safari drops a poster as soon as play() is called and
+          paints nothing until the first frame decodes, which flashed the
+          grey card background. With the image underneath, the poster stays
+          up until the video covers it with the same frame. */}
+      {!failed && (
+        <img
+          src={`/portfolio/lab/${slug}/poster.webp`}
+          alt=""
+          aria-hidden="true"
+          decoding="async"
+          draggable={false}
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+      )}
+
       {!failed && (
         <video
           ref={attachVideo}
           src={`/portfolio/lab/${slug}/preview.mp4`}
-          poster={`/portfolio/lab/${slug}/poster.webp`}
           muted
           loop
           playsInline
@@ -238,7 +253,7 @@ function PrototypeVideo({ slug, title }: PrototypeVideoProps) {
           onPause={function handlePause() {
             setPlaying(false);
           }}
-          className="block h-full w-full object-cover"
+          className="relative block h-full w-full object-cover"
         />
       )}
 
