@@ -193,7 +193,7 @@ That separates the effect of profile quality from the effect of paying, and sett
 - **Three more old projects have dead links. I asked before deleting these.**
   - Williams Alamu '23 Folio (`willie-folio.vercel.app`) and Dubai Habitat (`dubai-habitat.vercel.app`) return HTTP 451 `DEPLOYMENT_DISABLED`. That is probably the Vercel team flag, so these two may be recoverable.
   - Williams Alamu 2024 (`willie.design`): the domain no longer resolves.
-- **Mura still has the "High quality media" flag.** It has one featured image and one paragraph. It needs 2 or 3 real screenshots or a screen recording of the build. Screenshots of today's mura.co might not show your version, so I didn't add any.
+- **Mura's media gap is resolved as of round 3:** it now has a video cover, a hero video and 3 stills. The note below is from before round 3. **Mura still has the "High quality media" flag.** It has one featured image and one paragraph. It needs 2 or 3 real screenshots or a screen recording of the build. Screenshots of today's mura.co might not show your version, so I didn't add any.
 
 ### First read after the changes
 
@@ -215,6 +215,55 @@ That separates the effect of profile quality from the effect of paying, and sett
   - It reports `accessLimitedFeed: true` and returns 3 of 106 jobs.
   - The 3 jobs are copywriting and video editing, so the "For you" matching isn't using your roles at all.
   - The MCP doesn't get around the jobs paywall.
+
+### Round 3: new works and a new media system (2026-11-12)
+
+**New works, all published**
+- **Numenos** and **Inductive Bio**, both built with Bunsen Studio. Bunsen is credited for design, creative direction and motion.
+- **Oun Homes**: ThinkSeb did the brand, design and copy, and I built the site in Webflow and GSAP.
+- **Mailata Family Foundation Shop**, the Shopify build.
+- Three lab prototypes: **Spotify Best Part**, **Reliable Upload** and **Reorder Queue**.
+
+**Archived:** Share, Third Settlements and Cassettine.
+
+**Grid order:** works come first, and the post-based duplicates sit at the end of the grid.
+
+**Media v2, on every work (20 projects)**
+- The work fills the frame, in its own colours. There are no invented backdrops.
+- Covers are 4:3 video at 1600×1200, recorded from the live site or prototype.
+- Each work has a 16:9 hero video at the top and 2 or 3 full-bleed stills.
+- On existing works, only the v1 media I had made was replaced. Your own case-study media stayed, including all of Mailata's.
+
+**Profile cover:** a new 23-second reel of 13 held moments, with one shared slow push and hard cuts. It opens on Numenos and has no Share.
+
+**Services**
+- Share is gone from every service. The related works now point at the new projects.
+- The covers with a padded colour backdrop (teal, green, purple, orange) were replaced with full-bleed frames:
+
+  | Service | New cover |
+  |---|---|
+  | Prototype | Best Part |
+  | Webflow site | Numenos |
+  | Landing page | Oun |
+  | Accessibility audit | Reorder Queue |
+  | Fractional | Figma |
+  | Motion sprint | Clock |
+
+**Tool limit:** the editor allows at most 3 tools per project, so I trimmed the extra tags:
+- Prototypes: Next.js and Tailwind CSS removed, keeping React, Motion and TypeScript.
+- Webflow works: CSS, Figma or JavaScript removed.
+
+**Re-measured right after publishing**
+
+| Measure | Result |
+|---|---|
+| Discovery score | **201** (it was 183 after round 1 and 201 before round 3) |
+| MCP search, "design engineer" | #11 |
+| MCP search, "design engineer react motion" | #2 |
+| MCP search, "webflow developer" | not in top 25 |
+| MCP search, "webflow gsap" | not in top 50 |
+
+These numbers were taken minutes after publishing. Re-check after re-indexing, and run the Discover UI searches again in about a week.
 
 ### How the MCP is connected
 
