@@ -711,7 +711,10 @@ html[data-theme="dark"] [data-ta-page] {
   font-size: 12px;
   line-height: 19.5px;
   text-align: center;
-  white-space: nowrap;
+  /* Short labels stay on one line; long reasons wrap inside the box instead of spilling out. */
+  width: max-content;
+  text-wrap: balance;
+  overflow-wrap: break-word;
   pointer-events: none;
   visibility: hidden;
   opacity: 0;
