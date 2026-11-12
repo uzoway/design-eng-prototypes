@@ -1,259 +1,247 @@
-// Records the Time away prototype in slow motion with a scripted, human-like
-// macOS cursor. Frames are tagged with virtual (real-speed) time for the
-// post step, which adds the camera moves and builds a 60fps video.
+// Time away, take 2: drag a range -> Job hunting; click one day -> type a custom
+// reason; click a job-hunting day -> Remove; hover the custom day.
+// Recorded 10x slow with a human cursor; the cursor and caret are drawn in post.
 import { chromium } from 'playwright-core';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const OUT = process.argv[2] || 'take1';
-const S = 10; // slow-motion factor while recording
+const OUT = process.argv[2] || 'take';
+const URL = process.env.URL || 'http://localhost:3000/time-away/';
+const S = 10;
 const DPR = 3;
 const VIEW = { width: 1100, height: 900 };
-const REASON = process.env.REASON || 'Private repo, trust me';
+const CUSTOM = 'Fighting Safari';
 const DAY_START = 20464; // Sun Jan 11 2026
 const DAY_END = 20505; // Sat Feb 21 2026
-const DAY_HOVER = 20485; // Sun Feb 1 2026, mid-range
+const DAY_JOB = 20485; // Sun Feb 1, inside the range
+const SINGLE_CANDIDATES = [20558, 20557, 20559, 20551, 20565]; // Wed Apr 15 and neighbours
 
 fs.rmSync(OUT, { recursive: true, force: true });
 fs.mkdirSync(path.join(OUT, 'frames'), { recursive: true });
 
-const b64 = (f) => 'data:image/png;base64,' + fs.readFileSync(f).toString('base64');
-const CURSORS = {
-  arrow: { src: b64('arrow.png'), w: 17, h: 23, hx: 4, hy: 4 },
-  hand: { src: b64('hand.png'), w: 32, h: 32, hx: 13, hy: 8 },
-  ibeam: { src: b64('ibeam.png'), w: 9, h: 18, hx: 4, hy: 9 },
-};
-
 const browser = await chromium.launch({ channel: 'chrome' });
-const ctx = await browser.newContext({ viewport: VIEW, deviceScaleFactor: DPR, colorScheme: 'light', reducedMotion: 'no-preference' });
+const ctx = await browser.newContext({ viewport: VIEW, deviceScaleFactor: DPR, colorScheme: 'light' });
 await ctx.route(/googletagmanager|google-analytics|_vercel\/insights/, (r) => r.abort());
-
-await ctx.addInitScript((cursors) => {
+await ctx.addInitScript(() => {
   try { localStorage.setItem('merchant-theme', 'light'); } catch {}
-
-  // Time warp: JS clocks, timers and rAF run 1/S as fast once __setSlow is called.
-  const rn = performance.now.bind(performance);
-  const rdn = Date.now;
-  const rST = window.setTimeout.bind(window);
-  const rSI = window.setInterval.bind(window);
-  const rRAF = window.requestAnimationFrame.bind(window);
+  // Time warp (see README).
+  const rn = performance.now.bind(performance), rdn = Date.now;
+  const rST = window.setTimeout.bind(window), rSI = window.setInterval.bind(window), rRAF = window.requestAnimationFrame.bind(window);
   let S = 1, baseR = rn(), baseV = baseR, baseDR = rdn(), baseDV = baseDR;
   const v = () => baseV + (rn() - baseR) / S;
-  window.__setSlow = (s) => { const nv = v(); const nd = Date.now(); baseR = rn(); baseV = nv; baseDR = rdn(); baseDV = nd; S = s; };
+  window.__setSlow = (s) => { const nv = v(), nd = Date.now(); baseR = rn(); baseV = nv; baseDR = rdn(); baseDV = nd; S = s; };
   performance.now = v;
   Date.now = () => baseDV + (rdn() - baseDR) / S;
   window.setTimeout = (fn, d = 0, ...a) => rST(fn, (Number(d) || 0) * S, ...a);
   window.setInterval = (fn, d = 0, ...a) => rSI(fn, (Number(d) || 0) * S, ...a);
   window.requestAnimationFrame = (cb) => rRAF(() => cb(v()));
-
-  // The cursor layer.
-  const mount = () => {
-    const el = document.createElement('div');
-    el.id = '__cursor';
-    el.style.cssText = 'position:fixed;left:0;top:0;z-index:2147483647;pointer-events:none;will-change:transform;opacity:0';
-    const img = document.createElement('img');
-    img.style.cssText = 'display:block;width:100%;height:100%';
-    el.appendChild(img);
-    document.documentElement.appendChild(el);
-    let kind = '';
-    window.__cursor = (x, y, k, pressed) => {
-      const c = cursors[k];
-      if (k !== kind) { img.src = c.src; el.style.width = c.w + 'px'; el.style.height = c.h + 'px'; kind = k; }
-      el.style.opacity = '0'; // drawn in post at exact times
-      el.style.transformOrigin = `${c.hx}px ${c.hy}px`;
-      el.style.transform = `translate(${x - c.hx}px, ${y - c.hy}px) scale(${pressed ? 0.88 : 1})`;
-    };
+  // The browser's caret blinks on its own clock, so hide it; post draws it at the real rate.
+  const style = () => { const s = document.createElement('style'); s.textContent = '*{caret-color:transparent!important}'; document.head.appendChild(s); };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', style); else style();
+  // Where the caret is, for post.
+  const canvas = document.createElement('canvas').getContext('2d');
+  window.__probe = (x, y) => {
+    const el = document.elementFromPoint(x, y);
+    const c = el ? getComputedStyle(el).cursor : 'auto';
+    const kind = c === 'pointer' ? 'hand' : c === 'text' ? 'ibeam' : 'arrow';
+    let caret = null;
+    const a = document.activeElement;
+    if (a && a.tagName === 'INPUT' && a.selectionStart === a.selectionEnd) {
+      const st = getComputedStyle(a), r = a.getBoundingClientRect();
+      canvas.font = `${st.fontStyle} ${st.fontWeight} ${st.fontSize} ${st.fontFamily}`;
+      const w = canvas.measureText(a.value.slice(0, a.selectionStart)).width;
+      const fs = parseFloat(st.fontSize);
+      const h = Math.round(fs * 1.2);
+      caret = {
+        x: r.left + parseFloat(st.borderLeftWidth) + parseFloat(st.paddingLeft) + w - a.scrollLeft,
+        y: r.top + r.height / 2 - h / 2, h, color: st.color, len: a.value.length,
+      };
+    }
+    return { kind, caret };
   };
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount); else mount();
-}, CURSORS);
+});
 
 const page = await ctx.newPage();
-await page.goto(process.env.URL || 'https://uzookafor.com/time-away/', { waitUntil: 'networkidle' });
+await page.goto(URL, { waitUntil: 'networkidle' });
 await page.waitForSelector(`td[data-day="${DAY_END}"]`);
 await page.waitForTimeout(800);
 
-const label = async (d) => page.$eval(`td[data-day="${d}"]`, (e) => e.getAttribute('aria-label'));
-console.log('start:', await label(DAY_START), '| end:', await label(DAY_END), '| hover:', await label(DAY_HOVER));
+const label = (d) => page.$eval(`td[data-day="${d}"]`, (e) => e.getAttribute('aria-label'));
+let DAY_SINGLE = null;
+for (const d of SINGLE_CANDIDATES) if ((await label(d)).startsWith('No contributions')) { DAY_SINGLE = d; break; }
+console.log('range', await label(DAY_START), '→', await label(DAY_END), '| single', await label(DAY_SINGLE));
 
 const rect = (sel) => page.$eval(sel, (e) => { const r = e.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; });
+const box = async (loc) => { const b = await loc.boundingBox(); return { x: b.x, y: b.y, w: b.width, h: b.height }; };
 const center = (r) => ({ x: r.x + r.w / 2, y: r.y + r.h / 2 });
+const day = (d) => rect(`td[data-day="${d}"]`);
 const rects = {
-  h2: await rect('h2'),
-  box: await rect('.ta-box'),
-  table: await rect('.ta-grid'),
-  years: await rect('.ta-years'),
-  start: await rect(`td[data-day="${DAY_START}"]`),
-  end: await rect(`td[data-day="${DAY_END}"]`),
-  hover: await rect(`td[data-day="${DAY_HOVER}"]`),
+  h2: await rect('h2'), box: await rect('.ta-box'), table: await rect('.ta-grid'),
+  start: await day(DAY_START), end: await day(DAY_END), job: await day(DAY_JOB), single: await day(DAY_SINGLE),
 };
 
 // ---- human-like motion ----
 const minJerk = (t) => t * t * t * (10 + t * (-15 + 6 * t));
-let seed = 7;
+let seed = 11;
 const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
-
-/** A reach: one curved, min-jerk main movement with a small overshoot, then a correction. */
 function reach(from, to, { width = 12, curve = 0.07, overshoot = true, dur } = {}) {
-  const dx = to.x - from.x, dy = to.y - from.y;
-  const dist = Math.hypot(dx, dy);
+  const dx = to.x - from.x, dy = to.y - from.y, dist = Math.hypot(dx, dy);
   const T = dur ?? 0.2 + 0.11 * Math.log2(dist / width + 1);
   const ux = dx / (dist || 1), uy = dy / (dist || 1);
   const os = overshoot && dist > 60 ? Math.min(5, 1.5 + dist * 0.008) : 0;
   const aim = { x: to.x + ux * os + (rand() - 0.5) * 1.2, y: to.y + uy * os + (rand() - 0.5) * 1.2 };
-  // Bow the path a little, like a wrist pivoting.
   const side = dx >= 0 ? 1 : -1;
   const ctrl = { x: (from.x + aim.x) / 2 - uy * dist * curve * side, y: (from.y + aim.y) / 2 + ux * dist * curve * side };
-  const segs = [{
-    T,
-    at: (t) => { const s = minJerk(t); const a = 1 - s; return { x: a * a * from.x + 2 * a * s * ctrl.x + s * s * aim.x, y: a * a * from.y + 2 * a * s * ctrl.y + s * s * aim.y }; },
-  }];
-  if (os) {
-    const cT = 0.13 + rand() * 0.04;
-    segs.push({ T: cT, at: (t) => { const s = minJerk(t); return { x: aim.x + (to.x - aim.x) * s, y: aim.y + (to.y - aim.y) * s }; } });
-  }
+  const segs = [{ T, at: (t) => { const s = minJerk(t), a = 1 - s; return { x: a * a * from.x + 2 * a * s * ctrl.x + s * s * aim.x, y: a * a * from.y + 2 * a * s * ctrl.y + s * s * aim.y }; } }];
+  if (os) { const cT = 0.13 + rand() * 0.04; segs.push({ T: cT, at: (t) => { const s = minJerk(t); return { x: aim.x + (to.x - aim.x) * s, y: aim.y + (to.y - aim.y) * s }; } }); }
   return segs;
 }
 
-// ---- timeline (virtual seconds) ----
-const steps = [];
-let pos = { x: rects.box.x + 560, y: rects.box.y + 300 };
-let t = 0;
-const marks = {};
-const mark = (name) => { marks[name] = +t.toFixed(3); };
-const wait = (s) => { steps.push({ t0: t, T: s, at: ((p) => () => p)({ ...pos }) }); t += s; };
-const moveTo = (to, opts) => { for (const seg of reach(pos, to, opts)) { steps.push({ t0: t, T: seg.T, at: seg.at }); t += seg.T; } pos = { ...to }; };
-const events = [];
-const at = (type, extra = {}) => events.push({ t, type, ...extra });
-
-wait(0.35);
-mark('moveToStart');
-moveTo(center(rects.start), { width: 10 });
-wait(0.32);
-mark('down');
-at('down');
-wait(0.12);
-// The drag: slower and steadier than a reach, ending on Feb 21.
-{
-  const from = { ...pos }, to = center(rects.end);
-  const T = 1.25;
-  const ctrl = { x: (from.x + to.x) / 2 + 8, y: (from.y + to.y) / 2 - 10 };
-  steps.push({ t0: t, T, at: (u) => { const s = minJerk(u); const a = 1 - s; return { x: a * a * from.x + 2 * a * s * ctrl.x + s * s * to.x, y: a * a * from.y + 2 * a * s * ctrl.y + s * s * to.y }; } });
-  t += T; pos = { ...to };
+// ---- capture ----
+const cdp = await ctx.newCDPSession(page);
+await cdp.send('Animation.enable');
+const cap = { frames: [], pos: [], keys: [], rects, marks: {}, S, DPR, VIEW, custom: CUSTOM };
+let capturing = true, frameNo = 0, clock0 = 0;
+const vt = () => (performance.now() - clock0) / 1000 / S;
+async function captureLoop() {
+  while (capturing) {
+    const a = vt();
+    const data = await page.screenshot({ type: 'jpeg', quality: 95, caret: 'initial' });
+    const b = vt();
+    const name = String(frameNo++).padStart(5, '0') + '.jpg';
+    fs.writeFileSync(path.join(OUT, 'frames', name), data);
+    cap.frames.push({ name, vt: +((a + b) / 2).toFixed(4) });
+  }
 }
-wait(0.35);
-mark('up');
-at('up');
-wait(0.7);
-// The panel and its buttons only exist now, so these targets resolve at run time.
-mark('toChip');
-steps.push({ t0: t, dynamic: 'chip' });
-events.push({ t, type: 'resolve', target: 'chip' });
-t += 0; // the dynamic reach inserts its own time below
-const plan = { steps, events, marks };
 
-// Resolve dynamic targets by running the timeline in two phases.
-async function run(phaseSteps, phaseEvents, startT, cap) {
-  const startReal = performance.now();
-  const vt = () => startT + (performance.now() - startReal) / 1000 / S;
-  const end = phaseSteps.length ? Math.max(...phaseSteps.map((s) => s.t0 + s.T)) : startT;
-  let pressed = false, kind = 'arrow', ei = 0;
-  const evs = [...phaseEvents].sort((a, b) => a.t - b.t);
+// ---- phase runner: a phase is planned from the current DOM, then played in real time ----
+let pos = { x: rects.box.x + 560, y: rects.box.y + 300 };
+let pressed = false, kind = 'arrow';
+function planner() {
+  let t = vt();
+  const steps = [], events = [];
+  const api = {
+    mark: (n) => { cap.marks[n] = +t.toFixed(3); },
+    hold: (s) => { const p = { ...pos }; steps.push({ t0: t, T: s, at: () => p }); t += s; },
+    to: (target, opts) => { for (const seg of reach(pos, target, opts)) { steps.push({ t0: t, T: seg.T, at: seg.at }); t += seg.T; } pos = { ...target }; },
+    path: (T, at, end) => { steps.push({ t0: t, T, at }); t += T; pos = { ...end }; },
+    down: () => events.push({ t, type: 'down' }),
+    up: () => events.push({ t, type: 'up' }),
+    click: () => { events.push({ t, type: 'down' }); events.push({ t: t + 0.085, type: 'up' }); },
+    type: (text) => {
+      for (const ch of text) {
+        const gap = 0.075 + rand() * 0.06 + (ch === ' ' ? 0.05 : 0) + (ch === ch.toUpperCase() && ch !== ' ' ? 0.035 : 0);
+        api.hold(gap);
+        events.push({ t, type: 'key', ch });
+      }
+    },
+    play: () => run(steps, events),
+  };
+  return api;
+}
+async function run(steps, events) {
+  const end = Math.max(...steps.map((s) => s.t0 + s.T));
+  const evs = [...events].sort((a, b) => a.t - b.t);
+  let ei = 0;
   while (true) {
     const now = vt();
     while (ei < evs.length && evs[ei].t <= now) {
       const e = evs[ei++];
       if (e.type === 'down') { await page.mouse.down(); pressed = true; }
       if (e.type === 'up') { await page.mouse.up(); pressed = false; }
-      if (e.type === 'click') { await page.mouse.down(); pressed = true; e.release = e.t + 0.09; evs.push({ t: e.release, type: 'up' }); evs.sort((a, b) => a.t - b.t); }
+      if (e.type === 'key') { await page.keyboard.type(e.ch); cap.keys.push(+now.toFixed(4)); }
     }
-    const s = phaseSteps.find((s) => now >= s.t0 && now < s.t0 + s.T) || phaseSteps[phaseSteps.length - 1];
+    const s = steps.find((s) => now >= s.t0 && now < s.t0 + s.T) || steps[steps.length - 1];
     const p = s.at(Math.min(1, Math.max(0, (now - s.t0) / s.T)));
     await page.mouse.move(p.x, p.y);
-    if (!pressed) kind = await page.evaluate(([x, y]) => {
-      const el = document.elementFromPoint(x, y);
-      const c = el ? getComputedStyle(el).cursor : 'auto';
-      return c === 'pointer' ? 'hand' : c === 'text' ? 'ibeam' : 'arrow';
-    }, [p.x, p.y]);
-    await page.evaluate(([x, y, k, pr]) => window.__cursor(x, y, k, pr), [p.x, p.y, kind, pressed]);
-    cap.pos.push({ vt: +now.toFixed(4), x: +p.x.toFixed(2), y: +p.y.toFixed(2), kind, pressed });
+    const probe = await page.evaluate(([x, y]) => window.__probe(x, y), [p.x, p.y]);
+    if (!pressed) kind = probe.kind;
+    cap.pos.push({ vt: +now.toFixed(4), x: +p.x.toFixed(2), y: +p.y.toFixed(2), kind, pressed, caret: probe.caret });
     if (now >= end && ei >= evs.length) break;
   }
-  return end;
 }
 
-// ---- capture loop ----
-const cdp = await ctx.newCDPSession(page);
-await cdp.send('Animation.enable');
-const cap = { frames: [], pos: [], rects, marks, S, DPR, VIEW };
-let capturing = true, frameNo = 0, clock0 = 0;
-const capVt = () => (performance.now() - clock0) / 1000 / S;
-async function captureLoop() {
-  while (capturing) {
-    const a = capVt();
-    const data = await page.screenshot({ type: 'jpeg', quality: 95, caret: 'initial' });
-    const bvt = capVt();
-    const name = String(frameNo++).padStart(5, '0') + '.jpg';
-    fs.writeFileSync(path.join(OUT, 'frames', name), data);
-    cap.frames.push({ name, vt: +((a + bvt) / 2).toFixed(4) });
-  }
-}
-
-// Place the cursor before slowing down, so frame 0 has it.
 await page.mouse.move(pos.x, pos.y);
-await page.evaluate(([x, y]) => window.__cursor(x, y, 'arrow', false), [rects.box.x + 560, rects.box.y + 300]);
-pos = { x: rects.box.x + 560, y: rects.box.y + 300 };
-
 await page.evaluate((s) => window.__setSlow(s), S);
 await cdp.send('Animation.setPlaybackRate', { playbackRate: 1 / S });
 clock0 = performance.now();
 const capP = captureLoop();
 
-// Phase 1: reach, drag, release.
-const phase1Steps = steps.filter((s) => !s.dynamic);
-const phase1End = await run(phase1Steps, events.filter((e) => e.type !== 'resolve'), 0, cap);
-
-// Phase 2: the panel is open; aim for the chip, then "Mark as away".
-pos = center(rects.end);
-const chipBtn = page.locator('.ta-chips button', { hasText: REASON });
-const markBtn = page.getByRole('button', { name: 'Mark as away' });
-const chipR = await chipBtn.boundingBox();
-const markR = await markBtn.boundingBox();
-rects.panel = await rect('[role="dialog"]');
-rects.chip = { x: chipR.x, y: chipR.y, w: chipR.width, h: chipR.height };
-rects.mark = { x: markR.x, y: markR.y, w: markR.width, h: markR.height };
-
-const s2 = [], e2 = [];
-t = capVt();
-const push = (segs) => { for (const seg of segs) { s2.push({ t0: t, T: seg.T, at: seg.at }); t += seg.T; } };
-const hold = (sec) => { const p = { ...pos }; s2.push({ t0: t, T: sec, at: () => p }); t += sec; };
-mark('toChip');
-const chipTarget = { x: chipR.x + chipR.width * 0.42, y: chipR.y + chipR.height * 0.55 };
-push(reach(pos, chipTarget, { width: chipR.height })); pos = chipTarget;
-hold(0.18); mark('clickChip'); e2.push({ t, type: 'click' }); hold(0.55);
-mark('toMark');
-const markTarget = { x: markR.x + markR.width * 0.55, y: markR.y + markR.height * 0.5 };
-push(reach(pos, markTarget, { width: markR.height })); pos = markTarget;
-hold(0.2); mark('clickMark'); e2.push({ t, type: 'click' }); hold(0.5);
-// Step back off the graph so the wave is unobstructed.
-mark('stepAway');
-const aside = { x: rects.end.x + 150, y: rects.box.y + rects.box.h * 0.62 };
-push(reach(pos, aside, { width: 40, overshoot: false })); pos = aside;
-hold(0.75);
-mark('toHover');
-const hov = center(rects.hover);
-push(reach(pos, hov, { width: 10 })); pos = hov;
-hold(1.7);
-mark('leave');
-const out = { x: rects.box.x + rects.box.w * 0.74, y: rects.box.y + rects.box.h * 0.8 };
-push(reach(pos, out, { width: 60, overshoot: false })); pos = out;
-hold(2.0);
-mark('end');
-await run(s2, e2, capVt(), cap);
+// 1. Drag Jan 11 -> Feb 21.
+{
+  const p = planner();
+  p.hold(0.35); p.mark('moveToStart');
+  p.to(center(rects.start), { width: 10 });
+  p.hold(0.32); p.mark('down1'); p.down(); p.hold(0.12);
+  const from = { ...pos }, to = center(rects.end);
+  const ctrl = { x: (from.x + to.x) / 2 + 8, y: (from.y + to.y) / 2 - 10 };
+  p.path(1.25, (u) => { const s = minJerk(u), a = 1 - s; return { x: a * a * from.x + 2 * a * s * ctrl.x + s * s * to.x, y: a * a * from.y + 2 * a * s * ctrl.y + s * s * to.y }; }, to);
+  p.hold(0.35); p.mark('up1'); p.up(); p.hold(0.7);
+  await p.play();
+}
+// 2. Job hunting -> Mark as away.
+{
+  rects.panel1 = await rect('[role="dialog"]');
+  const chip = await box(page.locator('.ta-chips button', { hasText: 'Job hunting' }));
+  const mark = await box(page.getByRole('button', { name: 'Mark as away' }));
+  const p = planner();
+  p.mark('toChip'); p.to({ x: chip.x + chip.w * 0.45, y: chip.y + chip.h * 0.55 }, { width: chip.h });
+  p.hold(0.18); p.mark('clickChip'); p.click(); p.hold(0.55);
+  p.to({ x: mark.x + mark.w * 0.55, y: mark.y + mark.h * 0.5 }, { width: mark.h });
+  p.hold(0.2); p.mark('clickMark1'); p.click(); p.hold(0.75);
+  await p.play();
+}
+// 3. One day, typed reason.
+{
+  const p = planner();
+  p.mark('toSingle'); p.to(center(rects.single), { width: 10 });
+  p.hold(0.45); p.mark('clickSingle'); p.click(); p.hold(0.6);
+  await p.play();
+}
+{
+  rects.panel2 = await rect('[role="dialog"]');
+  const p = planner();
+  p.mark('typeStart'); p.type(CUSTOM); p.mark('typeEnd'); p.hold(0.4);
+  await p.play();
+}
+{
+  const mark = await box(page.getByRole('button', { name: 'Mark as away' }));
+  const p = planner();
+  p.to({ x: mark.x + mark.w * 0.5, y: mark.y + mark.h * 0.5 }, { width: mark.h });
+  p.hold(0.2); p.mark('clickMark2'); p.click(); p.hold(0.75);
+  await p.play();
+}
+// 4. Remove Job hunting.
+{
+  const p = planner();
+  p.mark('toJob'); p.to(center(rects.job), { width: 10 });
+  p.hold(0.9); p.mark('clickJob'); p.click(); p.hold(0.6);
+  await p.play();
+}
+{
+  rects.panel3 = await rect('[role="dialog"]');
+  const remove = await box(page.getByRole('button', { name: 'Remove' }));
+  rects.remove = remove;
+  const p = planner();
+  p.to({ x: remove.x + remove.w * 0.5, y: remove.y + remove.h * 0.55 }, { width: remove.h });
+  p.hold(0.22); p.mark('clickRemove'); p.click(); p.hold(1.0);
+  await p.play();
+}
+// 5. Hover the custom day, then step back.
+{
+  const p = planner();
+  p.mark('toSingleHover'); p.to(center(rects.single), { width: 10 });
+  p.hold(1.5); p.mark('leave');
+  p.to({ x: rects.box.x + rects.box.w * 0.72, y: rects.box.y + rects.box.h * 0.8 }, { width: 60, overshoot: false });
+  p.hold(2.0); p.mark('end');
+  await p.play();
+}
 
 capturing = false;
 await capP;
-cap.rects = rects;
-cap.marks = marks;
+const after = await page.evaluate(() => ({ h2: document.querySelector('h2').innerText, away: [...document.querySelectorAll('.ta-day[data-away]')].length }));
 fs.writeFileSync(path.join(OUT, 'take.json'), JSON.stringify(cap));
-console.log('frames', cap.frames.length, 'virtual length', cap.frames.at(-1).vt.toFixed(2) + 's', 'marks', JSON.stringify(marks));
+console.log('frames', cap.frames.length, 'length', cap.frames.at(-1).vt.toFixed(2) + 's', 'final:', JSON.stringify(after));
+console.log('marks', JSON.stringify(cap.marks));
+console.log('panels', JSON.stringify({ p1: rects.panel1, p2: rects.panel2, p3: rects.panel3, single: rects.single }));
 await browser.close();

@@ -1,9 +1,9 @@
-"""Camera moves + 60fps square edit from a slow-motion take.
+"""Camera moves, cursor and caret for record2 takes -> 60fps square video.
 
-usage: venv/bin/python post.py take2 out.mp4 [--preview]
+usage: venv/bin/python post2.py take out.mp4 [--preview]
 """
 import bisect, json, math, subprocess, sys
-from PIL import Image
+from PIL import Image, ImageDraw
 
 take, out = sys.argv[1], sys.argv[2]
 preview = '--preview' in sys.argv
@@ -15,16 +15,18 @@ SIZE = 540 if preview else 1080
 FPS = 60
 END = m['end'] - 0.6
 
-# Camera keyframes: (start of move, move duration, centre x, centre y, view width in CSS px).
+# (start of move, duration, centre x, centre y, view width in CSS px)
 shots = [
-    (0.00, 0.0, 330, 372, 540),                       # open on the graph, already readable
-    (m['moveToStart'] + 0.3, 0.9, 300, 322, 400),     # in on the days while the cursor arrives
-    (m['up'] - 0.05, 0.8, 302, 482, 540),             # the panel opens below the selection
-    (m['toHover'] - 0.15, 0.8, 322, 330, 470),        # hold through the click and wave, then in for the hover
-    (m['leave'] + 0.15, 1.1, 476, 462, 780),          # pull out to the whole card
+    (0.00, 0.0, 330, 372, 540),                        # open on the graph
+    (m['moveToStart'] + 0.3, 0.9, 300, 322, 400),      # in on the days for the drag
+    (m['up1'] - 0.05, 0.8, 302, 482, 540),             # panel; hold through Job hunting and the wave
+    (m['toSingle'] + 0.1, 0.9, 439, 500, 480),         # over to April for the typed reason
+    (m['clickMark2'] + 0.15, 0.9, 305, 462, 530),      # the heading, the April pop, then Remove
+    (m['toSingleHover'] + 0.05, 0.8, 324, 340, 490),   # in for the Fighting Safari tooltip, heading in frame
+    (m['leave'] + 0.15, 1.1, 476, 462, 780),           # pull out to the whole card
 ]
 
-def ease(t):  # ease-in-out, a touch softer than cubic
+def ease(t):
     t = max(0.0, min(1.0, t))
     return t * t * t * (t * (6 * t - 15) + 10)
 
@@ -40,14 +42,13 @@ def camera(t):
     cx = min(max(cx, w / 2), VW - w / 2); cy = min(max(cy, w / 2), VH - w / 2)
     return cx, cy, w
 
-# ---- cursor, drawn at exact times ----
+# ---- cursor ----
 P = d['pos']; pvt = [p['vt'] for p in P]
-CUR = {  # css size and hotspot of each macOS cursor; images are 10x
+CUR = {
     'arrow': (Image.open('arrow.png').convert('RGBA'), 17, 23, 4, 4),
     'hand': (Image.open('hand.png').convert('RGBA'), 32, 32, 13, 8),
     'ibeam': (Image.open('ibeam.png').convert('RGBA'), 9, 18, 4, 9),
 }
-# Debounce the cursor type: the 3px gaps between days would flicker hand/arrow.
 kinds = []
 stable, cand, since = P[0]['kind'], None, 0
 for p in P:
@@ -58,15 +59,22 @@ for p in P:
     elif p['vt'] - since >= 0.07:
         stable, cand = cand, None
     kinds.append(stable)
-# Press transitions, eased.
 presses = [(P[i]['vt'], P[i]['pressed']) for i in range(1, len(P)) if P[i]['pressed'] != P[i - 1]['pressed']]
 
-def cursor_at(t):
+# ---- caret: macOS Chrome blinks 500ms on / 500ms off, restarting solid on focus and on each key ----
+appears = [P[i]['vt'] for i in range(1, len(P)) if P[i]['caret'] and not P[i - 1]['caret']]
+resets = sorted(d['keys'] + appears)
+
+def sample(t):
     i = min(max(bisect.bisect_left(pvt, t), 1), len(P) - 1)
+    return i
+
+def cursor_at(t):
+    i = sample(t)
     a, b = P[i - 1], P[i]
     u = 0 if b['vt'] == a['vt'] else min(1, max(0, (t - a['vt']) / (b['vt'] - a['vt'])))
     x, y = a['x'] + (b['x'] - a['x']) * u, a['y'] + (b['y'] - a['y']) * u
-    amt, state = 0.0, False
+    amt, state, last = 0.0, False, 0
     for (tt, st) in presses:
         if tt > t: break
         state, last = st, tt
@@ -75,19 +83,36 @@ def cursor_at(t):
         amt = k if state else 1 - k
     return x, y, kinds[i], amt
 
+def draw_caret(frame, t, cx, cy, w):
+    c = P[sample(t)]['caret']
+    if not c:
+        return
+    j = bisect.bisect_right(resets, t) - 1
+    since = t - resets[j] if j >= 0 else 0
+    if (since % 1.0) >= 0.5:
+        return
+    # The caret is painted inside the panel, so it fades in with it (0.2s, Primer ease-out).
+    a = bisect.bisect_right(appears, t) - 1
+    u = min(1, (t - appears[a]) / 0.2) if a >= 0 else 1
+    alpha = 1 - (1 - u) ** 3
+    k = SIZE / w
+    x0 = (c['x'] - (cx - w / 2)) * k; y0 = (c['y'] - (cy - w / 2)) * k
+    rgb = tuple(int(v) for v in c['color'][c['color'].index('(') + 1:-1].split(',')[:3])
+    layer = Image.new('RGBA', frame.size, (0, 0, 0, 0))
+    ImageDraw.Draw(layer).rectangle([round(x0), round(y0), round(x0 + max(1, k)) - 1, round(y0 + c['h'] * k) - 1], fill=rgb + (round(255 * alpha),))
+    frame.alpha_composite(layer)
+
 def draw_cursor(frame, t, cx, cy, w):
     x, y, kind, amt = cursor_at(t)
     img, cw, ch, hx, hy = CUR[kind]
-    s = SIZE / w * (1 - 0.1 * amt)  # output px per css px, squeezed while pressed
+    s = SIZE / w * (1 - 0.1 * amt)
     W, H = max(1, round(cw * s)), max(1, round(ch * s))
     sprite = img.resize((W, H), Image.LANCZOS)
     ox = (x - (cx - w / 2)) * SIZE / w - hx * s
     oy = (y - (cy - w / 2)) * SIZE / w - hy * s
-    # Sub-pixel placement: shift the sprite by the fractional part before pasting.
     ix, iy = math.floor(ox), math.floor(oy)
-    fx, fy = ox - ix, oy - iy
     pad = Image.new('RGBA', (W + 2, H + 2), (0, 0, 0, 0)); pad.paste(sprite, (1, 1))
-    pad = pad.transform(pad.size, Image.AFFINE, (1, 0, -fx, 0, 1, -fy), resample=Image.BICUBIC)
+    pad = pad.transform(pad.size, Image.AFFINE, (1, 0, -(ox - ix), 0, 1, -(oy - iy)), resample=Image.BICUBIC)
     frame.alpha_composite(pad, (ix - 1, iy - 1)) if ix >= 1 and iy >= 1 else frame.paste(pad, (ix - 1, iy - 1), pad)
 
 ff = subprocess.Popen([
@@ -110,9 +135,8 @@ for k in range(n):
     cx, cy, w = camera(t)
     box = ((cx - w / 2) * DPR, (cy - w / 2) * DPR, (cx + w / 2) * DPR, (cy + w / 2) * DPR)
     fr = im.resize((SIZE, SIZE), Image.LANCZOS, box=box).convert('RGBA')
+    draw_caret(fr, t, cx, cy, w)
     draw_cursor(fr, t, cx, cy, w)
     ff.stdin.write(fr.convert('RGB').tobytes())
-    if k % 120 == 0:
-        print(f'{t:5.2f}s', flush=True)
 ff.stdin.close(); ff.wait()
-print('done', out, n, 'frames')
+print('done', out, n, 'frames', f'{END:.2f}s')
