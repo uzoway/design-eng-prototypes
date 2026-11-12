@@ -1,0 +1,48 @@
+# Uzo Okafor
+
+> Uzo Okafor (Uzochukwu Okafor) is a design engineer who builds websites, interaction prototypes and product UI with React, Next.js, Motion, Webflow and GSAP, with a focus on motion, accessibility and performance. Based in Abuja, Nigeria, working remotely with teams in the US and UK.
+
+Uzo works between design and engineering: turning Figma designs into production Webflow and React sites, building interactive prototypes that let teams feel an idea before building it, and polishing motion and interaction in live products. Most Webflow work is done with design studios, who handle design while Uzo handles development.
+
+## Hire
+
+- [Contra profile](https://contra.com/uzochukwu_okafor): services, reviews and portfolio. Bookings and payments go through Contra.
+- [Fractional Design Engineer](https://contra.com/s/sQBBRZg7-fractional-design-engineer-react-motion-and-webflow): about two days a week of prototyping, UI build, motion and Webflow work.
+- [Interactive React + Motion Prototype, built in 1 week](https://contra.com/s/EksNqUkX-interactive-react-motion-prototype-built-in-1-week)
+- [Motion and Interaction Polish Sprint](https://contra.com/s/Rb3eor2M-motion-and-interaction-polish-sprint-for-your-live-product)
+- [Webflow Website Development: 5 pages, CMS and GSAP](https://contra.com/s/BBkkUL6R-webflow-website-development-5-pages-cms-and-gsap-animation)
+- [Webflow Landing Page from Figma, built in 1 week](https://contra.com/s/AUBPmL3l-webflow-landing-page-from-figma-built-in-1-week)
+- [Accessibility Audit and Fixes for React and Webflow (WCAG 2.2)](https://contra.com/s/2UEANcXQ-accessibility-audit-and-fixes-for-react-and-webflow-wcag-22)
+- Email: uzochukwuokafor01@gmail.com
+
+## Skills
+
+Design engineering, interaction design, prototyping, motion design, React, Next.js, TypeScript, Motion for React (Framer Motion), Webflow, Webflow CMS, GSAP, Figma, web accessibility (WCAG), responsive design, front-end performance.
+
+## Client websites (development by Uzo)
+
+- [Inductive Bio](https://inductive.bio/): science-led biotech site. Design and motion by Bunsen Studio.
+- [Numenos](https://www.numenos.ai/): site for a frontier AI lab with scroll-led motion. Design and motion by Bunsen Studio.
+- [Oun Homes](https://www.oun.homes/): product marketing site for an AI real estate platform. Design by ThinkSeb.
+- [DTI Global](https://dtiglobal.net/): CMS-driven site for an automotive tooling manufacturer. Design by ThinkSeb.
+- [Mailata Family Foundation](https://www.mailatafamilyfoundation.org/): nonprofit site. Design by Avenue West.
+
+## Concept prototypes
+
+Working concepts built in React and Motion, each a live page:
+
+- [GitHub Time away](https://uzookafor.com/time-away/): mark quiet weeks in the contribution graph as time away.
+- [Figma detach reasons](https://uzookafor.com/figma-detach/): ask why a library component is detached and show the reasons to the design system team.
+- [Apple Homeview clock](https://uzookafor.com/homeview-clock/): clock customisation rebuilt with springing variable-font numerals.
+- [This could be an email](https://uzookafor.com/could-be-an-email/): turn a recurring Google Calendar meeting into an email.
+- [WhatsApp voice note](https://uzookafor.com/voice-note/): tap a word in the transcript to play from it.
+- [Spotify Two Streams](https://uzookafor.com/two-streams/): hold your album while a podcast plays, then resume on the exact second.
+- [Skip AI Overview](https://uzookafor.com/skip-ai-overview/): a Google Search concept where the AI Overview gets a skip countdown, like a YouTube ad, and a setting to always skip it.
+- [LinkedIn nav in motion](https://uzookafor.com/linkedin-nav/): LinkedIn's navigation icons, animated.
+- [All prototypes](https://uzookafor.com/lab/)
+
+## Elsewhere
+
+- [LinkedIn](https://www.linkedin.com/in/uzochukwuokafor/)
+- [GitHub](https://github.com/uzoway)
+- [X](https://x.com/uzodev)

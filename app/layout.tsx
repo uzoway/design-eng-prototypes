@@ -79,6 +79,57 @@ export const metadata: Metadata = {
   },
 };
 
+// Tells search engines and answer engines who the site belongs to and where else that
+// person lives online, so "Uzo Okafor", the Contra profile and the work resolve to one entity.
+const structuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Person",
+      "@id": `${siteUrl}/#person`,
+      name: "Uzo Okafor",
+      alternateName: "Uzochukwu Okafor",
+      jobTitle: "Design Engineer",
+      description,
+      url: siteUrl,
+      image: `${siteUrl}/og.png?v=2`,
+      email: "mailto:uzochukwuokafor01@gmail.com",
+      address: {
+        "@type": "PostalAddress",
+        addressLocality: "Abuja",
+        addressCountry: "NG",
+      },
+      knowsAbout: [
+        "Design engineering",
+        "Interaction design",
+        "Prototyping",
+        "Motion design",
+        "React",
+        "Next.js",
+        "TypeScript",
+        "Motion for React",
+        "Webflow",
+        "GSAP",
+        "Web accessibility",
+      ],
+      sameAs: [
+        "https://contra.com/uzochukwu_okafor",
+        "https://www.linkedin.com/in/uzochukwuokafor/",
+        "https://github.com/uzoway",
+        "https://x.com/uzodev",
+      ],
+    },
+    {
+      "@type": "WebSite",
+      "@id": `${siteUrl}/#website`,
+      url: siteUrl,
+      name: "Uzo Okafor",
+      description,
+      publisher: { "@id": `${siteUrl}/#person` },
+    },
+  ],
+};
+
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
@@ -129,6 +180,12 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html: themeInitializationScript,
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(structuredData),
           }}
         />
       </head>
