@@ -226,7 +226,15 @@ That separates the effect of profile quality from the effect of paying, and sett
 
 **Archived:** Share, Third Settlements and Cassettine.
 
-**Grid order:** works come first, and the post-based duplicates sit at the end of the grid.
+**Grid order:** works come first, and the post-based duplicates sit at the end of the grid. The works are now ordered for impact rather than by date added. Each row alternates a client site with a React prototype, so both kinds of buyer see themselves in the first row:
+
+1. Numenos · Best Part · Inductive · Figma Detach
+2. Oun · Two Streams · Mailata · LinkedIn Nav
+3. DTI · Clock · Mura · WhatsApp
+4. Thalia · Calendar · MFF Shop · Time Away
+5. Alvren · Skip AI · Reorder · Upload
+
+New works land at the front, so drag each new one into place after publishing. The drag handle supports the keyboard: press Space, use the arrow keys, then press Space again. Up and Down move one row of 4.
 
 **Media v2, on every work (20 projects)**
 - The work fills the frame, in its own colours. There are no invented backdrops.
