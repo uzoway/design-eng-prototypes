@@ -30,18 +30,17 @@ const s = await session({
 });
 const { page, box, center } = s;
 
-const bell = await box(page.locator('.ln-desktop button[aria-label^="Notifications"] svg').first());
 
 // 1. The bar at rest, wide enough to read as LinkedIn; the camera pushes in on the bell
 //    (edit.py) and settles before anything moves.
-await s.phase((p) => { p.mark('open'); p.hold(0.8); p.mark('push'); p.hold(1.25); });
+await s.phase((p) => { p.mark('open'); p.hold(0.6); p.mark('push'); p.hold(1.25); });
 
 // 2. A notification arrives on its own. Dense capture so it can be replayed at 0.25×.
 await s.setSlow(SLOW_REPLAY);
 await s.phase((p) => {
   p.mark('ring');
   p.call((pg) => pg.locator('.ln-desktop [data-event="notification"]').evaluate((b) => b.click()));
-  p.hold(1.5);
+  p.hold(1.15); // the swing ends at ~0.65s and the badge has landed by ~0.45s
   p.mark('ringEnd');
 });
 await s.setSlow(SLOW);
@@ -50,16 +49,12 @@ await s.setSlow(SLOW);
 //    It clicks the label, not the bell: at ~11.5× the hand would otherwise cover the ring.
 const label = await box(page.locator('.ln-desktop button[aria-label^="Notifications"] .ln-label').first());
 await s.phase((p) => {
-  p.hold(0.3);
   p.mark('toBell');
   p.to(center(label, 0.56, 0.5), { width: label.h });
-  p.hold(0.5);
+  p.hold(0.4);
   p.mark('click');
   p.click();
-  p.hold(1.4);
-  p.mark('clickEnd');
-  p.to({ x: bell.x - 30, y: bell.y + 110 }, { width: 60, overshoot: false });
-  p.hold(1.2);
+  p.hold(1.0); // full ring (~0.65s), the fill and the badge tucking back in
   p.mark('end');
 });
 

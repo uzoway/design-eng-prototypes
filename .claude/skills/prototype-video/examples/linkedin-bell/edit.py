@@ -21,16 +21,16 @@ m = t.marks
 BELL = (670, 442)
 WIDE, CLOSE = 250, 94
 
+# Kept under 9s: no step back at the end, and the replay is only the swing and the badge.
 main = [
     (0.00, 0.0, *BELL, WIDE),                   # open: the nav, readable from frame 1
     (m['push'], 0.9, *BELL, CLOSE),             # push in; settled 0.35s before the swing
-    (m['clickEnd'] + 0.15, 1.0, *BELL, WIDE),   # step back once the click has settled
 ]
 replay = [(0, 0, *BELL, CLOSE)]
 
 render(t, OUT, aspect='4:5', cover=m['ring'] + 0.45, segments=[
     Segment(0, m['end'], shots=main),
-    Segment(m['ring'] - 0.15, m['ring'] + 1.1, speed=0.25, label='4× slower', shots=replay, fade_in=0.25),
+    Segment(m['ring'] - 0.1, m['ring'] + 0.8, speed=0.25, label='4× slower', shots=replay, fade_in=0.25),
 ])
 if '--preview' in sys.argv:
     sheet(OUT + '-preview.mp4')
