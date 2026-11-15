@@ -37,6 +37,10 @@ export async function session({
   seed = 11,
   setup = async () => {}, // runs after load, before recording (click a 2x toggle, wait for fonts, etc.)
 } = {}) {
+  // A take folder is only ever replaced on purpose: OVERWRITE=1, or a new `out` per take.
+  if (fs.existsSync(path.join(out, 'take.json')) && !process.env.OVERWRITE) {
+    throw new Error(`${out} already holds a take. Use a new folder, or OVERWRITE=1 to replace it.`);
+  }
   fs.rmSync(out, { recursive: true, force: true });
   fs.mkdirSync(path.join(out, 'frames'), { recursive: true });
 

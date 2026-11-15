@@ -268,6 +268,14 @@ def render(take, out, segments, aspect='4:5', platforms=('linkedin', 'x', 'insta
     if preview:
         W, H = W // 2 // 2 * 2, H // 2 // 2 * 2
         platforms = ('preview',)
+    # Never write over a video that may already be delivered or posted. Re-renders get a new name (-v2, -v3).
+    if not preview and '--overwrite' not in sys.argv:
+        taken = [f'{out}-{p}.mp4' for p in platforms if os.path.exists(f'{out}-{p}.mp4')]
+        if cover is not None and os.path.exists(f'{out}-cover.png'):
+            taken.append(f'{out}-cover.png')
+        if taken:
+            print('! these already exist and may be what Uzo posted:', *taken, sep='\n  ')
+            print('render to a new name (e.g. add -v2), or pass --overwrite if Uzo said to replace them'); sys.exit(1)
     rnd = Renderer(take, W, H)
     os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
 

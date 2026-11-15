@@ -3,7 +3,7 @@
 //   node .claude/skills/prototype-video/examples/time-away/record.mjs
 import { session } from '../../engine/record.mjs';
 
-const OUT = process.env.OUT || 'briefs/refs/lab-masters/time-away/take';
+const OUT = process.env.OUT || 'briefs/refs/lab-masters/time-away/skill-test/take';
 const CUSTOM = 'Fighting Safari';
 const DAY = { start: 20464, end: 20505, job: 20485, singles: [20558, 20557, 20559, 20551, 20565] }; // Jan 11 → Feb 21, Feb 1, ~Apr 15
 

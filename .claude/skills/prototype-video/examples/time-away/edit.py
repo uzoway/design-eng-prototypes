@@ -6,8 +6,8 @@ import os, sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'engine'))
 from edit import Take, Segment, render, sheet
 
-TAKE = os.environ.get('TAKE', 'briefs/refs/lab-masters/time-away/take')
-OUT = os.environ.get('OUT', 'briefs/refs/lab-masters/time-away/time-away-light')
+TAKE = os.environ.get('TAKE', 'briefs/refs/lab-masters/time-away/skill-test/take')
+OUT = os.environ.get('OUT', 'briefs/refs/lab-masters/time-away/skill-test/time-away-light')
 t = Take(TAKE)
 m = t.marks
 

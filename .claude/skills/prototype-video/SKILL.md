@@ -55,7 +55,7 @@ For every number (motion constants, cursor hotspots, caret timing, platform spec
 
 11. **Safe to run.** The engine blocks analytics (GA, Vercel) in every take. It only reads the page. Never post, upload or message on Uzo's behalf. Deliver files and stop.
 
-12. **Outputs stay out of git.** Takes and renders go to `briefs/refs/lab-masters/<slug>/` (gitignored). The take and edit scripts get committed to `examples/<slug>/` so the next video starts from a working one. Commit as uzoway with no co-author line. Uzo pushes.
+12. **Outputs stay out of git, and nothing delivered is ever overwritten.** Takes and renders go to `briefs/refs/lab-masters/<slug>/` (gitignored). Every new render gets a new name (`-v2`, `-v3`); the engine refuses to write over an existing video or take unless told to (`--overwrite`, `OVERWRITE=1`), and you only tell it to when Uzo asks. The take and edit scripts get committed to `examples/<slug>/` so the next video starts from a working one. Commit as uzoway with no co-author line. Uzo pushes.
 
 ## Build Sequence
 
