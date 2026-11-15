@@ -1,6 +1,7 @@
-"""LinkedIn nav, dark, split screen: the same moment with motion (top) and with Reduce motion
-on (bottom). Two takes with the same cursor path, each rendered as a 1080×585 half with the
-engine's renderer under a 90px label strip, stacked into one 4:5 frame, encoded per platform.
+"""LinkedIn nav, dark, split screen: the whole icon set with motion and with Reduce motion on.
+Two takes with the same cursor path. Each is rendered as a tight crop of the bar with the
+engine's renderer, and the two bars are stacked close together in the middle of one 4:5
+frame, each under its label, then encoded per platform.
 
     ~/.cache/prototype-video/venv/bin/python .claude/skills/prototype-video/examples/linkedin-reduced-motion/edit.py [--preview]
 """
@@ -14,60 +15,65 @@ OUT = os.path.join(BASE, 'linkedin-reduced-motion-dark')
 top, bot = Take(os.path.join(BASE, 'take-motion')), Take(os.path.join(BASE, 'take-reduced'))
 preview = '--preview' in sys.argv
 
-W, STRIP, HALF = (540, 45, 292) if preview else (1080, 90, 585)
-H = 2 * (STRIP + HALF)
-# The labels sit in their own strips, so the camera can push right in without covering them.
-# WIDE: Messaging, Notifications and Me, whole (~4.3×), so both halves read as LinkedIn.
-# CLOSE: 96 wide runs 622–718, between "Messaging" (ends 620.5) and "Me" (starts 733.3):
-# the bell dead centre at ~11×, its badge, label and underline whole, the bar edge to edge.
-BELL = (670, 450)
-WIDE, CLOSE = 250, 96
+S = 0.5 if preview else 1.0  # the preview is half size
+W, H = round(1080 * S), round(1350 * S) // 2 * 2
+# The five animated tabs, Home to Notifications, are items 310–710: a 400-wide view holds
+# them exactly (Me's label starts at 733.3) at 2.7×, so 12px labels land at 32px. Each crop
+# is just the 52px bar plus 6px either side, so the bars aren't lost in empty black.
+VIEW = (510, 450, 400)
+BAR = round(W * 64 / 400)
 
 # Line the takes up on the notification; they were planned on the same clock, so it's ~0.
 mt, mb = top.marks, bot.marks
 off = mb['ring'] - mt['ring']
 start = max(0.0, -off)
 end = min(mt['end'], mb['end'] - off)
-def shots(dt):
-    return [(dt, 0, *BELL, WIDE), (mt['push'] + dt, 0.9, *BELL, CLOSE)]  # settled 0.35s before the bell
-
-
-seg_top = Segment(start, end, shots=shots(0))
-seg_bot = Segment(start + off, end + off, shots=shots(off))
+seg_top = Segment(start, end, shots=[(0, 0, *VIEW)])
+seg_bot = Segment(start + off, end + off, shots=[(0, 0, *VIEW)])
 ok = check(top, [seg_top], 1080) & check(bot, [seg_bot], 1080)
 if not ok and not preview:
     sys.exit('fix the warnings above')
 
-r_top, r_bot = Renderer(top, W, HALF), Renderer(bot, W, HALF)
+r_top, r_bot = Renderer(top, W, BAR), Renderer(bot, W, BAR)
 
-size = round(W * 0.033)  # 36px at 1080: readable on a phone
+size = round(36 * S)  # readable on a phone
 font = ImageFont.truetype('/System/Library/Fonts/SFNS.ttf', size)
 try:
     font.set_variation_by_axes([100, 28, 400, 590])
 except Exception:
     pass
+PX, PY = round(size * 0.7), round(size * 0.42)
+_l, _t, _r, _b = ImageDraw.Draw(Image.new('RGB', (1, 1))).textbbox((0, 0), 'Reduce motion', font=font)
+PILL = (_b - _t) + 2 * PY
+GAP_LABEL, GAP_PAIR = round(22 * S), round(70 * S)
+
+# Label, bar, gap, label, bar: centred as one group, so the eye only travels a short way.
+group = 2 * (PILL + GAP_LABEL + BAR) + GAP_PAIR
+y0 = (H - group) // 2
+Y_TOP_PILL, Y_TOP_BAR = y0, y0 + PILL + GAP_LABEL
+Y_BOT_PILL = Y_TOP_BAR + BAR + GAP_PAIR
+Y_BOT_BAR = Y_BOT_PILL + PILL + GAP_LABEL
 
 
-def pill(fr, text, y_top):
-    """A quiet label at the top centre of a half: white text on a faint white pill."""
+def pill(fr, text, y):
+    """A quiet label centred above a bar: white text on a faint white pill."""
     d0 = ImageDraw.Draw(fr)
     l, tp, r, b = d0.textbbox((0, 0), text, font=font)
-    px, py = round(size * 0.7), round(size * 0.42)
-    bw, bh = (r - l) + 2 * px, (b - tp) + 2 * py
-    x0, y0 = (W - bw) // 2, y_top + (STRIP - bh) // 2
+    bw = (r - l) + 2 * PX
+    x0 = (W - bw) // 2
     layer = Image.new('RGBA', fr.size, (0, 0, 0, 0))
     d = ImageDraw.Draw(layer)
-    d.rounded_rectangle([x0, y0, x0 + bw, y0 + bh], radius=bh // 2, fill=(255, 255, 255, 36))
-    d.text((x0 + px - l, y0 + py - tp), text, font=font, fill=(255, 255, 255, 235))
+    d.rounded_rectangle([x0, y, x0 + bw, y + PILL], radius=PILL // 2, fill=(255, 255, 255, 36))
+    d.text((x0 + PX - l, y + PY - tp), text, font=font, fill=(255, 255, 255, 235))
     fr.alpha_composite(layer)
 
 
 def frame(local):
     fr = Image.new('RGBA', (W, H), (0, 0, 0, 255))
-    fr.paste(r_top.frame(seg_top, local, seg_top.length), (0, STRIP))
-    fr.paste(r_bot.frame(seg_bot, local, seg_bot.length), (0, 2 * STRIP + HALF))
-    pill(fr, 'Motion', 0)
-    pill(fr, 'Reduce motion', STRIP + HALF)
+    fr.paste(r_top.frame(seg_top, local, seg_top.length), (0, Y_TOP_BAR))
+    fr.paste(r_bot.frame(seg_bot, local, seg_bot.length), (0, Y_BOT_BAR))
+    pill(fr, 'Motion', Y_TOP_PILL)
+    pill(fr, 'Reduce motion', Y_BOT_PILL)
     return fr
 
 
