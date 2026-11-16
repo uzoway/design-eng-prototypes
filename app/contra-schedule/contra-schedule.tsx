@@ -75,10 +75,14 @@ export function ContraSchedule() {
     if (current && reason !== "outside") {
       // A frame later: by then a chip that was just added exists, and inert states have cleared.
       requestAnimationFrame(() => {
+        const composer = composerRef.current;
         // A chip that's been removed is still in the page while it fades, but it's no place for focus.
-        const gone = reason === "removed" || !current.anchor.isConnected;
+        // And on a phone the clock steps aside once a time is set, so focus goes to the chip in its place.
+        const candidates =
+          reason === "removed" ? [composer?.clock] : [current.anchor, composer?.chip, composer?.clock];
+        const next = candidates.find((node) => node && node.isConnected && !node.closest("[inert]"));
 
-        (gone ? composerRef.current?.clock : current.anchor)?.focus({ preventScroll: true });
+        next?.focus({ preventScroll: true });
       });
     }
   }, []);

@@ -446,20 +446,30 @@ html[data-theme-transitioning="true"] body [data-cs-page] *::after {
   scale: 0.97;
 }
 
-/* Contra's tag row. It's empty, and no height, until a time is set. */
+/* Contra's tag row: empty and no height, as on Contra until tags are added. */
 .cs-chips {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
   margin-bottom: 16px;
 }
 
-/* The slot grows to 32px so the card grows smoothly; the chip fades and scales inside it. */
-.cs-chip-slot {
+/*
+ * The time chip's place: the left of the Post row, which is otherwise empty.
+ * It rides with Post, and leaves room for the clock and Schedule on its right
+ * (only Schedule on a phone, where the chip stands in for the clock).
+ */
+.cs-when {
+  position: absolute;
+  left: 0;
+  z-index: 1;
   display: flex;
-  align-items: flex-start;
-  min-width: 0;
+  align-items: center;
+  max-width: calc(100% - 160px);
+  height: 40px;
+}
+
+@media (max-width: 35.98rem) {
+  .cs-when {
+    max-width: calc(100% - 112px);
+  }
 }
 
 .cs-chip {
@@ -467,6 +477,7 @@ html[data-theme-transitioning="true"] body [data-cs-page] *::after {
   align-items: center;
   gap: 4px;
   min-width: 0;
+  max-width: 100%;
   height: 32px;
   padding: 0 12px 0 8px;
   border-radius: 16px;
@@ -510,6 +521,12 @@ html[data-theme-transitioning="true"] body [data-cs-page] *::after {
   align-items: center;
   gap: 8px;
   height: 40px;
+  /* The group's box isn't a target: on a phone it spans the hidden clock, over the time chip's ×. */
+  pointer-events: none;
+}
+
+.cs-actions > * {
+  pointer-events: auto;
 }
 
 .cs-clock {
@@ -535,7 +552,7 @@ html[data-theme-transitioning="true"] body [data-cs-page] *::after {
     visibility 0s linear 0.1s;
 }
 
-.cs-composer[data-open="true"] .cs-clock {
+.cs-clock[data-shown="true"] {
   visibility: visible;
   transition:
     background-color 0.17s ease-out,

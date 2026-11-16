@@ -1,7 +1,16 @@
 "use client";
 
 import { animate, AnimatePresence, motion, useMotionValue, useTransform } from "motion/react";
-import { useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type Ref } from "react";
+import {
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type Ref,
+} from "react";
 import { ClockIcon, CloseIcon, EmojiIcon, HashtagIcon, ImageIcon, TasteTestIcon } from "./icons";
 import { formatWhen, formatWhenLong } from "./schedule";
 import type { PostImage } from "./state";
@@ -26,7 +35,32 @@ const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 /** One spring drives the whole card. Closing is a little quicker than opening. */
 const OPEN = { type: "spring", visualDuration: 0.32, bounce: 0, restDelta: 0.0005, restSpeed: 0.001 } as const;
 const CLOSE = { type: "spring", visualDuration: 0.24, bounce: 0, restDelta: 0.0005, restSpeed: 0.001 } as const;
-const RESIZE = { type: "spring", visualDuration: 0.28, bounce: 0 } as const;
+/*
+ * Size changes that follow a click (the error line, an attached image, Post
+ * turning into Schedule) use a strong ease-out rather than a spring. A spring
+ * starts from rest, so the content faded in while the box had barely moved;
+ * this moves at once and stays ahead of what it's making room for.
+ */
+const RESIZE = { duration: 0.24, ease: EASE_OUT } as const;
+
+/** Below Contra's 36rem breakpoint the Post row has no room for the clock and the time chip together. */
+const NARROW = "(max-width: 35.98rem)";
+
+function subscribeNarrow(onChange: () => void) {
+  const query = window.matchMedia(NARROW);
+
+  query.addEventListener("change", onChange);
+
+  return () => query.removeEventListener("change", onChange);
+}
+
+function useNarrow() {
+  return useSyncExternalStore(
+    subscribeNarrow,
+    () => window.matchMedia(NARROW).matches,
+    () => false,
+  );
+}
 
 /*
  * Contents arrive a beat after the card starts to move, and leave before it
@@ -108,6 +142,15 @@ export function Composer({
   /* Contra's rule: open while you're in it, and for as long as it holds anything. */
   const open = active || !empty;
   const scheduled = at !== null;
+  const narrow = useNarrow();
+  /*
+   * On a phone the chip takes the clock's place once a time is set: it has
+   * the same icon and opens the same popover, and there isn't room for both.
+   */
+  const clockShown = open && !(scheduled && narrow);
+
+  // The error belongs to this attempt: once the composer lets go, it goes too.
+  if (!open && error) setError(false);
 
   /* ------------------------------------------------------------------------ */
   /* Geometry: everything below is derived from one progress value            */
@@ -539,56 +582,56 @@ export function Composer({
             </motion.div>
           </motion.div>
 
-          <div className="cs-chips">
+          {/* Contra's tag row: empty here, as it is on Contra until tags are added. */}
+          <div className="cs-chips" />
+
+          {/*
+           * The time sits on the left of the Post row, riding up and down with
+           * it, so setting one never moves Post or grows the card.
+           */}
+          <motion.div className="cs-when" style={{ bottom: actionsBottom }}>
             <AnimatePresence initial={false}>
               {scheduled && (
                 <motion.div
                   key="when"
-                  className="cs-chip-slot"
-                  initial={reduced ? { height: 32 } : { height: 0 }}
-                  animate={{ height: 32 }}
-                  exit={reduced ? { height: 32, transition: FADE_OUT } : { height: 0 }}
-                  transition={RESIZE}
+                  className="cs-chip"
+                  data-pop-anchor
+                  initial={reduced ? { opacity: 0 } : { opacity: 0, transform: "scale(0.92)" }}
+                  animate={{ opacity: 1, transform: "scale(1)", transition: { duration: 0.2, ease: EASE_OUT } }}
+                  exit={
+                    reduced
+                      ? { opacity: 0, transition: FADE_OUT }
+                      : { opacity: 0, transform: "scale(0.92)", transition: { duration: 0.12, ease: EASE_OUT } }
+                  }
                 >
-                  <motion.div
-                    className="cs-chip"
-                    data-pop-anchor
-                    initial={reduced ? { opacity: 0 } : { opacity: 0, transform: "scale(0.92)" }}
-                    animate={{ opacity: 1, transform: "scale(1)", transition: { duration: 0.2, ease: EASE_OUT } }}
-                    exit={
-                      reduced
-                        ? { opacity: 0, transition: FADE_OUT }
-                        : { opacity: 0, transform: "scale(0.92)", transition: { duration: 0.12, ease: EASE_OUT } }
-                    }
+                  <button
+                    ref={chipRef}
+                    type="button"
+                    className="cs-chip-main"
+                    aria-haspopup="dialog"
+                    aria-expanded={popoverOpen}
+                    aria-label={at !== null ? `Scheduled for ${formatWhenLong(at)}. Change time` : undefined}
+                    onClick={() => onOpenSchedule("chip")}
                   >
-                    <button
-                      ref={chipRef}
-                      type="button"
-                      className="cs-chip-main"
-                      aria-haspopup="dialog"
-                      aria-expanded={popoverOpen}
-                      aria-label={at !== null ? `Scheduled for ${formatWhenLong(at)}. Change time` : undefined}
-                      onClick={() => onOpenSchedule("chip")}
-                    >
-                      <ClockIcon />
-                      <span>{whenLabel}</span>
-                    </button>
-                    <button
-                      type="button"
-                      className="cs-chip-remove"
-                      aria-label="Remove schedule"
-                      onClick={() => {
-                        onClearSchedule();
-                        clockRef.current?.focus({ preventScroll: true });
-                      }}
-                    >
-                      <CloseIcon />
-                    </button>
-                  </motion.div>
+                    <ClockIcon />
+                    <span>{whenLabel}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="cs-chip-remove"
+                    aria-label="Remove schedule"
+                    onClick={() => {
+                      onClearSchedule();
+                      // A frame later: on a phone the clock is inert until the chip has gone.
+                      requestAnimationFrame(() => clockRef.current?.focus({ preventScroll: true }));
+                    }}
+                  >
+                    <CloseIcon />
+                  </button>
                 </motion.div>
               )}
             </AnimatePresence>
-          </div>
+          </motion.div>
 
           {/* One group in one place: Post rides between the toolbar row and its own row. */}
           <motion.div className="cs-actions" style={{ bottom: actionsBottom }}>
@@ -600,11 +643,12 @@ export function Composer({
               aria-haspopup="dialog"
               aria-expanded={popoverOpen}
               data-set={scheduled}
-              inert={!open}
+              data-shown={clockShown}
+              inert={!clockShown}
               initial={false}
               // Shown and hidden in CSS (see .cs-clock), which can't be left half-done by an interruption.
               animate={
-                open
+                clockShown
                   ? {
                       opacity: 1,
                       transform: "scale(1)",
