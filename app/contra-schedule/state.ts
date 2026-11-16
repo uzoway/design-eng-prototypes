@@ -29,6 +29,7 @@ export type Post = {
 export type State = { posts: Post[] };
 
 export type Action =
+  | { type: "seed"; now: number }
   | { type: "add"; post: Post }
   | { type: "reschedule"; id: string; at: number }
   | { type: "post-now"; id: string; now: number }
@@ -51,6 +52,9 @@ export function queuedPosts(posts: Post[], now: number): Post[] {
 
 export function reducer(state: State, action: Action): State {
   switch (action.type) {
+    case "seed":
+      return seed(action.now);
+
     case "add":
       // Undo puts a deleted post back; adding one that's still there changes nothing.
       return state.posts.some((post) => post.id === action.post.id)

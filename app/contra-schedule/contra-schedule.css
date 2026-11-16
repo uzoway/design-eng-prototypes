@@ -1124,6 +1124,531 @@ html[data-theme-transitioning="true"] body [data-cs-page] *::after {
 }
 
 /* -------------------------------------------------------------------------- */
+/* Feed                                                                       */
+/* -------------------------------------------------------------------------- */
+
+/*
+ * Contra's feed card. On Contra it runs on down the page with square bottom
+ * corners; with only a few posts here, the bottom is closed with the same 24px.
+ * Below 62rem it's square and full width.
+ */
+.cs-feed {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--cs-border);
+  background: var(--cs-surface);
+  overflow: clip;
+}
+
+@media (min-width: 62rem) {
+  .cs-feed {
+    border-radius: 24px;
+  }
+}
+
+/*
+ * Each post draws the line above itself, inside the row that grows and
+ * collapses. So a line arrives and leaves with its post and the card never
+ * jumps a pixel when one is added or removed. The first line is tucked under
+ * the card's edge; in the queue it's the line under the header instead.
+ */
+.cs-feed-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.cs-feed-list--flush {
+  margin-top: -1px;
+}
+
+.cs-row {
+  overflow: clip;
+}
+
+.cs-post {
+  padding: 16px;
+  border-top: 1px solid var(--cs-border);
+  background: var(--cs-surface);
+}
+
+.cs-post-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.cs-avatar--ring {
+  border: 1px solid var(--cs-border);
+}
+
+.cs-post-col {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  gap: 8px;
+  min-width: 0;
+  max-width: calc(100% - 40px);
+}
+
+.cs-post-main {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cs-post-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 24px;
+  padding-left: 2px;
+}
+
+.cs-post-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: var(--cs-faint);
+  font-size: 15px;
+  line-height: 24px;
+  letter-spacing: -0.15px;
+}
+
+.cs-post-name {
+  overflow: hidden;
+  color: var(--cs-ink);
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cs-post-date {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.cs-post-date--scheduled {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cs-post-more {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-top: 4px;
+  border-radius: 50%;
+  color: var(--cs-muted);
+}
+
+.cs-post-more::after {
+  content: "";
+  position: absolute;
+  inset: -8px;
+  z-index: -1;
+  border-radius: 50%;
+  transition: background-color 0.2s ease-out;
+}
+
+@media (min-width: 36rem) {
+  .cs-post-row {
+    gap: 12px;
+  }
+
+  .cs-post-col {
+    max-width: calc(100% - 56px);
+  }
+
+  .cs-post-more {
+    margin-top: 2px;
+  }
+}
+
+.cs-post-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cs-post-text {
+  padding: 3px 0 3px 2px;
+  font-size: 15px;
+  line-height: 24px;
+  letter-spacing: -0.16px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.cs-post-text a {
+  color: var(--cs-purple);
+  text-decoration: none;
+}
+
+/* One line of tags; the rest fold into "+N", as on Contra. */
+.cs-tags {
+  position: relative;
+  display: flex;
+  gap: 6px;
+  max-height: 32px;
+  overflow: hidden;
+}
+
+.cs-tags-measure {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  gap: 6px;
+  width: 100%;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.cs-tag {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  height: 32px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  background: var(--cs-fill);
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: -0.14px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.cs-tags > .cs-tag {
+  flex-shrink: 1;
+  min-width: 0;
+}
+
+.cs-tag > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cs-tag[data-kind="hashtag"] {
+  padding-left: 6px;
+}
+
+.cs-tag-logo {
+  width: 16px;
+  height: 16px;
+  border-radius: 2px;
+}
+
+.cs-tag-hash {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--cs-fill-soft);
+  color: var(--cs-muted);
+}
+
+/* Fills the width at the image's own shape, up to 512 tall; the image is contained. */
+.cs-post-media {
+  position: relative;
+  display: grid;
+  max-width: 100%;
+  max-height: 512px;
+  border: 1px solid var(--cs-border);
+  border-radius: 16px;
+  overflow: clip;
+}
+
+.cs-post-media[data-portrait="true"] {
+  background: var(--cs-fill-soft);
+}
+
+.cs-post-media img {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border-radius: 16px;
+  object-fit: contain;
+}
+
+/* Contra's media has a hairline just inside its border. */
+.cs-post-media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 15px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
+  pointer-events: none;
+}
+
+/* The actions: five equal columns (106.9 each at full width), then bookmark and share. */
+.cs-actions-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 32px;
+  padding-right: 8px;
+}
+
+.cs-actions-grid,
+.cs-actions-side,
+.cs-actions-grid > div {
+  display: contents;
+}
+
+.cs-actions-wide {
+  display: none !important;
+}
+
+@media (min-width: 36rem) {
+  .cs-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    width: 100%;
+  }
+
+  .cs-actions-grid > div {
+    display: block;
+  }
+
+  .cs-actions-side {
+    display: flex;
+    align-items: flex-end;
+    gap: 16px;
+  }
+
+  .cs-actions-wide {
+    display: flex !important;
+  }
+
+  div.cs-actions-wide {
+    display: block !important;
+  }
+}
+
+.cs-action {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
+  height: 32px;
+  border-radius: 20px;
+  color: var(--cs-muted);
+  font-size: 15px;
+  font-weight: 500;
+  transition: color 0.2s ease-out;
+}
+
+/* The tinted halo behind an action on hover. */
+.cs-action::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  margin: 0 -8px;
+  border-radius: 20px;
+  transition: background-color 0.2s ease-out;
+}
+
+.cs-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cs-action-count {
+  font-weight: 400;
+  line-height: 24px;
+  letter-spacing: -0.15px;
+  font-variant-numeric: tabular-nums;
+  transition: color 0.2s ease-out;
+}
+
+.cs-action--like[data-liked="true"] .cs-action-count {
+  color: var(--cs-red);
+}
+
+.cs-heart-fill,
+.cs-heart-line {
+  transition: fill 0.2s ease-out;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .cs-post-more:hover::after {
+    background: var(--cs-border);
+  }
+
+  .cs-post-text a:hover {
+    text-decoration: underline;
+  }
+
+  .cs-action:not(:disabled):hover {
+    color: var(--cs-purple);
+  }
+
+  .cs-action:not(:disabled):hover::before {
+    background: #eeebff;
+  }
+
+  .cs-action--like:hover,
+  .cs-action--delete:hover {
+    color: var(--cs-red) !important;
+  }
+
+  .cs-action--like:hover::before,
+  .cs-action--delete:hover::before {
+    background: #ffebeb !important;
+  }
+
+  .cs-action--like:hover .cs-heart-line {
+    fill: var(--cs-red);
+  }
+}
+
+.cs-action:focus-visible {
+  outline-offset: 4px;
+}
+
+/* A rolling number: the old digit leaves one way as the new one arrives from the other. */
+.cs-count {
+  position: relative;
+  display: inline-flex;
+}
+
+.cs-count-digit {
+  display: inline-block;
+}
+
+/* The Scheduled tab's count: quiet, not a notification red. */
+.cs-tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  margin-left: 2px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: var(--cs-border);
+  color: var(--cs-ink-soft);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 20px;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+  /* The digit rolls inside the pill. */
+  overflow: clip;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Scheduled queue (concept)                                                  */
+/* -------------------------------------------------------------------------- */
+
+.cs-feed-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+}
+
+/* Contra's section label ("SUGGESTED TOPICS"). */
+.cs-label {
+  color: var(--cs-muted);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+.cs-feed-zone {
+  color: var(--cs-faint);
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: -0.12px;
+  text-align: right;
+}
+
+/* In place of the actions row: when it goes out, and what you can do about it. */
+.cs-queue-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 32px;
+  padding-right: 8px;
+}
+
+.cs-queue-row .cs-chip {
+  padding-right: 8px;
+  transition: background-color 0.15s ease-out;
+}
+
+.cs-queue-side {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 16px;
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: -0.14px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .cs-chip:has(.cs-chip-main:hover) {
+    background: var(--cs-divider);
+  }
+}
+
+.cs-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 24px 56px;
+  border-top: 1px solid var(--cs-border);
+  text-align: center;
+}
+
+.cs-empty svg {
+  color: var(--cs-faint);
+}
+
+.cs-empty-title {
+  margin-top: 12px;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 24px;
+  letter-spacing: -0.15px;
+}
+
+.cs-empty-text {
+  max-width: 300px;
+  margin-top: 4px;
+  color: var(--cs-muted);
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: -0.14px;
+}
+
+/* -------------------------------------------------------------------------- */
 /* Toast (concept)                                                            */
 /* -------------------------------------------------------------------------- */
 

@@ -28,11 +28,14 @@ export function Tabs({
   tab,
   reduced,
   onSelect,
+  scheduledLabel,
   count,
 }: {
   tab: TabId;
   reduced: boolean;
   onSelect: (tab: TabId) => void;
+  /** The Scheduled tab's name with its count, for screen readers. */
+  scheduledLabel: string;
   /** The Scheduled tab's count pill. */
   count: React.ReactNode;
 }) {
@@ -41,6 +44,7 @@ export function Tabs({
       <button
         type="button"
         className="cs-tab"
+        data-tab="for-you"
         aria-current={tab === "for-you" ? "page" : undefined}
         onClick={() => onSelect("for-you")}
       >
@@ -58,6 +62,8 @@ export function Tabs({
       <button
         type="button"
         className="cs-tab"
+        data-tab="scheduled"
+        aria-label={scheduledLabel}
         aria-current={tab === "scheduled" ? "page" : undefined}
         onClick={() => onSelect("scheduled")}
       >
