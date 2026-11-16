@@ -1,12 +1,14 @@
-// Scheduled posts for Contra (app/contra-schedule), light. The brief's demo flow:
-// open the composer, write a post, schedule it for tomorrow morning, send it, then View.
+// Scheduled posts for Contra (app/contra-schedule), light, at Contra's desktop layout.
+// The whole window first, then in close: write a post, pick today 8:30 AM in the calendar,
+// Schedule, then the Scheduled tab.
 //   node .claude/skills/prototype-video/examples/contra-schedule/record.mjs
 //
-// A 600×750 window: Contra's tablet layout keeps the clock beside Schedule, and the
-// whole 4:5 frame at 1080 wide is 1.8×, so 14px text reads at 25px on a phone.
+// A 1000×1250 window is 4:5, so frame 1 is the whole page. It's still ≥62rem, so it's
+// Contra's desktop column (680px). Close-ups are 460–510 wide (2.1–2.35×), so dpr 2.5.
+// Frames are 2500×3125, so slow 14 keeps capture above ~120fps.
 import { session } from '../../engine/record.mjs';
 
-const OUT = process.env.OUT || 'briefs/refs/lab-masters/contra-schedule/take2';
+const OUT = process.env.OUT || 'briefs/refs/lab-masters/contra-schedule/take3';
 const TEXT = "Batching next week's posts tonight.";
 // The Time away post's real cover has a hand cursor and a tooltip baked in, right where the
 // toast lands. For the video only, serve a copy with both painted out (the live page keeps the
@@ -16,11 +18,11 @@ const CLEAN_IMAGE = 'briefs/refs/lab-masters/contra-schedule/time-away-clean.web
 const s = await session({
   url: process.env.URL || 'http://localhost:3000/contra-schedule/',
   out: OUT,
-  slow: 10,
-  dpr: 3,
-  viewport: { width: 600, height: 750 },
+  slow: 14,
+  dpr: 2.5,
+  viewport: { width: 1000, height: 1250 },
   theme: 'light',
-  start: { x: 0.72, y: 0.62 },
+  start: { x: 0.74, y: 0.6 },
   setup: async (page) => {
     await page.route('**/contra-schedule/time-away.webp', (r) => r.fulfill({ path: CLEAN_IMAGE, contentType: 'image/webp' }));
     await page.reload({ waitUntil: 'networkidle' });
@@ -29,57 +31,89 @@ const s = await session({
   },
 });
 const { page, rect, box, center } = s;
+const at = (sel, opts) => box(opts ? page.locator(sel, opts).first() : page.locator(sel).first());
 
-// 1. The closed composer, then into it.
+// 1. The whole window, still. Then into the composer while the camera pushes in.
 {
   const editor = await rect('.cs-editor');
   await s.phase((p) => {
-    p.hold(0.9); p.mark('toEditor');
-    // Right of where the typed line ends, so the I-beam never sits on the words.
-    p.to(center(editor, 0.8, 0.5), { width: editor.h });
-    p.hold(0.3); p.mark('open'); p.click(); p.hold(0.75);
+    p.hold(1.5); p.mark('toEditor');
+    // Right of where the typed line will end, so the I-beam never sits on the words.
+    p.to(center(editor, 0.65, 0.5), { width: editor.h });
+    p.hold(0.45); p.mark('open'); p.click(); p.hold(0.7);
   });
 }
 // 2. Write the post.
-await s.phase((p) => { p.mark('typeStart'); p.type(TEXT); p.mark('typeEnd'); p.hold(0.45); });
+await s.phase((p) => { p.mark('typeStart'); p.type(TEXT); p.mark('typeEnd'); p.hold(0.4); });
 
-// 3. The clock, then Tomorrow morning.
+// 3. The clock, then Pick date & time: the menu gives way to the calendar.
 {
-  const clock = await box(page.locator('.cs-clock'));
+  const clock = await at('.cs-clock');
   await s.phase((p) => {
     p.mark('toClock'); p.to(center(clock), { width: clock.w });
-    p.hold(0.3); p.mark('clickClock'); p.click(); p.hold(0.55);
+    p.hold(0.35); p.mark('clickClock'); p.click(); p.hold(0.55);
   });
 }
 {
-  const pick = await box(page.locator('.cs-pop .cs-menu-item', { hasText: 'Tomorrow morning' }));
+  const pick = await at('.cs-pop .cs-menu-item', { hasText: 'Pick date' });
   await s.phase((p) => {
     p.mark('toPick'); p.to(center(pick, 0.3, 0.5), { width: pick.h });
-    p.hold(0.4); p.mark('pick'); p.click();
-    // The chip arrives and Post rolls into Schedule. Hold on it.
-    p.hold(1.7); p.mark('scheduled');
+    p.hold(0.3); p.mark('pick'); p.click(); p.hold(0.75);
   });
 }
-// 4. Schedule: the card closes, the count rolls 2 → 3, the toast comes up.
+// 4. Today, then 8:30 AM from the time list, then confirm.
 {
-  const submit = await box(page.locator('.cs-submit'));
+  const today = await at('.cs-cal-day[aria-label$=", today"]');
+  await s.phase((p) => {
+    p.mark('toDay'); p.to(center(today), { width: today.w });
+    p.hold(0.3); p.mark('day'); p.click(); p.hold(0.5);
+  });
+}
+{
+  const trigger = await at('.cs-time-trigger');
+  await s.phase((p) => {
+    p.mark('toTime'); p.to(center(trigger, 0.4, 0.5), { width: trigger.h });
+    p.hold(0.3); p.mark('timeOpen'); p.click(); p.hold(0.5);
+  });
+}
+{
+  const option = await at('.cs-time-option', { hasText: /^8:30 AM$/ });
+  await s.phase((p) => {
+    p.mark('toOption'); p.to(center(option, 0.4, 0.5), { width: option.h });
+    p.hold(0.3); p.mark('time'); p.click(); p.hold(0.5);
+  });
+}
+{
+  const confirm = await at('.cs-cal-foot .cs-button');
+  await s.phase((p) => {
+    p.mark('toConfirm'); p.to(center(confirm), { width: confirm.h });
+    p.hold(0.3); p.mark('confirm'); p.click();
+    // Post rolls into Schedule here, then the camera drifts left to the text and the chip.
+    p.hold(2.3); p.mark('chipSeen');
+  });
+}
+// 5. Schedule: the card closes and the Scheduled count rolls 2 → 3 in the tabs above.
+{
+  const submit = await at('.cs-submit');
   await s.phase((p) => {
     p.mark('toSubmit'); p.to(center(submit), { width: submit.h });
-    p.hold(0.3); p.mark('submit'); p.click(); p.hold(1.3); p.mark('toastIn');
+    p.hold(0.35); p.mark('submit'); p.click(); p.hold(1.3); p.mark('closed');
   });
 }
-// 5. View: the pill glides to Scheduled and the new post is first in the queue.
-// (Measured here: the toast is gone once View is clicked, and phase 6 drifts from its spot.)
-const view = await box(page.locator('.cs-toast-action'));
-await s.phase((p) => {
-  p.mark('toView'); p.to(center(view), { width: view.h });
-  p.hold(0.35); p.mark('view'); p.click(); p.hold(1.4); p.mark('queue');
-});
-// 6. A short drift off the toast's old spot, clear of every control, and let the queue sit.
+// 6. The Scheduled tab: the pill glides over and the post is first in the queue.
 {
+  const tab = await at('[data-tab="scheduled"]');
   await s.phase((p) => {
-    p.to({ x: view.x + view.w / 2 + 110, y: view.y - 30 }, { width: 60, overshoot: false });
-    p.hold(1.6); p.mark('end');
+    p.mark('toTab'); p.to(center(tab), { width: tab.h });
+    p.hold(0.35); p.mark('tab'); p.click(); p.hold(1.7); p.mark('queue');
+  });
+}
+// 7. Drift off the tab, clear of every control, while the camera steps back to the window.
+{
+  const tabs = await rect('.cs-tabs');
+  await s.phase((p) => {
+    p.to({ x: tabs.x + tabs.w * 0.78, y: tabs.y + tabs.h * 0.55 }, { width: 60, overshoot: false });
+    p.hold(1.5); p.mark('end');
   });
 }
 
