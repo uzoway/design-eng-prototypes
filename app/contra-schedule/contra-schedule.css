@@ -233,3 +233,466 @@ html[data-theme-transitioning="true"] body [data-cs-page] *::after {
   align-items: center;
   gap: 4px;
 }
+
+/* -------------------------------------------------------------------------- */
+/* Composer                                                                   */
+/* -------------------------------------------------------------------------- */
+
+/* 680 × 159.3 closed, 425.7 open. Below 62rem Contra gives it 8px side margins. */
+.cs-composer {
+  display: flex;
+  flex-direction: column;
+  margin: 0 8px 24px;
+  border: 1px solid var(--cs-border);
+  border-radius: 24px;
+  background: var(--cs-surface);
+  box-shadow: var(--cs-shadow);
+  /* clip, not hidden: a hidden box can still be scrolled by focus() mid-animation. */
+  overflow: clip;
+}
+
+@media (min-width: 62rem) {
+  .cs-composer {
+    margin: 0 0 24px;
+  }
+}
+
+.cs-composer-form {
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+}
+
+.cs-composer-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding-bottom: 12px;
+}
+
+.cs-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.cs-editor-wrap {
+  flex-grow: 1;
+  min-width: 0;
+  min-height: 56px;
+  cursor: text;
+}
+
+@media (min-width: 62rem) {
+  .cs-editor-wrap {
+    min-height: 48px;
+    margin-top: 6px;
+  }
+}
+
+.cs-editor {
+  padding: 3px 0;
+  color: var(--cs-typed);
+  font-size: 19px;
+  font-weight: 400;
+  line-height: 1.15;
+  white-space: break-spaces;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* Floated at no height, so the caret sits at the start of the line the placeholder is on. */
+.cs-editor[data-empty="true"]::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  color: var(--cs-faint);
+  font-weight: 500;
+  pointer-events: none;
+}
+
+/*
+ * The lower half. Its rows have explicit heights that all follow one spring
+ * (see composer.tsx), so the card's height is simply their sum: nothing is
+ * measured, and nothing can be left behind when the motion is interrupted.
+ */
+.cs-composer-lower {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.cs-error-slot {
+  overflow: clip;
+}
+
+.cs-error {
+  color: var(--cs-red);
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: -0.12px;
+}
+
+/*
+ * The drop zone's window. It fades out over its last 20px, which at rest is
+ * the empty gap under the drop zone; mid-motion it's the soft edge the drop
+ * zone is uncovered through. The slot overlaps the row below by 12px, so it
+ * takes no clicks itself.
+ */
+.cs-media-slot {
+  position: relative;
+  flex-shrink: 0;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 20px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 20px), transparent);
+}
+
+.cs-media {
+  position: relative;
+  width: 100%;
+  pointer-events: auto;
+}
+
+/* 164 tall. The drop zone stays where it is; the rows below slide off it. */
+.cs-dropzone {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  border: 1px solid var(--cs-border);
+  border-radius: 8px;
+  background: var(--cs-fill-soft);
+  text-align: center;
+  transition:
+    background-color 0.15s ease-out,
+    border-color 0.15s ease-out;
+}
+
+.cs-dropzone[data-dragging="true"] {
+  border-color: var(--cs-faint);
+  background: var(--cs-fill);
+}
+
+/* Contra's icon sits inline in a 27.7px line; the box keeps the text where Contra has it. */
+.cs-dropzone > svg {
+  box-sizing: content-box;
+  padding-bottom: 3.67px;
+  color: var(--cs-faint);
+}
+
+.cs-dropzone-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.cs-dropzone-title {
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 24px;
+  letter-spacing: -0.15px;
+}
+
+.cs-dropzone-hint {
+  color: var(--cs-muted);
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: -0.12px;
+}
+
+.cs-dropzone-browse {
+  color: var(--cs-ink);
+  text-decoration: underline;
+}
+
+.cs-preview {
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--cs-border);
+  border-radius: 8px;
+  background: var(--cs-fill-soft);
+  overflow: clip;
+}
+
+.cs-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.cs-preview-remove {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(20, 23, 31, 0.72);
+  color: #fff;
+  transition:
+    background-color 0.17s ease-out,
+    scale 0.16s var(--cs-ease-out);
+}
+
+.cs-preview-remove:active {
+  scale: 0.97;
+}
+
+/* Contra's tag row. It's empty, and no height, until a time is set. */
+.cs-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+/* The slot grows to 32px so the card grows smoothly; the chip fades and scales inside it. */
+.cs-chip-slot {
+  display: flex;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.cs-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  height: 32px;
+  padding: 0 12px 0 8px;
+  border-radius: 16px;
+  background: var(--cs-fill);
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: -0.14px;
+  white-space: nowrap;
+  transform-origin: left center;
+}
+
+.cs-chip svg {
+  color: var(--cs-muted);
+}
+
+.cs-chip-main {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  height: 32px;
+  border-radius: 16px;
+}
+
+.cs-chip-main > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cs-chip-remove {
+  display: flex;
+  border-radius: 50%;
+}
+
+/* Post and the clock: one group, absolutely placed, that rides up as the card opens. */
+.cs-actions {
+  position: absolute;
+  right: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+}
+
+.cs-clock {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--cs-border);
+  border-radius: 50%;
+  background: var(--cs-surface);
+  color: var(--cs-ink);
+  transition:
+    background-color 0.17s ease-out,
+    scale 0.16s var(--cs-ease-out);
+}
+
+/* Filled once a time is set, so it reads as on. */
+.cs-clock[data-set="true"] {
+  background: var(--cs-fill);
+}
+
+/* 63.2 × 40. On hover only the fill changes; the border keeps its colour, as on Contra. */
+.cs-post {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--cs-ink-strong);
+  border-radius: 20px;
+  background: var(--cs-ink-strong);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  letter-spacing: -0.14px;
+  white-space: nowrap;
+  overflow: clip;
+  user-select: none;
+  transition:
+    background-color 0.17s ease-out,
+    scale 0.16s var(--cs-ease-out);
+}
+
+.cs-clock:active,
+.cs-post:active {
+  scale: 0.97;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .cs-clock:not([data-set="true"]):hover {
+    background: var(--cs-fill-soft);
+  }
+
+  .cs-post:hover {
+    background: var(--cs-ink-soft);
+  }
+
+  .cs-preview-remove:hover {
+    background: rgba(20, 23, 31, 0.88);
+  }
+}
+
+.cs-post-sizer {
+  visibility: hidden;
+}
+
+/* Both labels sit in the same place; one is always rolled out of view. */
+.cs-post-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cs-post-slot {
+  flex-shrink: 0;
+  margin-bottom: 4px;
+}
+
+.cs-divider-slot {
+  position: relative;
+  flex-shrink: 0;
+}
+
+/* 16px down a 37px slot, at any height of it. */
+.cs-divider {
+  position: absolute;
+  top: 43.243%;
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: var(--cs-divider);
+}
+
+.cs-toolbar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cs-tools {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  color: var(--cs-ink);
+  line-height: 0;
+}
+
+.cs-tools button {
+  position: relative;
+  line-height: 0;
+}
+
+.cs-tools-divider {
+  display: none;
+  width: 1px;
+  height: 16px;
+  background: var(--cs-border);
+}
+
+.cs-tags {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cs-tags svg {
+  color: var(--cs-ink-soft);
+}
+
+.cs-tags span {
+  display: none;
+  color: var(--cs-muted);
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: -0.14px;
+  white-space: nowrap;
+}
+
+@media (min-width: 36rem) {
+  .cs-tools-divider,
+  .cs-tags span {
+    display: block;
+  }
+}
+
+/* Wraps to two lines as Contra's does; it's never squeezed out. */
+.cs-prompt {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: -0.14px;
+}
+
+.cs-link {
+  border: 1px solid transparent;
+  color: var(--cs-ink-strong);
+  font-weight: 600;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .cs-link:hover {
+    text-decoration: underline;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cs-clock:active,
+  .cs-post:active,
+  .cs-preview-remove:active {
+    scale: none;
+  }
+}
