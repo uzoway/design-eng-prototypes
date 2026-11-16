@@ -9,8 +9,13 @@ import { ScheduleCalendar } from "./schedule-calendar";
 export type PopoverMode = "new" | "reschedule";
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
-/** The popover grows to the calendar's height and back. */
-const RESIZE = { type: "spring", visualDuration: 0.28, bounce: 0 } as const;
+/**
+ * The popover grows to the calendar's height and back. A strong ease-out, not
+ * a spring: a spring starts from rest, so the incoming view had faded in
+ * while the height had barely moved and then caught up late. This moves at
+ * once, ahead of the content.
+ */
+const RESIZE = { duration: 0.24, ease: EASE_OUT } as const;
 const WIDTH = 320;
 /** Kept clear of the column's edges, which on a phone are the screen's. */
 const EDGE = 8;
@@ -160,7 +165,7 @@ export function SchedulePopover({
 
     let controls: ReturnType<typeof animate> | undefined;
 
-    // Opening is a jump to the right height; changing view is the spring.
+    // Opening is a jump to the right height; changing view is the ease-out.
     if (first || reduced || !switched) height.jump(node.offsetHeight);
     else controls = animate(height as never, node.offsetHeight, RESIZE);
 
@@ -301,12 +306,13 @@ export function SchedulePopover({
       ? {
           opacity: 1,
           transform: "translateX(0px)",
-          transition: { duration: 0.2, ease: EASE_OUT, delay: reduced ? 0 : 0.03 },
+          // In just after the old view has mostly gone, so the two never sit half-faded on top of each other.
+          transition: { duration: 0.2, ease: EASE_OUT, delay: reduced ? 0 : 0.05 },
         }
       : {
           opacity: 0,
           transform: reduced ? "translateX(0px)" : `translateX(${from}px)`,
-          transition: { duration: 0.12, ease: EASE_OUT },
+          transition: { duration: 0.08, ease: EASE_OUT },
         };
 
   return (
