@@ -247,13 +247,22 @@ def check(take, segments, W):
             ok = False
             print(f'! segment {n}: {have:.0f} captured fps but {need:.0f} needed at speed {seg.speed} '
                   f'— frames will repeat (stutter). Record that part with a higher slow (setSlow).')
-        for (t0, dur, cx, cy, w) in seg.shots:
+        for k, (t0, dur, cx, cy, w) in enumerate(seg.shots):
             scale = W / w
             if scale > take.dpr + 0.01:
                 ok = False
                 print(f'! segment {n} shot at {t0:.2f}s: {scale:.2f} output px per CSS px but captured at dpr {take.dpr} '
                       f'— upscaled, soft. Record with dpr ≥ {math.ceil(scale)} (use clip to keep frames small).')
-            if scale < 1.8:
+            # How long the camera rests on this shot. Anything held is being read, so it needs the
+            # reading floor; a wide shot may only be a short establishing or closing beat.
+            t1 = seg.shots[k + 1][0] if k + 1 < len(seg.shots) else seg.end
+            held = (min(t1, seg.end) - max(t0 + dur, seg.start)) / seg.speed
+            if scale < 2.0 and held > 2.0:
+                ok = False
+                print(f'! segment {n} shot at {t0:.2f}s: {scale:.2f}× held for {held:.1f}s — 12px text lands at '
+                      f'{12 * scale:.0f}px. Anything held needs ≥2.0× (2.2× for text people read); keep wide '
+                      f'shots to a 1–2s opening or closing beat and push in for the rest.')
+            elif scale < 1.8:
                 print(f'  segment {n} shot at {t0:.2f}s: {scale:.2f}× — 12px text lands at {12 * scale:.0f}px. '
                       f'Fine for a brief establishing shot, too small for anything people need to read.')
     return ok
