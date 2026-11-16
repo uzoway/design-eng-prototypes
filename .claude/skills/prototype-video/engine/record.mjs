@@ -86,6 +86,26 @@ export async function session({
             x: r.left + parseFloat(st.borderLeftWidth) + parseFloat(st.paddingLeft) + w - a.scrollLeft,
             y: r.top + r.height / 2 - h / 2, h, color: st.color,
           };
+        } else if (a && a.isContentEditable) {
+          // A contenteditable editor: the caret is wherever the collapsed selection is.
+          const sel = getSelection();
+          if (sel && sel.rangeCount && sel.isCollapsed && a.contains(sel.anchorNode)) {
+            const st = getComputedStyle(a);
+            const h = Math.round(parseFloat(st.fontSize) * 1.2);
+            const range = sel.getRangeAt(0);
+            let r = range.getClientRects()[0];
+            if (!r || (!r.width && !r.height)) {
+              // An empty editor, or the caret right after a line break, has no rect: use a probe span.
+              const mark = document.createElement('span');
+              mark.textContent = '​';
+              range.insertNode(mark);
+              r = mark.getBoundingClientRect();
+              mark.remove();
+              a.normalize();
+              sel.collapse(range.startContainer, range.startOffset);
+            }
+            caret = { x: r.left, y: r.top + r.height / 2 - h / 2, h, color: st.color };
+          }
         }
         return { kind, caret };
       };
