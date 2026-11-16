@@ -525,7 +525,8 @@ export function Composer({
                   transition={RESIZE}
                 >
                   <motion.div
-                    className="cs-chip cs-chip--when"
+                    className="cs-chip"
+                    data-pop-anchor
                     initial={reduced ? { opacity: 0 } : { opacity: 0, transform: "scale(0.92)" }}
                     animate={{ opacity: 1, transform: "scale(1)", transition: { duration: 0.2, ease: EASE_OUT } }}
                     exit={

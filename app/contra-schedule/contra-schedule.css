@@ -696,3 +696,429 @@ html[data-theme-transitioning="true"] body [data-cs-page] *::after {
     scale: none;
   }
 }
+
+/* -------------------------------------------------------------------------- */
+/* Schedule popover (concept, in the style of Contra's menus)                 */
+/* -------------------------------------------------------------------------- */
+
+/*
+ * Contra's menu: white, 10px corners, the same soft shadow as its cards. The
+ * faint ring is added so it holds its edge over a white card. It lives in the
+ * column, outside the composer, whose overflow would clip it.
+ */
+.cs-pop {
+  position: absolute;
+  z-index: 30;
+  border-radius: 10px;
+  background: var(--cs-surface);
+  box-shadow:
+    var(--cs-shadow),
+    0 0 0 1px rgba(229, 231, 235, 0.6);
+}
+
+.cs-pop-body {
+  position: relative;
+  border-radius: 10px;
+  overflow: clip;
+}
+
+/* Both views are always there, stacked; the body takes the height of the one on show. */
+.cs-pop-view {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+}
+
+.cs-pop[data-side="above"] .cs-pop-view {
+  top: auto;
+  bottom: 0;
+}
+
+.cs-pop-head {
+  padding: 16px 16px 8px;
+}
+
+.cs-pop-title {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 24px;
+  letter-spacing: -0.16px;
+}
+
+.cs-pop-sub {
+  margin-top: 2px;
+  color: var(--cs-muted);
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: -0.14px;
+}
+
+.cs-menu {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 8px;
+}
+
+/* Contra's menu item: 16px text, 12px gap, 12px 16px padding, 48 tall. */
+.cs-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 16px;
+  font-size: 16px;
+  line-height: 24px;
+  transition: background-color 0.1s ease-out;
+}
+
+.cs-menu-item:focus-visible {
+  outline-offset: -2px;
+  background: var(--cs-fill);
+}
+
+.cs-menu-item--danger {
+  color: var(--cs-red);
+}
+
+.cs-menu-hint {
+  margin-left: auto;
+  color: var(--cs-muted);
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: -0.14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.cs-menu-chevron {
+  margin-left: auto;
+  color: var(--cs-muted);
+}
+
+.cs-menu-rule {
+  height: 1px;
+  margin: 4px 0;
+  background: var(--cs-divider);
+}
+
+/* Calendar view */
+
+.cs-cal {
+  display: flex;
+  flex-direction: column;
+}
+
+.cs-cal-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 12px 4px;
+}
+
+.cs-cal-month {
+  flex: 1;
+  padding-left: 4px;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 24px;
+  letter-spacing: -0.15px;
+}
+
+.cs-icon-button {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: var(--cs-ink);
+  transition:
+    background-color 0.15s ease-out,
+    color 0.15s ease-out,
+    scale 0.16s var(--cs-ease-out);
+}
+
+.cs-icon-button[aria-disabled="true"] {
+  color: var(--cs-off);
+  cursor: default;
+}
+
+.cs-icon-button:not([aria-disabled="true"]):active {
+  scale: 0.97;
+}
+
+.cs-cal-grid {
+  padding: 0 16px;
+}
+
+.cs-cal-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.cs-cal-weekday {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  color: var(--cs-faint);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
+}
+
+.cs-cal-days {
+  position: relative;
+}
+
+/* One cell big; translated by whole cells to the selected day. */
+.cs-cal-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  justify-content: center;
+  width: calc(100% / 7);
+  height: 36px;
+  pointer-events: none;
+}
+
+.cs-cal-fill > span {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--cs-ink-strong);
+}
+
+.cs-cal-cell {
+  display: flex;
+  justify-content: center;
+}
+
+.cs-cal-day {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: -0.14px;
+  font-variant-numeric: tabular-nums;
+  transition:
+    background-color 0.1s ease-out,
+    color 0.15s ease-out;
+}
+
+.cs-cal-day[data-off="true"] {
+  color: var(--cs-off);
+}
+
+.cs-cal-day[data-selected="true"] {
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Today: a 4px dot under the number. */
+.cs-cal-day[data-today="true"]::after {
+  content: "";
+  position: absolute;
+  bottom: 4px;
+  left: calc(50% - 2px);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.cs-cal-time {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--cs-divider);
+}
+
+.cs-cal-time-label {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  letter-spacing: -0.14px;
+}
+
+.cs-cal-zone {
+  overflow: hidden;
+  color: var(--cs-muted);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 16px;
+  letter-spacing: -0.12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cs-time {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.cs-time-trigger {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 10px 0 14px;
+  border: 1px solid var(--cs-border);
+  border-radius: 18px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  letter-spacing: -0.14px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  transition:
+    background-color 0.15s ease-out,
+    scale 0.16s var(--cs-ease-out);
+}
+
+.cs-time-trigger svg {
+  color: var(--cs-muted);
+}
+
+.cs-time-trigger:active {
+  scale: 0.97;
+}
+
+/* Opens upwards, over the calendar, so it never runs out of the popover. */
+.cs-time-list {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 6px);
+  z-index: 2;
+  width: 128px;
+  max-height: 224px;
+  padding: 4px;
+  border-radius: 10px;
+  background: var(--cs-surface);
+  box-shadow:
+    var(--cs-shadow),
+    0 0 0 1px rgba(229, 231, 235, 0.9);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  transform-origin: calc(100% - 24px) bottom;
+}
+
+.cs-time-option {
+  display: flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 6px;
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: -0.14px;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: background-color 0.1s ease-out;
+}
+
+.cs-time-option:focus-visible {
+  outline: none;
+  background: var(--cs-fill);
+}
+
+.cs-time-option[aria-selected="true"] {
+  font-weight: 600;
+}
+
+.cs-time-option[aria-disabled="true"] {
+  color: var(--cs-off);
+  cursor: default;
+}
+
+.cs-cal-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--cs-divider);
+}
+
+.cs-cal-summary {
+  min-width: 0;
+  color: var(--cs-ink-soft);
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: -0.14px;
+}
+
+/* Contra's primary button, at the popover's smaller size. */
+.cs-button {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0 16px;
+  border: 1px solid var(--cs-ink-strong);
+  border-radius: 18px;
+  background: var(--cs-ink-strong);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  letter-spacing: -0.14px;
+  white-space: nowrap;
+  transition:
+    background-color 0.17s ease-out,
+    border-color 0.17s ease-out,
+    color 0.17s ease-out,
+    scale 0.16s var(--cs-ease-out);
+}
+
+.cs-button[aria-disabled="true"] {
+  border-color: var(--cs-divider);
+  background: var(--cs-divider);
+  color: #d0d4dc;
+  cursor: not-allowed;
+}
+
+.cs-button:not([aria-disabled="true"]):active {
+  scale: 0.97;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .cs-menu-item:hover,
+  .cs-icon-button:not([aria-disabled="true"]):hover,
+  .cs-cal-day:not([data-selected="true"], [data-off="true"]):hover,
+  .cs-time-option:not([aria-disabled="true"]):hover {
+    background: var(--cs-fill);
+  }
+
+  .cs-time-trigger:hover {
+    background: var(--cs-fill-soft);
+  }
+
+  .cs-button:not([aria-disabled="true"]):hover {
+    background: var(--cs-ink-soft);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cs-icon-button:active,
+  .cs-time-trigger:active,
+  .cs-button:active {
+    scale: none !important;
+  }
+}
