@@ -864,13 +864,27 @@ html[data-theme-transitioning="true"] body [data-cs-page] *::after {
   scale: 0.97;
 }
 
+/*
+ * Seven 36px columns with whole-pixel gaps, so the selected day's fill, which
+ * moves by transform, lands exactly on a day that was placed by layout.
+ */
 .cs-cal-grid {
+  --cs-cal-gap: 6px;
+
   padding: 0 16px;
+}
+
+@media (max-width: 335px) {
+  .cs-cal-grid {
+    --cs-cal-gap: 2px;
+  }
 }
 
 .cs-cal-row {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, 36px);
+  column-gap: var(--cs-cal-gap);
+  justify-content: center;
 }
 
 .cs-cal-weekday {
@@ -886,21 +900,22 @@ html[data-theme-transitioning="true"] body [data-cs-page] *::after {
 
 .cs-cal-days {
   position: relative;
+  width: calc(252px + 6 * var(--cs-cal-gap));
+  margin: 0 auto;
 }
 
-/* One cell big; translated by whole cells to the selected day. */
+/* One column's pitch wide, so moving it by 100% is moving it one day along. */
 .cs-cal-fill {
   position: absolute;
   top: 0;
   left: 0;
-  display: flex;
-  justify-content: center;
-  width: calc(100% / 7);
+  width: calc(36px + var(--cs-cal-gap));
   height: 36px;
   pointer-events: none;
 }
 
 .cs-cal-fill > span {
+  display: block;
   width: 36px;
   height: 36px;
   border-radius: 50%;

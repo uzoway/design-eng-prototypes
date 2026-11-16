@@ -31,6 +31,7 @@ export function SchedulePopover({
   ref,
   anchor,
   container,
+  openId,
   mode,
   value,
   now,
@@ -44,6 +45,11 @@ export function SchedulePopover({
   anchor: HTMLElement;
   /** The column it's positioned in, so it scrolls with the page. */
   container: HTMLElement;
+  /**
+   * Counts each time it's opened. Opened again while it was still closing,
+   * it's the same popover turned round, and this is how it knows to start over.
+   */
+  openId: number;
   mode: PopoverMode;
   value: number | null;
   now: number;
@@ -54,6 +60,13 @@ export function SchedulePopover({
 }) {
   const [view, setView] = useState<"picks" | "custom">("picks");
   const [place, setPlace] = useState<Place | null>(null);
+  const [opened, setOpened] = useState(openId);
+
+  // Reopened mid-close: back to the quick picks, as if it had opened fresh.
+  if (opened !== openId) {
+    setOpened(openId);
+    setView("picks");
+  }
 
   const rootRef = useRef<HTMLDivElement | null>(null);
   const picksRef = useRef<HTMLDivElement>(null);
@@ -174,12 +187,13 @@ export function SchedulePopover({
   /* Focus and dismissal                                                      */
   /* ------------------------------------------------------------------------ */
 
-  // Focus goes to the first pick as the popover opens. It can't before the popover is placed: it's hidden until then.
+  // Focus goes to the first pick each time the popover opens. It can't before
+  // the popover is placed: it's hidden until then.
   const placed = place !== null;
 
   useEffect(() => {
     if (placed) menuRef.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus({ preventScroll: true });
-  }, [placed]);
+  }, [placed, openId]);
 
   useEffect(() => {
     function onPointerDown(event: PointerEvent) {
@@ -191,20 +205,25 @@ export function SchedulePopover({
       onClose("outside");
     }
 
-    document.addEventListener("pointerdown", onPointerDown, true);
+    // Escape closes it wherever focus is: a click on the popover's own
+    // background leaves focus on the page, and Safari never focuses a clicked button.
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key !== "Escape" || event.defaultPrevented) return;
 
-    return () => document.removeEventListener("pointerdown", onPointerDown, true);
+      event.preventDefault();
+      onClose("escape");
+    }
+
+    document.addEventListener("pointerdown", onPointerDown, true);
+    document.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown, true);
+      document.removeEventListener("keydown", onKeyDown);
+    };
   }, [anchor, onClose]);
 
   function onKeyDown(event: React.KeyboardEvent) {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      event.stopPropagation();
-      onClose("escape");
-
-      return;
-    }
-
     // Focus stays inside while it's open: Tab wraps from the last control to the first.
     if (event.key === "Tab") {
       const root = rootRef.current;
@@ -258,8 +277,17 @@ export function SchedulePopover({
 
   function showPicks() {
     setView("picks");
-    customTriggerRef.current?.focus({ preventScroll: true });
   }
+
+  // Back from the calendar, focus returns to the row that led there. After the
+  // render, because the picks are inert until they're the view on show again.
+  const lastView = useRef(view);
+
+  useEffect(() => {
+    if (view === "picks" && lastView.current === "custom") customTriggerRef.current?.focus({ preventScroll: true });
+
+    lastView.current = view;
+  }, [view]);
 
   const picks = quickPicks(now);
   const title = mode === "reschedule" ? "Reschedule" : "Schedule post";

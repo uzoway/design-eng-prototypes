@@ -386,7 +386,10 @@ export function Composer({
       return null;
     });
     // The × is about to go; focus moves to the control that brings an image back.
-    cardRef.current?.querySelector<HTMLButtonElement>(".cs-dropzone")?.focus({ preventScroll: true });
+    // A frame later, because the drop zone is inert until the image is gone.
+    requestAnimationFrame(() => {
+      cardRef.current?.querySelector<HTMLButtonElement>(".cs-dropzone")?.focus({ preventScroll: true });
+    });
   }
 
   function submit() {

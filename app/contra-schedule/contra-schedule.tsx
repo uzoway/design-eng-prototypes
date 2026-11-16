@@ -14,7 +14,8 @@ import { readNow, useNow } from "./use-now";
 import "./contra-schedule.css";
 
 /** What the schedule popover is setting a time for, and the control it opened from. */
-type Popover = { anchor: HTMLElement; draft: true; id?: undefined } | { anchor: HTMLElement; draft: false; id: string };
+type Target = { anchor: HTMLElement; draft: true; id?: undefined } | { anchor: HTMLElement; draft: false; id: string };
+type Popover = Target & { openId: number };
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 
@@ -56,12 +57,7 @@ export function ContraSchedule() {
   /* Popover                                                                  */
   /* ------------------------------------------------------------------------ */
 
-  /** Opens the popover from a control, or closes it if that control already has it open. */
-  function toggle(next: Popover | null) {
-    if (!next) return;
-
-    setPopover((current) => (current?.anchor === next.anchor ? null : next));
-  }
+  const opens = useRef(0);
 
   /* The open popover, readable from callbacks without making them change identity. */
   const popoverNow = useRef(popover);
@@ -70,21 +66,37 @@ export function ContraSchedule() {
     popoverNow.current = popover;
   }, [popover]);
 
-  const close = useCallback((reason: "escape" | "outside" | "picked") => {
+  const close = useCallback((reason: "escape" | "outside" | "picked" | "removed") => {
     const current = popoverNow.current;
 
     setPopover(null);
 
     // Escape and a pick hand focus back to where the popover came from.
     if (current && reason !== "outside") {
-      // By the next frame a chip that was removed is gone, and one that was added exists.
+      // A frame later: by then a chip that was just added exists, and inert states have cleared.
       requestAnimationFrame(() => {
-        const anchor = current.anchor.isConnected ? current.anchor : composerRef.current?.clock;
+        // A chip that's been removed is still in the page while it fades, but it's no place for focus.
+        const gone = reason === "removed" || !current.anchor.isConnected;
 
-        anchor?.focus({ preventScroll: true });
+        (gone ? composerRef.current?.clock : current.anchor)?.focus({ preventScroll: true });
       });
     }
   }, []);
+
+  /** Opens the popover from a control, or closes it if that control already has it open. */
+  function toggle(next: Target | null) {
+    if (!next) return;
+
+    if (popoverNow.current?.anchor === next.anchor) {
+      // Closed by the control that opened it: focus goes back there, as with Escape.
+      close("escape");
+
+      return;
+    }
+
+    opens.current += 1;
+    setPopover({ ...next, openId: opens.current });
+  }
 
   /* ------------------------------------------------------------------------ */
   /* Toasts and tabs                                                          */
@@ -238,6 +250,7 @@ export function ContraSchedule() {
             ref={popoverRef}
             anchor={open.anchor}
             container={column}
+            openId={open.openId}
             mode={open.draft ? "new" : "reschedule"}
             value={open.draft ? draftAt : (rescheduled?.at ?? null)}
             now={now}
@@ -250,7 +263,7 @@ export function ContraSchedule() {
             }}
             onRemove={() => {
               setDraftAt(null);
-              close("picked");
+              close("removed");
             }}
             onClose={close}
           />

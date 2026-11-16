@@ -232,9 +232,23 @@ export function ScheduleCalendar({
       setListOpen(false);
     }
 
-    document.addEventListener("pointerdown", onPointerDown, true);
+    // Escape closes only the list, wherever focus is. Caught first, so the popover never hears it.
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
 
-    return () => document.removeEventListener("pointerdown", onPointerDown, true);
+      event.preventDefault();
+      event.stopPropagation();
+      setListOpen(false);
+      triggerRef.current?.focus({ preventScroll: true });
+    }
+
+    document.addEventListener("pointerdown", onPointerDown, true);
+    document.addEventListener("keydown", onKeyDown, true);
+
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown, true);
+      document.removeEventListener("keydown", onKeyDown, true);
+    };
   }, [listOpen]);
 
   function onListKeyDown(event: React.KeyboardEvent) {
@@ -245,13 +259,6 @@ export function ScheduleCalendar({
     let next = -1;
 
     switch (event.key) {
-      case "Escape":
-        // Only the list closes; the popover stays.
-        event.preventDefault();
-        event.stopPropagation();
-        closeList(true);
-
-        return;
       case "Tab":
         event.preventDefault();
         event.stopPropagation();
