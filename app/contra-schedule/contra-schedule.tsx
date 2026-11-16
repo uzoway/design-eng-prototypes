@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion, useIsPresent, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { Composer, type ComposerHandle, type Draft } from "./composer";
 import { Count } from "./count";
@@ -18,6 +18,49 @@ type Target = { anchor: HTMLElement; draft: true; id?: undefined } | { anchor: H
 type Popover = Target & { openId: number };
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
+const EASE_FADE = [0.25, 0.46, 0.45, 0.94] as const;
+/** How far a tab's content shifts, towards the side its tab is on. */
+const SHIFT = 12;
+
+const TAB_ORDER: TabId[] = ["for-you", "scheduled"];
+
+/**
+ * A tab's content. Switching fades through: the old one goes quickly, then the
+ * new one comes in from the side of its tab, arriving with the pill. Two feeds
+ * crossfading on top of each other would be a mess of overlapping text.
+ */
+function Pane({ direction, reduced, children }: { direction: number; reduced: boolean; children: React.ReactNode }) {
+  // A pane on its way out can't be clicked.
+  const present = useIsPresent();
+  const offset = (sign: number) => (reduced ? "translateX(0px)" : `translateX(${sign * SHIFT}px)`);
+
+  return (
+    <motion.div
+      className="cs-pane"
+      inert={!present}
+      // Variants, so the pane that's leaving is told which way this switch goes, not the last one.
+      custom={direction}
+      variants={{
+        enter: (sign: number) => ({ opacity: 0, transform: offset(sign) }),
+        shown: {
+          opacity: 1,
+          transform: "translateX(0px)",
+          transition: { opacity: { duration: 0.2, ease: EASE_FADE }, transform: { duration: 0.24, ease: EASE_OUT } },
+        },
+        leave: (sign: number) => ({
+          opacity: 0,
+          transform: offset(-sign / 2),
+          transition: { duration: 0.1, ease: EASE_FADE },
+        }),
+      }}
+      initial="enter"
+      animate="shown"
+      exit="leave"
+    >
+      {children}
+    </motion.div>
+  );
+}
 
 let toasts = 0;
 
@@ -28,6 +71,8 @@ export function ContraSchedule() {
   const [state, dispatch] = useReducer(reducer, { posts: [] });
   const [seeded, setSeeded] = useState(false);
   const [tab, setTab] = useState<TabId>("for-you");
+  /** 1 when the last switch went right, -1 when it went left. */
+  const [direction, setDirection] = useState(1);
   const [draftAt, setDraftAt] = useState<number | null>(null);
   const [popover, setPopover] = useState<Popover | null>(null);
   const [toast, setToast] = useState<ToastState | null>(null);
@@ -116,6 +161,7 @@ export function ContraSchedule() {
   }, []);
 
   function select(next: TabId) {
+    if (next !== tab) setDirection(TAB_ORDER.indexOf(next) > TAB_ORDER.indexOf(tab) ? 1 : -1);
     setTab(next);
     // The queue's popover belongs to a post that's about to leave the screen.
     setPopover((current) => (current && !current.draft ? null : current));
@@ -232,20 +278,27 @@ export function ContraSchedule() {
         onSubmit={submit}
       />
 
-      {now !== null &&
-        (tab === "for-you" ? (
-          <ForYou posts={feed} now={now} reduced={reduced} onLike={(id) => dispatch({ type: "like", id })} />
-        ) : (
-          <Scheduled
-            posts={queue}
-            now={now}
-            reduced={reduced}
-            reschedulingId={open && !open.draft ? open.id : null}
-            onReschedule={(post, anchor) => toggle({ anchor, draft: false, id: post.id })}
-            onPostNow={postNow}
-            onDelete={remove}
-          />
-        ))}
+      {now !== null && (
+        <AnimatePresence mode="wait" initial={false} custom={direction}>
+          {tab === "for-you" ? (
+            <Pane key="for-you" direction={direction} reduced={reduced}>
+              <ForYou posts={feed} now={now} reduced={reduced} onLike={(id) => dispatch({ type: "like", id })} />
+            </Pane>
+          ) : (
+            <Pane key="scheduled" direction={direction} reduced={reduced}>
+              <Scheduled
+                posts={queue}
+                now={now}
+                reduced={reduced}
+                reschedulingId={open && !open.draft ? open.id : null}
+                onReschedule={(post, anchor) => toggle({ anchor, draft: false, id: post.id })}
+                onPostNow={postNow}
+                onDelete={remove}
+              />
+            </Pane>
+          )}
+        </AnimatePresence>
+      )}
 
       <AnimatePresence>
         {open && column && now !== null && (

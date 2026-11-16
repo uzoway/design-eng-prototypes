@@ -177,6 +177,8 @@ html[data-theme-transitioning="true"] body [data-cs-page] *::after {
   gap: 24px;
   height: 56px;
   padding: 0 16px 16px 0;
+  /* The pill sits under every label, not just its own tab's, while it glides past the others. */
+  isolation: isolate;
 }
 
 /*
@@ -222,13 +224,13 @@ html[data-theme-transitioning="true"] body [data-cs-page] *::after {
 /* The selected pill is one element that glides between the tabs. */
 .cs-tab-pill {
   position: absolute;
+  z-index: -1;
   inset: 0;
   border-radius: 32px;
   background: var(--cs-fill);
 }
 
 .cs-tab-content {
-  position: relative;
   display: flex;
   align-items: center;
   gap: 4px;
