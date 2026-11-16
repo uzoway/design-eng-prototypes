@@ -21,8 +21,6 @@ const WIDTH = 320;
 const EDGE = 8;
 /** The gap between the trigger and the popover: Contra's menus sit 8px off theirs. */
 const OFFSET = 8;
-/** Room the taller view needs, used to decide whether to open upwards. */
-const TALLEST = 500;
 
 type Place = { left: number; top?: number; bottom?: number; originX: number; side: "below" | "above" };
 
@@ -106,9 +104,17 @@ export function SchedulePopover({
       const wanted = fromRight ? trigger.right - box.left - width : trigger.left - box.left;
       const left = Math.round(Math.max(EDGE, Math.min(wanted, box.width - width - EDGE)));
 
+      /*
+       * It opens on the side with room for its taller view, the calendar, so
+       * switching views never runs it off the screen. With room on neither
+       * side (a phone) it opens below, where the page can scroll to it: above,
+       * it could grow past the top of the page, out of reach.
+       */
+      const tallest = Math.max(picksRef.current?.offsetHeight ?? 0, customRef.current?.offsetHeight ?? 0);
+      const needed = tallest + OFFSET + EDGE;
       const below = window.innerHeight - trigger.bottom;
       const above = trigger.top;
-      const side = keepSide ?? (below < TALLEST && above > below ? "above" : "below");
+      const side = keepSide ?? (below >= needed || above < needed ? "below" : "above");
 
       setPlace({
         left,
@@ -123,6 +129,34 @@ export function SchedulePopover({
   );
 
   const sideRef = useRef<Place["side"] | undefined>(undefined);
+  const placeRef = useRef<Place | null>(null);
+
+  useEffect(() => {
+    placeRef.current = place;
+  }, [place]);
+
+  /**
+   * Scrolls the page just enough to show the popover at a height it's heading
+   * for, when that would run past the screen's edge (the calendar on a phone).
+   */
+  function reveal(target: number) {
+    const at = placeRef.current;
+
+    if (!at) return;
+
+    const box = container.getBoundingClientRect();
+    const behavior = reduced ? "instant" : "smooth";
+
+    if (at.side === "below" && at.top !== undefined) {
+      const over = box.top + at.top + target - (window.innerHeight - EDGE);
+
+      if (over > 0) window.scrollBy({ top: over, behavior });
+    } else if (at.side === "above" && at.bottom !== undefined) {
+      const over = EDGE - (box.bottom - at.bottom - target);
+
+      if (over > 0) window.scrollBy({ top: -over, behavior });
+    }
+  }
 
   useLayoutEffect(() => {
     position(sideRef.current);
@@ -169,6 +203,8 @@ export function SchedulePopover({
     if (first || reduced || !switched) height.jump(node.offsetHeight);
     else controls = animate(height as never, node.offsetHeight, RESIZE);
 
+    if (switched) reveal(node.offsetHeight);
+
     // A view that changes height by itself (an evening pick expiring) is followed at once.
     const observer = new ResizeObserver(() => {
       if (controls) return;
@@ -186,6 +222,8 @@ export function SchedulePopover({
       observer.disconnect();
       controls?.stop();
     };
+    // reveal reads the latest placement through a ref.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [height, reduced, view]);
 
   /* ------------------------------------------------------------------------ */
@@ -197,7 +235,12 @@ export function SchedulePopover({
   const placed = place !== null;
 
   useEffect(() => {
-    if (placed) menuRef.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus({ preventScroll: true });
+    if (!placed) return;
+
+    // Opened low on a phone, the page scrolls just enough to show it all.
+    reveal(picksRef.current?.offsetHeight ?? 0);
+    menuRef.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus({ preventScroll: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [placed, openId]);
 
   useEffect(() => {
