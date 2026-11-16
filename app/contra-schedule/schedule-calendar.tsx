@@ -68,6 +68,8 @@ export function ScheduleCalendar({
   const [picked, setPicked] = useState(() => initial(value, now));
   const [month, setMonth] = useState(() => new Date(picked.getFullYear(), picked.getMonth(), 1));
   const [listOpen, setListOpen] = useState(false);
+  /** Whether the last pick was a click. Arrow keys move the fill at once: they repeat too fast for a glide. */
+  const [clicked, setClicked] = useState(true);
 
   const gridRef = useRef<HTMLDivElement>(null);
   const backRef = useRef<HTMLButtonElement>(null);
@@ -101,7 +103,7 @@ export function ScheduleCalendar({
 
   const fillShown = pickedIndex >= 0;
   const fillIndex = fillShown ? pickedIndex : fill.index;
-  const glide = fill.glide && fill.monthKey === monthKey;
+  const glide = fill.glide && fill.monthKey === monthKey && clicked;
 
   // Coming into view, focus lands on the selected day (or Back, if that day isn't on show).
   const wasActive = useRef(active);
@@ -129,12 +131,13 @@ export function ScheduleCalendar({
   /* Picking a day                                                            */
   /* ------------------------------------------------------------------------ */
 
-  function pickDay(day: Date) {
+  function pickDay(day: Date, by: "click" | "key") {
     // The time you'd chosen carries over; today starts at its first slot still open.
     const next = defaultTime(day, now, picked);
 
     if (!next) return false;
 
+    setClicked(by === "click");
     setPicked(next);
     setMonth(new Date(next.getFullYear(), next.getMonth(), 1));
 
@@ -187,7 +190,7 @@ export function ScheduleCalendar({
       if (isDayPast(target, now)) target = addDays(target, 1);
     }
 
-    if (pickDay(target)) refocus.current = true;
+    if (pickDay(target, "key")) refocus.current = true;
   }
 
   /* ------------------------------------------------------------------------ */
@@ -373,7 +376,7 @@ export function ScheduleCalendar({
                       data-today={today}
                       tabIndex={selected ? 0 : -1}
                       aria-label={`${formatDayLong(day)}${today ? ", today" : ""}`}
-                      onClick={() => pickDay(day)}
+                      onClick={() => pickDay(day, "click")}
                     >
                       {day.getDate()}
                     </button>

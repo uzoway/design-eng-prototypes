@@ -396,9 +396,9 @@ function Row({
       layout={reduced ? false : "position"}
       layoutDependency={order}
       initial={reduced ? { opacity: 0 } : { height: 0, opacity: 0 }}
-      animate={{ height: "auto", opacity: 1, transition: reduced ? { duration: 0.15 } : ROW_IN }}
+      animate={{ height: "auto", opacity: 1, transition: reduced ? { duration: 0.15, ease: EASE_OUT } : ROW_IN }}
       exit={
-        reduced ? { opacity: 0, transition: { duration: 0.1 } } : { height: 0, opacity: 0, transition: ROW_OUT }
+        reduced ? { opacity: 0, transition: { duration: 0.1, ease: EASE_OUT } } : { height: 0, opacity: 0, transition: ROW_OUT }
       }
       transition={{ layout: ROW_SPRING }}
     >

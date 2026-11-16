@@ -374,16 +374,17 @@ export function SchedulePopover({
         transformOrigin: place ? `${place.originX}px ${place.side === "below" ? "top" : "bottom"}` : undefined,
         visibility: place ? "visible" : "hidden",
       }}
-      initial={reduced ? { opacity: 0 } : { opacity: 0, transform: "translateY(-4px) scale(0.96)" }}
+      // Scales out of its trigger, whichever side that's on: the origin carries the direction.
+      initial={reduced ? { opacity: 0 } : { opacity: 0, transform: "scale(0.96)" }}
       animate={{
         opacity: 1,
-        transform: "translateY(0px) scale(1)",
+        transform: "scale(1)",
         transition: { duration: 0.18, ease: EASE_OUT },
       }}
       exit={
         reduced
           ? { opacity: 0, transition: { duration: 0.12, ease: EASE_OUT } }
-          : { opacity: 0, transform: "translateY(-4px) scale(0.96)", transition: { duration: 0.12, ease: EASE_OUT } }
+          : { opacity: 0, transform: "scale(0.96)", transition: { duration: 0.12, ease: EASE_OUT } }
       }
       onKeyDown={onKeyDown}
     >
