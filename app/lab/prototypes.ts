@@ -27,6 +27,14 @@ export const prototypes: Prototype[] = [
     featured: true,
   },
   {
+    slug: "linkedin-nav",
+    title: "LinkedIn nav icons",
+    description:
+      "A LinkedIn concept that keeps the top nav's icons and gives each one its own small motion: the house lights up, the people make room, the briefcase opens, the bubble types and the bell rings.",
+    disciplines: ["Motion", "SVG", "Accessibility"],
+    featured: true,
+  },
+  {
     slug: "homeview-clock",
     title: "Apple Homeview clock",
     description:
@@ -66,7 +74,7 @@ export const prototypes: Prototype[] = [
     description:
       "A Spotify concept that marks a song's best part on the scrubber, with a one-tap jump that dips the volume so the skip doesn't sound like a cut.",
     disciplines: ["Interaction", "Motion", "Audio"],
-    featured: true,
+    featured: false,
   },
   {
     slug: "reliable-upload",
