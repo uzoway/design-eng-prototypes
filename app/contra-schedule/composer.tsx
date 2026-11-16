@@ -92,6 +92,8 @@ export function Composer({
   const postLabelRef = useRef<HTMLSpanElement>(null);
   const scheduleLabelRef = useRef<HTMLSpanElement>(null);
   const postRef = useRef<HTMLButtonElement>(null);
+  /** When the last post went out. A second press straight after is a double-click, not an empty post. */
+  const sentAt = useRef(-Infinity);
 
   useImperativeHandle(ref, () => ({
     get clock() {
@@ -333,6 +335,9 @@ export function Composer({
   }
 
   function onPointerDown(event: React.PointerEvent) {
+    // A second press on Post just after it sent is a double-click: it doesn't reopen the emptied composer.
+    if ((event.target as Element).closest(".cs-submit") && performance.now() - sentAt.current < 600) return;
+
     setActive(true);
 
     // A press on the card itself, not on a control, puts the caret in the editor.
@@ -393,6 +398,8 @@ export function Composer({
   }
 
   function submit() {
+    if (performance.now() - sentAt.current < 600) return;
+
     if (text.trim() === "") {
       setError(true);
       setActive(true);
@@ -402,6 +409,7 @@ export function Composer({
     }
 
     onSubmit({ text, image: image ? { src: image.src, width: image.width, height: image.height, alt: "" } : undefined });
+    sentAt.current = performance.now();
 
     // The image now belongs to the post, so its URL is kept.
     editorRef.current?.replaceChildren();
