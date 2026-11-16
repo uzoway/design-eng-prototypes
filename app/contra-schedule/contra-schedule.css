@@ -523,9 +523,24 @@ html[data-theme-transitioning="true"] body [data-cs-page] *::after {
   border-radius: 50%;
   background: var(--cs-surface);
   color: var(--cs-ink);
+  /*
+   * Only there while the composer is open. Hidden a moment after it closes,
+   * once the fade is done; a CSS transition, so reopening mid-close simply
+   * cancels the hide.
+   */
+  visibility: hidden;
   transition:
     background-color 0.17s ease-out,
-    scale 0.16s var(--cs-ease-out);
+    scale 0.16s var(--cs-ease-out),
+    visibility 0s linear 0.1s;
+}
+
+.cs-composer[data-open="true"] .cs-clock {
+  visibility: visible;
+  transition:
+    background-color 0.17s ease-out,
+    scale 0.16s var(--cs-ease-out),
+    visibility 0s;
 }
 
 /* Filled once a time is set, so it reads as on. */

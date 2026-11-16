@@ -308,12 +308,26 @@ export function Composer({
     return () => document.removeEventListener("pointerdown", onPointerDown);
   }, [popoverRef]);
 
+  /*
+   * Whether the blur that follows was a Tab press. Safari, by default, tabs
+   * past buttons and out of the page, so there's no element to see focus
+   * arrive at; the key press is the only sign that focus left by keyboard.
+   */
+  const tabbing = useRef(false);
+
+  function onKeyDownCapture(event: React.KeyboardEvent) {
+    tabbing.current = event.key === "Tab";
+  }
+
   function onBlur(event: React.FocusEvent) {
     const next = event.relatedTarget as Node | null;
+    const tabbed = tabbing.current;
 
-    // Focus leaving the window, or going to nothing, is not tabbing away.
-    if (!next) return;
-    if (cardRef.current?.contains(next) || popoverRef.current?.contains(next)) return;
+    tabbing.current = false;
+
+    if (next && (cardRef.current?.contains(next) || popoverRef.current?.contains(next))) return;
+    // Focus going to nothing without a Tab is the window losing focus, not you leaving.
+    if (!next && !tabbed) return;
 
     setActive(false);
   }
@@ -404,6 +418,7 @@ export function Composer({
       aria-label="Write a post"
       data-open={open}
       onPointerDown={onPointerDown}
+      onKeyDownCapture={onKeyDownCapture}
       onBlur={onBlur}
     >
       <form
@@ -576,20 +591,15 @@ export function Composer({
               data-set={scheduled}
               inert={!open}
               initial={false}
+              // Shown and hidden in CSS (see .cs-clock), which can't be left half-done by an interruption.
               animate={
                 open
                   ? {
-                      visibility: "visible",
                       opacity: 1,
                       transform: "scale(1)",
                       transition: reduced ? FADE_IN : { duration: 0.2, delay: 0.08, ease: EASE_OUT },
                     }
-                  : {
-                      opacity: 0,
-                      transform: reduced ? "scale(1)" : "scale(0.9)",
-                      transition: FADE_OUT,
-                      transitionEnd: { visibility: "hidden" },
-                    }
+                  : { opacity: 0, transform: reduced ? "scale(1)" : "scale(0.9)", transition: FADE_OUT }
               }
               onClick={() => onOpenSchedule("clock")}
             >
