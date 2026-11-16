@@ -1637,11 +1637,13 @@ html[data-theme-transitioning="true"] body [data-cs-page] *::after {
 }
 
 /* In place of the actions row: when it goes out, and what you can do about it. */
+/* On a narrow phone Post now and the trash wrap under the time rather than cutting it short. */
 .cs-queue-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px 12px;
   min-height: 32px;
   padding-right: 8px;
 }
@@ -1654,6 +1656,7 @@ html[data-theme-transitioning="true"] body [data-cs-page] *::after {
 .cs-queue-side {
   display: flex;
   flex-shrink: 0;
+  margin-left: auto;
   align-items: center;
   gap: 16px;
   font-size: 14px;

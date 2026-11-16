@@ -23,13 +23,23 @@ const NAME = "Uzochukwu Okafor";
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 
 /** A post takes its place with a spring; what's in it fades in just behind. */
+/** A reorder glide: movement on screen, so a spring. */
 const ROW_SPRING = { type: "spring", visualDuration: 0.3, bounce: 0 } as const;
+/*
+ * Rows grow and collapse with an ease-out rather than a spring. A spring
+ * starts from rest and settles slowly: a deleted post faded out, then its
+ * empty slot hung there and crept shut over its last few pixels. A gentle
+ * ease-out (easeOutSine, from easings.net), not a strong one: a row with an
+ * image is over 700px tall, and the strong curves moved it 150px a frame.
+ * It also comes to rest at zero speed, so there's no step at the end.
+ */
+const EASE_ROW = [0.61, 1, 0.88, 1] as const;
 const ROW_IN = {
-  height: ROW_SPRING,
-  opacity: { duration: 0.2, delay: 0.1, ease: EASE_OUT },
+  height: { duration: 0.34, ease: EASE_ROW },
+  opacity: { duration: 0.2, delay: 0.08, ease: EASE_OUT },
 } as const;
 const ROW_OUT = {
-  height: { type: "spring", visualDuration: 0.26, bounce: 0 },
+  height: { duration: 0.3, ease: EASE_ROW },
   opacity: { duration: 0.1, ease: EASE_OUT },
 } as const;
 
@@ -347,6 +357,28 @@ function QueuedPost({
 /* The two lists                                                              */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * A key that changes only when posts that stay in the list swap places (a
+ * reschedule). Adding or removing one doesn't change it: the rows around it
+ * just follow its height, and measuring every row for a glide nobody sees
+ * cost two frames at the start of each delete.
+ */
+function useReorderKey(posts: Post[]): string {
+  const ids = posts.map((post) => post.id).join(" ");
+  const [seen, setSeen] = useState({ ids, key: 0 });
+
+  if (seen.ids !== ids) {
+    const before = seen.ids.split(" ");
+    const after = ids.split(" ");
+    const kept = before.filter((id) => after.includes(id)).join(" ");
+    const still = after.filter((id) => before.includes(id)).join(" ");
+
+    setSeen({ ids, key: kept === still ? seen.key : seen.key + 1 });
+  }
+
+  return String(seen.key);
+}
+
 /** One row of a list: grows in, collapses out, and glides when the order changes. */
 function Row({
   children,
@@ -355,7 +387,7 @@ function Row({
 }: {
   children: React.ReactNode;
   reduced: boolean;
-  /** Changes only when the list's order does, so nothing else can start a glide. */
+  /** Changes only when rows swap places, so nothing else can start a glide. */
   order: string;
 }) {
   return (
@@ -386,7 +418,7 @@ export function ForYou({
   reduced: boolean;
   onLike: (id: string) => void;
 }) {
-  const order = posts.map((post) => post.id).join(" ");
+  const order = useReorderKey(posts);
 
   return (
     <section className="cs-feed" aria-label="For you">
@@ -420,7 +452,7 @@ export function Scheduled({
   onPostNow: (post: Post) => void;
   onDelete: (post: Post) => void;
 }) {
-  const order = posts.map((post) => post.id).join(" ");
+  const order = useReorderKey(posts);
 
   return (
     <section className="cs-feed" aria-label="Scheduled posts">
