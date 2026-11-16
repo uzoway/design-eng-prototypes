@@ -534,7 +534,7 @@ html[data-theme-transitioning="true"] body [data-cs-page] *::after {
 }
 
 /* 63.2 × 40. On hover only the fill changes; the border keeps its colour, as on Contra. */
-.cs-post {
+.cs-submit {
   position: relative;
   display: inline-flex;
   flex-shrink: 0;
@@ -559,7 +559,7 @@ html[data-theme-transitioning="true"] body [data-cs-page] *::after {
 }
 
 .cs-clock:active,
-.cs-post:active {
+.cs-submit:active {
   scale: 0.97;
 }
 
@@ -568,7 +568,7 @@ html[data-theme-transitioning="true"] body [data-cs-page] *::after {
     background: var(--cs-fill-soft);
   }
 
-  .cs-post:hover {
+  .cs-submit:hover {
     background: var(--cs-ink-soft);
   }
 
@@ -577,12 +577,12 @@ html[data-theme-transitioning="true"] body [data-cs-page] *::after {
   }
 }
 
-.cs-post-sizer {
+.cs-submit-sizer {
   visibility: hidden;
 }
 
 /* Both labels sit in the same place; one is always rolled out of view. */
-.cs-post-label {
+.cs-submit-label {
   position: absolute;
   inset: 0;
   display: flex;
@@ -590,7 +590,7 @@ html[data-theme-transitioning="true"] body [data-cs-page] *::after {
   justify-content: center;
 }
 
-.cs-post-slot {
+.cs-submit-slot {
   flex-shrink: 0;
   margin-bottom: 4px;
 }
@@ -640,17 +640,17 @@ html[data-theme-transitioning="true"] body [data-cs-page] *::after {
   background: var(--cs-border);
 }
 
-.cs-tags {
+.cs-tools-tags {
   display: inline-flex;
   align-items: center;
   gap: 6px;
 }
 
-.cs-tags svg {
+.cs-tools-tags svg {
   color: var(--cs-ink-soft);
 }
 
-.cs-tags span {
+.cs-tools-tags span {
   display: none;
   color: var(--cs-muted);
   font-size: 14px;
@@ -661,7 +661,7 @@ html[data-theme-transitioning="true"] body [data-cs-page] *::after {
 
 @media (min-width: 36rem) {
   .cs-tools-divider,
-  .cs-tags span {
+  .cs-tools-tags span {
     display: block;
   }
 }
@@ -691,7 +691,7 @@ html[data-theme-transitioning="true"] body [data-cs-page] *::after {
 
 @media (prefers-reduced-motion: reduce) {
   .cs-clock:active,
-  .cs-post:active,
+  .cs-submit:active,
   .cs-preview-remove:active {
     scale: none;
   }
@@ -1120,5 +1120,76 @@ html[data-theme-transitioning="true"] body [data-cs-page] *::after {
   .cs-time-trigger:active,
   .cs-button:active {
     scale: none !important;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Toast (concept)                                                            */
+/* -------------------------------------------------------------------------- */
+
+.cs-toasts {
+  position: fixed;
+  right: 0;
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  left: 0;
+  z-index: 50;
+  display: flex;
+  justify-content: center;
+  padding: 0 16px;
+  pointer-events: none;
+}
+
+.cs-toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 100%;
+  min-height: 44px;
+  padding: 8px 8px 8px 16px;
+  border-radius: 22px;
+  background: var(--cs-ink-strong);
+  box-shadow: 0 8px 24px rgba(20, 23, 31, 0.16);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  letter-spacing: -0.14px;
+  pointer-events: auto;
+}
+
+.cs-toast:not(:has(button)) {
+  padding-right: 16px;
+}
+
+.cs-toast-action {
+  flex-shrink: 0;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-weight: 600;
+  transition:
+    background-color 0.15s ease-out,
+    scale 0.16s var(--cs-ease-out);
+}
+
+.cs-toast-action:focus-visible {
+  outline-color: #fff;
+}
+
+.cs-toast-action:active {
+  scale: 0.97;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .cs-toast-action:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cs-toast-action:active {
+    scale: none;
   }
 }

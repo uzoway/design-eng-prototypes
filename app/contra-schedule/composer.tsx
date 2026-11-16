@@ -599,16 +599,16 @@ export function Composer({
             <motion.button
               ref={postRef}
               type="submit"
-              className="cs-post"
+              className="cs-submit"
               aria-label={scheduled ? "Schedule" : "Post"}
               style={{ width: postWidth }}
             >
               {/* Holds the button at Post's width until the labels are measured. */}
-              <span className="cs-post-sizer" aria-hidden="true">
+              <span className="cs-submit-sizer" aria-hidden="true">
                 Post
               </span>
               <motion.span
-                className="cs-post-label"
+                className="cs-submit-label"
                 aria-hidden="true"
                 initial={false}
                 animate={
@@ -621,7 +621,7 @@ export function Composer({
                 <span ref={postLabelRef}>Post</span>
               </motion.span>
               <motion.span
-                className="cs-post-label"
+                className="cs-submit-label"
                 aria-hidden="true"
                 initial={false}
                 animate={
@@ -636,7 +636,7 @@ export function Composer({
             </motion.button>
           </motion.div>
 
-          <motion.div className="cs-post-slot" style={{ height: postSlot }} />
+          <motion.div className="cs-submit-slot" style={{ height: postSlot }} />
 
           <motion.div className="cs-divider-slot" style={{ height: dividerSlot }}>
             <motion.div
@@ -670,7 +670,7 @@ export function Composer({
                 <EmojiIcon />
               </button>
               <span className="cs-tools-divider" />
-              <button type="button" className="cs-tags" aria-label="Add tags" aria-disabled="true">
+              <button type="button" className="cs-tools-tags" aria-label="Add tags" aria-disabled="true">
                 <HashtagIcon />
                 <span>Add tags</span>
               </button>
