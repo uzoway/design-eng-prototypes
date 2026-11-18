@@ -26,10 +26,11 @@ const GA = /googletagmanager|google-analytics|_vercel\/insights|vitals\.vercel/;
 export async function session({
   url,
   out,
-  slow = 10, // page runs 1/slow as fast while recording; s.setSlow() changes it between phases
+  slow = null, // page runs 1/slow as fast while recording (default 10, 20 for touch); s.setSlow() changes it between phases
   dpr = 3, // raise for close-ups: output px per CSS px must never exceed it
   clip = null, // {x, y, width, height} in CSS px: capture only this region (faster, allows a high dpr)
-  viewport = { width: 1100, height: 900 },
+  pointer = 'mouse', // 'mouse' | 'touch': a phone UI gets a finger (touch events, no hover) drawn as a touch dot
+  viewport = pointer === 'touch' ? { width: 393, height: 852 } : { width: 1100, height: 900 }, // touch: iPhone 16 Pro, 1179×2556 at dpr 3
   theme = 'light', // 'light' | 'dark'
   themeStorage = { 'merchant-theme': null }, // localStorage keys the site reads for its theme; null = use `theme`
   format = 'png', // 'png' (lossless, default) | 'jpeg'
@@ -45,7 +46,8 @@ export async function session({
   fs.mkdirSync(path.join(out, 'frames'), { recursive: true });
 
   const browser = await chromium.launch({ channel: 'chrome' });
-  const ctx = await browser.newContext({ viewport, deviceScaleFactor: dpr, colorScheme: theme });
+  const touch = pointer === 'touch';
+  const ctx = await browser.newContext({ viewport, deviceScaleFactor: dpr, colorScheme: theme, ...(touch ? { isMobile: true, hasTouch: true } : {}) });
   await ctx.route(GA, (r) => r.abort());
   await ctx.addInitScript(
     ({ theme, themeStorage }) => {
@@ -122,6 +124,16 @@ export async function session({
   const rect = (sel) => page.locator(sel).first().evaluate((e) => { const r = e.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; });
   const box = async (loc) => { const b = await loc.boundingBox(); return { x: b.x, y: b.y, w: b.width, h: b.height }; };
   const center = (r, fx = 0.5, fy = 0.5) => ({ x: r.x + r.w * fx, y: r.y + r.h * fy });
+  // Where to click so the hand hangs below and right of the label instead of covering it
+  // (the hand's body sits down-right of its hotspot). A finger presses the middle.
+  const aim = (r) => (touch ? center(r) : center(r, 0.76, 0.78));
+  // A point just outside a shot around r: the cursor starts here and enters, and leaves here before a cut.
+  // Bottom-right by default, so the hand trails its fingertip and never sweeps across the subject.
+  const offstage = (r, pad = 40, side = 'bottom-right') => ({
+    'bottom-right': { x: r.x + r.w + pad, y: r.y + r.h + pad },
+    right: { x: r.x + r.w + pad, y: r.y + r.h * 0.7 },
+    bottom: { x: r.x + r.w * 0.7, y: r.y + r.h + pad },
+  })[side];
 
   // ---- human-like motion ----
   const minJerk = (t) => t * t * t * (10 + t * (-15 + 6 * t));
@@ -143,10 +155,11 @@ export async function session({
   // ---- capture ----
   const cdp = await ctx.newCDPSession(page);
   await cdp.send('Animation.enable');
-  const take = { frames: [], pos: [], keys: [], marks: {}, slowRanges: [], dpr, viewport, clip, theme, url };
+  const take = { frames: [], pos: [], keys: [], marks: {}, slowRanges: [], dpr, viewport, clip, theme, url, pointer };
   let capturing = false, frameNo = 0;
   // Real-speed seconds since recording began, continuous across setSlow().
-  let S = slow, realBase = 0, vBase = 0;
+  // A phone frame at dpr 3 is ~3M px and captures at about half the desktop rate, so touch runs slower.
+  let S = slow ?? (touch ? 20 : 10), realBase = 0, vBase = 0;
   const vt = () => vBase + (performance.now() - realBase) / 1000 / S;
   async function captureLoop() {
     while (capturing) {
@@ -160,8 +173,11 @@ export async function session({
   }
 
   let pos = start.x <= 1 ? { x: viewport.width * start.x, y: viewport.height * start.y } : { ...start };
-  let pressed = false, kind = 'arrow', loop;
-  await page.mouse.move(pos.x, pos.y);
+  let pressed = false, kind = touch ? 'touch' : 'arrow', loop;
+  if (!touch) await page.mouse.move(pos.x, pos.y); // a finger doesn't hover, so it sends nothing until it lands
+  const finger = (type, p) => cdp.send('Input.dispatchTouchEvent', {
+    type, touchPoints: type === 'touchEnd' ? [] : [{ x: p.x, y: p.y, radiusX: 11, radiusY: 11, force: 1, id: 1 }],
+  });
 
   async function applySlow(next) {
     await page.evaluate((s) => window.__setSlow(s), next);
@@ -187,22 +203,24 @@ export async function session({
     if (!steps.length) return;
     const end = Math.max(...steps.map((s) => s.t0 + s.T));
     const evs = [...events].sort((a, b) => a.t - b.t);
-    let ei = 0;
+    let ei = 0, last = { ...pos };
     while (true) {
       const now = vt();
       while (ei < evs.length && evs[ei].t <= now) {
         const e = evs[ei++];
-        if (e.type === 'down') { await page.mouse.down(); pressed = true; }
-        if (e.type === 'up') { await page.mouse.up(); pressed = false; }
+        if (e.type === 'down') { if (touch) await finger('touchStart', last); else await page.mouse.down(); pressed = true; }
+        if (e.type === 'up') { if (touch) await finger('touchEnd', last); else await page.mouse.up(); pressed = false; }
         if (e.type === 'key') { await page.keyboard.type(e.ch); take.keys.push(+now.toFixed(4)); }
         if (e.type === 'press') { await page.keyboard.press(e.key); take.keys.push(+now.toFixed(4)); }
         if (e.type === 'call') await e.fn(page);
       }
       const s = steps.find((s) => now >= s.t0 && now < s.t0 + s.T) || steps[steps.length - 1];
       const p = s.at(Math.min(1, Math.max(0, (now - s.t0) / s.T)));
-      await page.mouse.move(p.x, p.y);
+      if (!touch) await page.mouse.move(p.x, p.y);
+      else if (pressed && (p.x !== last.x || p.y !== last.y)) await finger('touchMove', p);
+      last = p;
       const probe = await page.evaluate(([x, y]) => window.__probe(x, y), [p.x, p.y]);
-      if (!pressed) kind = probe.kind;
+      if (!pressed && !touch) kind = probe.kind;
       take.pos.push({ vt: +now.toFixed(4), x: +p.x.toFixed(2), y: +p.y.toFixed(2), kind, pressed, caret: probe.caret });
       if (now >= end && ei >= evs.length) break;
     }
@@ -218,7 +236,8 @@ export async function session({
       get pos() { return { ...pos }; },
       mark: (n) => { take.marks[n] = +t.toFixed(3); },
       hold: (sec) => { const q = { ...pos }; steps.push({ t0: t, T: sec, at: () => q }); t += sec; },
-      to: (target, opts) => { for (const seg of reach(pos, target, opts)) { steps.push({ t0: t, T: seg.T, at: seg.at }); t += seg.T; } pos = { ...target }; },
+      // A finger glides to its next target without the mouse's overshoot-and-correct.
+      to: (target, opts) => { for (const seg of reach(pos, target, { ...(touch ? { overshoot: false } : {}), ...opts })) { steps.push({ t0: t, T: seg.T, at: seg.at }); t += seg.T; } pos = { ...target }; },
       /** A drag or any custom path: at(u) for u in 0..1, ending at `end`. */
       path: (T, at, end) => { steps.push({ t0: t, T, at }); t += T; pos = { ...end }; },
       /** A steady drag from here to `to`, bowed slightly. */
@@ -229,6 +248,21 @@ export async function session({
       down: () => events.push({ t, type: 'down' }),
       up: () => events.push({ t, type: 'up' }),
       click: () => { events.push({ t, type: 'down' }); events.push({ t: t + 0.085, type: 'up' }); },
+      /** A finger tap: same as click, a touch held a little longer. */
+      tap: () => { events.push({ t, type: 'down' }); events.push({ t: t + 0.1, type: 'up' }); },
+      /**
+       * A flick: the finger lands here, speeds up toward `to` and lifts while still moving (so pagers
+       * and lists get real release velocity), then drifts a little further in the air and stops.
+       */
+      swipe: (to, T = 0.32) => {
+        const from = { ...pos };
+        const dx = to.x - from.x, dy = to.y - from.y;
+        events.push({ t, type: 'down' });
+        p.path(T, (u) => { const s = (3 * u * u - u * u * u) / 2; return { x: from.x + dx * s, y: from.y + dy * s }; }, to);
+        events.push({ t, type: 'up' });
+        const after = { x: to.x + dx * 0.12, y: to.y + dy * 0.12 };
+        p.path(0.18, (u) => { const s = 1 - (1 - u) ** 3; return { x: to.x + (after.x - to.x) * s, y: to.y + (after.y - to.y) * s }; }, after);
+      },
       /** Type like a person: 75–135ms a key, a little longer after spaces and capitals. */
       type: (text) => {
         for (const ch of text) {
@@ -255,5 +289,5 @@ export async function session({
     return take;
   }
 
-  return { page, rect, box, center, phase, setSlow, finish, take, vt };
+  return { page, rect, box, center, aim, offstage, phase, setSlow, finish, take, vt };
 }

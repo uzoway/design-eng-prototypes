@@ -45,6 +45,23 @@ CURSORS = {  # css size and hotspot of each macOS cursor; the PNGs are 10x
     'hand':  ('hand.png', 32, 32, 13, 8),
     'ibeam': ('ibeam.png', 9, 18, 4, 9),
 }
+# A real macOS cursor doesn't shrink when you click; the press shows in the UI's own :active state.
+# Set above 0 (0.1 was the old default) only if a video needs the click spelled out.
+PRESS_SQUEEZE = 0.0
+TOUCH_DOT = 32  # css px across: a fingertip-sized dot, smaller than the 44pt hit target so it never hides it
+
+
+def touch_sprite(dark):
+    """The finger: a faint grey disc with a slightly darker rim, drawn at 10x like the cursor PNGs.
+    Measured off a reference phone recording: 6% black fill and a ~1px 13% rim over white, no shadow.
+    It reads on a busy screen without hiding what's under it. On dark UI it's white instead."""
+    n = TOUCH_DOT * 10
+    ink = (255, 255, 255) if dark else (0, 0, 0)
+    big = Image.new('RGBA', (n, n), ink + (0,))  # transparent in the ink colour, so resizing leaves no fringe
+    d = ImageDraw.Draw(big)
+    d.ellipse([0, 0, n - 1, n - 1], fill=ink + (round(255 * (0.2 if dark else 0.13)),))
+    d.ellipse([10, 10, n - 11, n - 11], fill=ink + (round(255 * (0.1 if dark else 0.065)),))
+    return big
 
 
 def smootherstep(t):
@@ -140,6 +157,7 @@ class Renderer:
         self.t, self.W, self.H, self.aspect = take, W, H, W / H
         self.sprites = {k: (Image.open(os.path.join(HERE, 'cursors', f)).convert('RGBA'), cw, ch, hx, hy)
                         for k, (f, cw, ch, hx, hy) in CURSORS.items()}
+        self.sprites['touch'] = (touch_sprite(take.theme == 'dark'), TOUCH_DOT, TOUCH_DOT, TOUCH_DOT / 2, TOUCH_DOT / 2)
         self.font_path = '/System/Library/Fonts/SFNS.ttf'
 
     def camera(self, seg, t):
@@ -153,7 +171,7 @@ class Renderer:
             cur = (cur[0] + (cx - cur[0]) * u, cur[1] + (cy - cur[1]) * u, math.exp(lw))
         cx, cy, w = cur
         h = w / self.aspect
-        w = min(w, c['width'], c['height'] * self.aspect); h = w / self.aspect
+        w = min(w, c['width'], c['height'] * self.aspect); h = min(w / self.aspect, c['height'])  # float error must not push the box off the frame
         cx = min(max(cx, c['x'] + w / 2), c['x'] + c['width'] - w / 2)
         cy = min(max(cy, c['y'] + h / 2), c['y'] + c['height'] - h / 2)
         return cx, cy, w, h
@@ -184,7 +202,7 @@ class Renderer:
         img, cw, ch, hx, hy = self.sprites[kind]
         cx, cy, w, h = view
         k = self.W / w
-        s = k * (1 - 0.1 * amt)  # squeezes a little while pressed
+        s = k * (1 - (0 if kind == 'touch' else PRESS_SQUEEZE) * amt)
         Wc, Hc = max(1, round(cw * s)), max(1, round(ch * s))
         sprite = img.resize((Wc, Hc), Image.LANCZOS)
         ox = (x - (cx - w / 2)) * k - hx * s
@@ -272,6 +290,7 @@ def render(take, out, segments, aspect='4:5', platforms=('linkedin', 'x', 'insta
            preview='--preview' in sys.argv, force='--force' in sys.argv):
     """Render once, encode every platform from the same frames. Writes <out>-<platform>.mp4."""
     W, H = SIZES[aspect] if isinstance(aspect, str) else aspect
+    W, H = W // 2 * 2, H // 2 * 2  # H.264 4:2:0 needs even sides (a native 1179×2556 phone frame becomes 1178×2556)
     if not check(take, segments, W) and not preview and not force:
         print('fix the warnings above, or pass --force'); sys.exit(1)
     if preview:

@@ -12,7 +12,9 @@ What each feed displays, so the file goes in at that size and nothing gets resam
 | X | 1080×1350 | 60 | up to 1920×1200 landscape, 1200×1900 portrait, ≤60fps, ~25 Mbps | Plays 60, and its encode holds up at that rate. |
 | Instagram | 1080×1350 | 30 | feed 4:5 at 1080 wide, 30fps constant | Converts 60 down itself, badly. Never upload 60. |
 
-**Aspect.** 4:5 is the default. It takes the most room in every feed and fits a panel-and-grid UI. Use 1:1 only when Uzo asks. 16:9 (1920×1080) suits wide layouts going to X or LinkedIn only.
+**Aspect.** 4:5 is the default. It takes the most room in every feed and fits a panel-and-grid UI. Use 1:1 only when Uzo asks. 16:9 (1920×1080) suits wide layouts going to X or LinkedIn only. If a wide component framed at ~75% of a 4:5 width lands under 2.2×, don't shrink it to fit: go 16:9 for X and LinkedIn, or frame the part that changes.
+
+**X takes more than this table says (seen, not yet tested here).** Emil's 17 Nov 2026 post was uploaded at 3600×2250 60fps, and X served it at every rung up to 3456×2160 at 25 Mbps (1728×1080 at 10 Mbps, 1152×720 at 2 Mbps). So X keeps a 4K-class variant, at least for his account, and every lower rung is scaled from a sharper source. It may need X Premium. Worth one test on Uzo's account: post an X export rendered at 2× (2160×2700, which needs `dpr` ≥ 2× the shot scale, so ≥ 5 for a 2.2× shot) and pull the variants back to see the top one. Until that's checked, keep 1080×1350.
 
 **Encode** (built into `edit.py`): libx264 High, yuv420p, preset slow, CRF 12, `-tune animation` (flat UI), `-maxrate` 20M for X and LinkedIn and 10M for Instagram with a 2× buffer, a keyframe every 2s, faststart, BT.709 tags written with `h264_metadata` in the stream and the container. FFmpeg 9 ignores `-color_trc` on its own. Flat UI comes out around 3 Mbps at CRF 12. That's expected: the bits go where the detail is.
 
@@ -40,7 +42,8 @@ At 1080 wide: view width 480 → 2.25×, 440 → 2.45×, 400 → 2.7×, 160 → 
 | Format | PNG | Lossless. Benchmarked as fast as JPEG q95 (86 vs 77ms at 3300×2700) and smaller on flat UI |
 | `dpr` | 3, more for close-ups | Leaves headroom for 2–3× shots |
 | Viewport | 1100×900 | Desktop layout with room for panels. Match what the prototype is designed for |
-| `slow` | 10 | ~11 captures per real second × 10 ≈ 110fps of real time, enough for 60fps output |
+| `slow` | 10, touch 20 | ~11 captures per real second × 10 ≈ 110fps of real time, enough for 60fps output. A phone frame (1179×2556) captures at half that rate: slow 10 gave 51fps, slow 20 gives 105 |
+| Touch | `pointer: 'touch'` | 393×852 at dpr 3 with `isMobile` and `hasTouch`. Taps and swipes go through CDP `Input.dispatchTouchEvent`, so the page gets real touch and pointer events (`pointerType: 'touch'`). Nothing is sent while the finger is in the air |
 | Slow-mo `setSlow` | ≥ 8 / speed (0.25× → 32, use 40) | Every output frame needs its own captured frame: 60 / speed fps |
 | Screenshot | `page.screenshot` | A raw CDP `captureScreenshot` ignores `deviceScaleFactor` and returns 1× frames |
 | Frame time | Midpoint of each screenshot call | |
@@ -74,8 +77,21 @@ macOS AppKit cursors, exported at 10× (`engine/cursors/`). `export-cursors.swif
 | ibeam | 9×18 | 4, 9 | computed `cursor: text` |
 
 - **Kind:** debounced 70ms, so 2–3px gaps between targets don't flicker hand/arrow. It holds while the button is down.
-- **Press:** scales to 0.9 over 60ms with smoothstep, and back on release.
+- **Press:** nothing happens to the cursor, as on a real Mac. The press shows in the UI's `:active` state. (`PRESS_SQUEEZE` in `edit.py` brings back a shrink if a video ever needs it; it was 0.1.)
+- **Aim:** `s.aim(box)` clicks at 76% across and 78% down the target. The hand's body hangs below and right of its hotspot, so this keeps the label and the state change visible. Emil's clips do the same on every target.
 - **Placement:** drawn at the interpolated sample position with a sub-pixel affine shift, never snapped to whole pixels. The cursor scales with the camera, like a real one under zoom.
+
+**Touch dot** (`pointer: 'touch'`), measured off Emil's phone clip:
+
+| | Value |
+|---|---|
+| Size | 32 CSS px across (96px at dpr 3). Smaller than the 44pt hit target, so the target shows around it |
+| Light UI | 6.5% black fill, 1 CSS px rim at 13% black, no shadow. Over white that's #EFEFEF with a #DEDEDE edge |
+| Dark UI | 10% white fill, 20% white rim |
+| Press | No change in size or shade. The UI's own pressed state shows the tap |
+| Between touches | Always visible. It glides to the next target with minimum-jerk easing and no overshoot |
+| Tap | Down and up 100ms apart, at the target's centre |
+| Swipe | `p.swipe(to, 0.32)`: lands, accelerates (`(3u² − u³)/2`, released at 1.5× the average speed), lifts while still moving, drifts 12% further over 0.18s |
 
 ## Caret
 
@@ -102,12 +118,36 @@ macOS Chrome blinks 500ms on, 500ms off. It turns solid again on focus and on ev
 - The label is a pill at the bottom centre: "4× slower", SF Pro Semibold at 2.6% of the width. It fades in over 0.25s and out 0.3s before the segment ends. Keep the bottom ~10% of the frame clear of UI for it.
 - Keep the cursor in, unless it covers the detail.
 
+## Packaging
+
+The numbers behind SKILL.md's Packaging rules. Measured frame by frame from Emil Kowalski's `/package-my-work` post (x.com/emilkowalski/status/2122704498334339368, 17 Nov 2026): 20s, 60fps, silent, four before/after chapters. The "before" side of each is Playwright's own `recordVideo` (800×450 webm, no cursor, a blank first second while the page loads), which is everything this engine already avoids.
+
+| | Value |
+|---|---|
+| Subject | One component per clip, ~75% of the frame width. Card 796 of 1060px, chart 814 of 1060 |
+| Output | Shaped by the subject at up to 3840 wide (3120×2004, 2432×2128, 3840×2080); phone at native 1179×2556. We keep the feed sizes and fit the subject inside them |
+| Camera | Locked for the whole clip. No push-ins, no pans |
+| Opening | ~1.0s of the finished UI at rest, no cursor. That frame is the poster |
+| Entry | From the bottom-right edge, ease-out, ~0.5s, with a slow last ~0.25s settle. The arrow turns to the hand as it crosses the target |
+| Hover | ~0.4s on the hover state before pressing |
+| After a click | ~1.0s hold before the next action. Repeated clicks (+, +) ~1s apart, cursor still |
+| Exit | Leave the frame (or return to rest) before a cut; ~0.6s at rest before the cut |
+| Cuts | Hard cuts only, on matching rest states. No crossfades between chapters or items |
+| Reel | Same framing per item, 3.0s each |
+| Length | 5–10s a clip, length in the file name |
+| Loop | Ends in the start state (Visitors → Signups → Visitors) |
+| Audio | None |
+
+**When the post is about the craft itself** (a before/after, a tool, a technique), package the post the way Emil packaged his: a 16:10 canvas with the two versions side by side, each panel labelled with its file name and pixel size, one monospaced line above as the caption for that chapter, "Before" and "After" pills below, ~5s chapters with hard cuts. Frame 1 already shows the difference (his "before" panel was still blank while the "after" was finished), so the poster makes the argument on its own. The engine doesn't build these compositions yet; ask Uzo before making one by hand.
+
 ## Before delivering
 
 - [ ] `edit.py` printed no `!` warnings.
 - [ ] A full-size frame at every camera hold, the payoff and typing is sharp and nothing important is cut off.
 - [ ] The hand shows over every clickable thing, the I-beam over text fields, the arrow everywhere else.
 - [ ] No sped-up tells: the caret and every animation run at a believable real speed.
-- [ ] Frame 1 is readable and interesting. It's the thumbnail in most feeds, and `-cover.png` covers the rest.
+- [ ] Frame 1 is readable and interesting, at rest, with no cursor. It's the thumbnail in most feeds, and `-cover.png` covers the rest.
+- [ ] Only the subject is in frame, and the cursor never sits on the label or state it changes.
+- [ ] The cursor enters from off-frame and is gone before every cut and the end.
 - [ ] `ffprobe` shows each file at 1080×1350 with the right fps and `bt709` tags.
-- [ ] The prototype ends in a sensible state, so the loop restarting isn't jarring.
+- [ ] The last frame matches the first, so the loop restarts without a jump.

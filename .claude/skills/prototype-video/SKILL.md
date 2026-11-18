@@ -1,6 +1,6 @@
 ---
 name: prototype-video
-description: Records a prototype from this repo (or its live URL) as a social video for LinkedIn, X and Instagram — the real macOS cursor that turns into the hand over clickable things, human mouse paths and typing, real-speed motion, optional slow-motion replays, and an export per platform at the size and frame rate each feed actually shows. Use whenever Uzo asks for a video, clip, demo, recording or slow-mo of something built here. Not for portfolio lab loops on uzookafor.com (that's the lab recipe in STANDARDS.md) or for screen-recording native apps.
+description: Records a prototype from this repo (or its live URL) as a social video for LinkedIn, X and Instagram — framed on the one component that matters, the real macOS cursor that turns into the hand over clickable things (or a touch dot and real swipes for phone UIs), human mouse paths and typing, real-speed motion, clean loops, optional slow-motion replays, and an export per platform at the size and frame rate each feed actually shows. Use whenever Uzo asks for a video, clip, demo, recording or slow-mo of something built here. Not for portfolio lab loops on uzookafor.com (that's the lab recipe in STANDARDS.md) or for screen-recording native apps.
 ---
 
 # Prototype Video
@@ -28,6 +28,11 @@ Cheap-looking videos fail in a handful of known ways. Each one has happened on t
 | Camera moving during the payoff | The detail you made the video for is a blur | Rule 7 |
 | Close-up wider than the capture | Upscaled, mushy edges | Rule 8 |
 | 60fps into a 30fps feed, wrong size | The platform resamples and re-compresses harder | Rule 10 |
+| The whole page when the work is one component | Sidebar and chrome compete with the thing you made | Packaging 1 |
+| A cursor sitting in frame 1, or still in frame at a cut | A cluttered thumbnail, a jump when the loop restarts | Packaging 2 |
+| The hand parked on the label it clicks | The state change happens under the cursor | Packaging 3 |
+| Ending somewhere else than it started | The loop snaps back | Packaging 5 |
+| A mouse cursor on a phone UI | Reads as a desktop site squeezed small | Packaging 7 |
 
 For every number (motion constants, cursor hotspots, caret timing, platform specs, encode settings), see [STANDARDS.md](STANDARDS.md). Load it before planning shots.
 
@@ -57,18 +62,30 @@ For every number (motion constants, cursor hotspots, caret timing, platform spec
 
 12. **Outputs stay out of git, and nothing delivered is ever overwritten.** Takes and renders go to `briefs/refs/lab-masters/<slug>/` (gitignored). Every new render gets a new name (`-v2`, `-v3`); the engine refuses to write over an existing video or take unless told to (`--overwrite`, `OVERWRITE=1`), and you only tell it to when Uzo asks. The take and edit scripts get committed to `examples/<slug>/` so the next video starts from a working one. Commit as uzoway with no co-author line. Uzo pushes.
 
+## Packaging
+
+The rules above make a take that's correct. These make it look made. They come from taking apart Emil Kowalski's `/package-my-work` demo frame by frame (Nov 2026); his four "after" clips follow every one of them. Numbers are in STANDARDS.md under Packaging.
+
+1. **Frame the subject, not the page.** One component per clip, cropped to its bounding box with room around it (it fills about three quarters of the width). Sidebar, header and the rest of the app stay out. For a single component the camera doesn't move at all: the crop is the zoom. Camera moves are for flows that span areas, like the Contra page tour (open on the whole window, push in to each detail, step back at the end), which is the shape Uzo picked for those.
+2. **Clean in, clean out.** Frame 1 is the finished UI at rest with no cursor. It's the thumbnail (X uses frame 1 as the poster). Hold it about a second, then the cursor enters from off-frame (bottom-right, so the hand trails its fingertip and never sweeps across the subject). Before every cut and at the end it leaves the frame again. Start it with `start` outside the shot, and send it out with `s.offstage(box)`.
+3. **Never cover what changes.** Click with `s.aim(box)`, low and right of the target's centre, so the hand hangs off the label instead of sitting on it. When a click turns a control into another one (Add → a − 1 + stepper), aim where the next control will be so the cursor doesn't have to move again.
+4. **Show the hover, then the press.** Rest on the hover state long enough to see it before clicking. The click itself shows through the UI's own pressed state. No click rings, ripples or cursor squish (the engine no longer shrinks the cursor; a real one doesn't).
+5. **Round trip.** End in the state you started in: switch the tab and switch it back, add and remove, open and close. The loop then restarts without a jump.
+6. **Short, one idea.** 5–10s for a component. Put the length in the file name (`add-to-cart-7s`). A set of similar things is a reel: same framing for each, about 3s per item, a hard cut between identical rest states with no cursor in frame.
+7. **Phone UIs get a finger.** `pointer: 'touch'` records at a phone viewport with real touch events (taps, swipes with release velocity, no hover) and draws a soft touch dot instead of a cursor. It stays visible between touches and glides to the next one, so the eye can follow.
+
 ## Build Sequence
 
 Work in this order. Each step has a check before the next.
 
 | # | Step | Done when |
 |---|---|---|
-| 1 | **Story.** Read the prototype and pick the moment that's worth watching. Draft the flow, typed text options, theme and platforms. Send it to Uzo (Rule 5). | Uzo says yes |
+| 1 | **Story.** Read the prototype and pick the moment that's worth watching: which one component is in frame, and the round trip that brings it back to rest (Packaging 1, 5). Draft the flow, typed text options, theme, platforms and length. Send it to Uzo (Rule 5). | Uzo says yes |
 | 2 | **Setup.** Run `sh .claude/skills/prototype-video/engine/setup.sh` once (it installs into `~/.cache/prototype-video`, not the repo). Make sure `npm run dev` is serving `localhost:3000`; check with `curl`. | `ready` printed, page returns 200 |
-| 3 | **Take script.** Copy the closest `examples/*/record.mjs`. Measure targets from the live DOM (`rect`, `box`) inside the phase that uses them, because layout moves. Add `p.mark('name')` at every moment the edit will cut or frame on. Set `setSlow()` around any slow-mo moment. | Script reads like the story |
+| 3 | **Take script.** Copy the closest `examples/*/record.mjs`. Measure targets from the live DOM (`rect`, `box`) inside the phase that uses them, because layout moves. Start the cursor outside the shot, click with `s.aim()`, and leave with `s.offstage()` (Packaging 2, 3). Add `p.mark('name')` at every moment the edit will cut or frame on. Set `setSlow()` around any slow-mo moment. | Script reads like the story |
 | 4 | **Record.** `node <script>`. It prints the frame count, captured fps and marks. Check the end state it logs against what should have happened. | Flow completed, ≥100 captured fps |
 | 5 | **Edit.** Copy the closest `examples/*/edit.py`. Write the shot list from the marks (Rules 6–8), then the segments (Rule 9). Run with `--preview` for a half-size render and a contact sheet. Fix every warning. | Sheet shows the right framing at every beat |
-| 6 | **Look closely.** Pull full-size frames (`ffmpeg -ss <t> -i out.mp4 -frames:v 1 f.png`) at the payoff, during typing and at each camera hold, and read them. Check the cursor type at each hover, the caret, and anything mid-animation. | Nothing soft, cut off or wrong |
+| 6 | **Look closely.** Pull full-size frames (`ffmpeg -ss <t> -i out.mp4 -frames:v 1 f.png`) at the payoff, during typing and at each camera hold, and read them. Check the cursor type at each hover, the caret, and anything mid-animation. Put the first and last frames side by side: both at rest, no cursor, the same state. | Nothing soft, cut off or wrong; the loop is seamless |
 | 7 | **Render.** Run the edit without `--preview`. It writes `<out>-linkedin.mp4`, `-x.mp4`, `-instagram.mp4` and `-cover.png`. Confirm sizes, fps and colour tags with `ffprobe`. | Matches the STANDARDS table |
 | 8 | **Deliver.** Send the files with `SendUserFile` and say which file goes where in one line each. If asked for a caption, write it in Uzo's voice: short, plain, warm, no lists. | Files in Uzo's hands |
 | 9 | **Keep it.** Move the scripts into `examples/<slug>/`, commit, and delete the take's `frames/` once Uzo is happy (they're gigabytes). | Committed, disk cleaned |
@@ -96,7 +113,15 @@ render(t, out, aspect='4:5', cover=m['ring'] + 0.4, segments=[
 ])
 ```
 
-Phase API: `hold(s)`, `to(point, {width})`, `drag(point, s)`, `path(T, at, end)`, `click()`, `down()`, `up()`, `type(text)`, `press(key)`, `call(fn)`, `mark(name)`. Shots are `(take time, move duration, centre x, centre y, view width)` in CSS px. Segment options: `speed`, `label`, `cursor=False`, `fade_in`.
+```js
+// a phone UI: touch events, a touch dot instead of a cursor, 393×852 at dpr 3 (1179×2556), slow 20
+const s = await session({ url, out, pointer: 'touch', start: { x: 440, y: 900 } /* off-screen: the finger glides in */ });
+const photo = await s.box(s.page.locator('[aria-label="Photo 1 of 8"]'));
+await s.phase((p) => { p.hold(1); p.to(right, { width: 80 }); p.hold(0.25); p.swipe(left); p.hold(1); /* …and back */
+                       p.to(s.offstage(photo, 60)); p.hold(0.6); });
+```
+
+Phase API: `hold(s)`, `to(point, {width})`, `drag(point, s)`, `path(T, at, end)`, `click()`, `tap()`, `swipe(point, s)`, `down()`, `up()`, `type(text)`, `press(key)`, `call(fn)`, `mark(name)`. Session helpers: `box`, `rect`, `center`, `aim(box)`, `offstage(box, pad, side)`. Shots are `(take time, move duration, centre x, centre y, view width)` in CSS px. Segment options: `speed`, `label`, `cursor=False`, `fade_in`.
 
 A trigger with no on-screen control (a "simulate" button outside the shot, a timer) fires with `p.call()`. Inside it, click with `el.click()` through `evaluate`, never `locator.click()`, which moves the real mouse away from the cursor you're drawing. Ask Uzo whether the cursor should be seen pressing the demo control or parked out of frame.
 
