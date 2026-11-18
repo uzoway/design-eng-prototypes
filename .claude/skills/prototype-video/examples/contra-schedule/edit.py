@@ -1,5 +1,5 @@
 """Scheduled posts for Contra, light: the whole window, then in close to write a post, pick
-today 8:30 AM in the calendar, Schedule, and open the Scheduled tab. Then back out.
+tomorrow 8:30 AM in the calendar, Schedule, and open the Scheduled tab. Then back out.
 
     ~/.cache/prototype-video/venv/bin/python .claude/skills/prototype-video/examples/contra-schedule/edit.py [--preview]
 """
@@ -7,8 +7,8 @@ import os, sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'engine'))
 from edit import Take, Segment, render, sheet
 
-TAKE = os.environ.get('TAKE', 'briefs/refs/lab-masters/contra-schedule/take3')
-OUT = os.environ.get('OUT', 'briefs/refs/lab-masters/contra-schedule/contra-schedule-light')
+TAKE = os.environ.get('TAKE', 'briefs/refs/lab-masters/contra-schedule/take4')
+OUT = os.environ.get('OUT', 'briefs/refs/lab-masters/contra-schedule/contra-schedule-light-v2')
 t = Take(TAKE)
 m = t.marks
 
@@ -35,12 +35,13 @@ flow = [
     # Once the card has closed (~0.35s) there's nothing left on the right, so head back left
     # straight away: Scheduled 3 comes into view, then the pill and the queue.
     (m['submit'] + 0.45, 1.0, *LEFT),
-    (m['tab'] + 1.2, 1.2, 500, 625, 1000),                     # back to the whole window
+    (m['gone'] + 0.1, 1.2, 500, 625, 1000),                    # back to the window once the cursor has left
 ]
 
-# Under 25s: open on 1s of the window (the take holds 1.5) and end 0.6s early.
-render(t, OUT, aspect='4:5', cover=m['confirm'] - 0.1, segments=[
-    Segment(0.5, m['end'] - 0.6, shots=flow),
+# Open on 1s of the window with no cursor (the take holds 1.5), end on ~1s of the window at rest.
+# One video, for X: its first frame is the poster, so no separate cover.
+render(t, OUT, aspect='4:5', platforms=('x',), segments=[
+    Segment(0.5, m['end'] - 0.2, shots=flow),
 ])
 if '--preview' in sys.argv:
     sheet(OUT + '-preview.mp4')

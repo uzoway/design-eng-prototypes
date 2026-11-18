@@ -126,7 +126,8 @@ export async function session({
   const center = (r, fx = 0.5, fy = 0.5) => ({ x: r.x + r.w * fx, y: r.y + r.h * fy });
   // Where to click so the hand hangs below and right of the label instead of covering it
   // (the hand's body sits down-right of its hotspot). A finger presses the middle.
-  const aim = (r) => (touch ? center(r) : center(r, 0.76, 0.78));
+  // On a tight pill whose label fills it, go lower (fy ~0.9) so the hand sits under the text.
+  const aim = (r, fx = 0.76, fy = 0.78) => (touch ? center(r) : center(r, fx, fy));
   // A point just outside a shot around r: the cursor starts here and enters, and leaves here before a cut.
   // Bottom-right by default, so the hand trails its fingertip and never sweeps across the subject.
   const offstage = (r, pad = 40, side = 'bottom-right') => ({

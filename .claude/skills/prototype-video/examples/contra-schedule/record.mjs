@@ -1,6 +1,8 @@
 // Scheduled posts for Contra (app/contra-schedule), light, at Contra's desktop layout.
-// The whole window first, then in close: write a post, pick today 8:30 AM in the calendar,
-// Schedule, then the Scheduled tab.
+// The whole window first, then in close: write a post, pick tomorrow 8:30 AM in the calendar,
+// Schedule, then the Scheduled tab. Take 4 (2026-11-18) adds the packaging rules: the cursor
+// starts off-screen and leaves before the end, clicks land low and right of each label, and it
+// rests ~0.4s on each hover.
 //   node .claude/skills/prototype-video/examples/contra-schedule/record.mjs
 //
 // A 1000×1250 window is 4:5, so frame 1 is the whole page. It's still ≥62rem, so it's
@@ -8,7 +10,7 @@
 // Frames are 2500×3125, so slow 14 keeps capture above ~120fps.
 import { session } from '../../engine/record.mjs';
 
-const OUT = process.env.OUT || 'briefs/refs/lab-masters/contra-schedule/take3';
+const OUT = process.env.OUT || 'briefs/refs/lab-masters/contra-schedule/take4';
 const TEXT = "Batching next week's posts tonight.";
 // The Time away post's real cover has a hand cursor and a tooltip baked in, right where the
 // toast lands. For the video only, serve a copy with both painted out (the live page keeps the
@@ -22,7 +24,7 @@ const s = await session({
   dpr: 2.5,
   viewport: { width: 1000, height: 1250 },
   theme: 'light',
-  start: { x: 0.74, y: 0.6 },
+  start: { x: 1040, y: 1300 }, // off-screen bottom-right, so frame 1 has no cursor and it enters from there
   setup: async (page) => {
     await page.route('**/contra-schedule/time-away.webp', (r) => r.fulfill({ path: CLEAN_IMAGE, contentType: 'image/webp' }));
     await page.reload({ waitUntil: 'networkidle' });
@@ -30,7 +32,7 @@ const s = await session({
     await page.waitForSelector('.cs-feed');
   },
 });
-const { page, rect, box, center } = s;
+const { page, rect, box, center, aim } = s;
 const at = (sel, opts) => box(opts ? page.locator(sel, opts).first() : page.locator(sel).first());
 
 // 1. The whole window, still. Then into the composer while the camera pushes in.
@@ -50,44 +52,39 @@ await s.phase((p) => { p.mark('typeStart'); p.type(TEXT); p.mark('typeEnd'); p.h
 {
   const clock = await at('.cs-clock');
   await s.phase((p) => {
-    p.mark('toClock'); p.to(center(clock), { width: clock.w });
-    p.hold(0.35); p.mark('clickClock'); p.click(); p.hold(0.55);
+    p.mark('toClock'); p.to(aim(clock), { width: clock.w });
+    p.hold(0.4); p.mark('clickClock'); p.click(); p.hold(0.55);
   });
 }
 {
   const pick = await at('.cs-pop .cs-menu-item', { hasText: 'Pick date' });
   await s.phase((p) => {
-    p.mark('toPick'); p.to(center(pick, 0.3, 0.5), { width: pick.h });
-    p.hold(0.3); p.mark('pick'); p.click(); p.hold(0.75);
+    p.mark('toPick'); p.to(aim(pick), { width: pick.h }); // right of the label, in the row's empty end
+    p.hold(0.4); p.mark('pick'); p.click(); p.hold(0.75);
   });
 }
-// 4. Today, then 8:30 AM from the time list, then confirm.
-{
-  const today = await at('.cs-cal-day[aria-label$=", today"]');
-  await s.phase((p) => {
-    p.mark('toDay'); p.to(center(today), { width: today.w });
-    p.hold(0.3); p.mark('day'); p.click(); p.hold(0.5);
-  });
-}
+// 4. 8:30 AM from the time list, then confirm. The calendar opens on tomorrow at 9:00 AM, so only
+// the time changes: 8:30 lands before the queue's first post (tomorrow 9:00) and leads the list.
+// (Take 3 picked today 8:30, which only works when recorded after midnight.)
 {
   const trigger = await at('.cs-time-trigger');
   await s.phase((p) => {
-    p.mark('toTime'); p.to(center(trigger, 0.4, 0.5), { width: trigger.h });
-    p.hold(0.3); p.mark('timeOpen'); p.click(); p.hold(0.5);
+    p.mark('toTime'); p.to(aim(trigger), { width: trigger.h });
+    p.hold(0.4); p.mark('timeOpen'); p.click(); p.hold(0.5);
   });
 }
 {
   const option = await at('.cs-time-option', { hasText: /^8:30 AM$/ });
   await s.phase((p) => {
-    p.mark('toOption'); p.to(center(option, 0.4, 0.5), { width: option.h });
-    p.hold(0.3); p.mark('time'); p.click(); p.hold(0.5);
+    p.mark('toOption'); p.to(aim(option), { width: option.h });
+    p.hold(0.4); p.mark('time'); p.click(); p.hold(0.5);
   });
 }
 {
   const confirm = await at('.cs-cal-foot .cs-button');
   await s.phase((p) => {
-    p.mark('toConfirm'); p.to(center(confirm), { width: confirm.h });
-    p.hold(0.3); p.mark('confirm'); p.click();
+    p.mark('toConfirm'); p.to(aim(confirm, 0.8, 0.9), { width: confirm.h });
+    p.hold(0.4); p.mark('confirm'); p.click();
     // Post rolls into Schedule here, then the camera drifts left to the text and the chip.
     p.hold(2.3); p.mark('chipSeen');
   });
@@ -96,24 +93,27 @@ await s.phase((p) => { p.mark('typeStart'); p.type(TEXT); p.mark('typeEnd'); p.h
 {
   const submit = await at('.cs-submit');
   await s.phase((p) => {
-    p.mark('toSubmit'); p.to(center(submit), { width: submit.h });
-    p.hold(0.35); p.mark('submit'); p.click(); p.hold(1.3); p.mark('closed');
+    p.mark('toSubmit'); p.to(aim(submit, 0.8, 0.9), { width: submit.h }); // under the label, so Post → Schedule stays readable
+    p.hold(0.4); p.mark('submit'); p.click(); p.hold(1.3); p.mark('closed');
   });
 }
 // 6. The Scheduled tab: the pill glides over and the post is first in the queue.
 {
   const tab = await at('[data-tab="scheduled"]');
   await s.phase((p) => {
-    p.mark('toTab'); p.to(center(tab), { width: tab.h });
-    p.hold(0.35); p.mark('tab'); p.click(); p.hold(1.7); p.mark('queue');
+    p.mark('toTab'); // Under "Scheduled" and left of its count, so the hand covers neither while the pill glides over.
+    p.to(aim(tab, 0.42, 0.9), { width: tab.h });
+    p.hold(0.4); p.mark('tab'); p.click(); p.hold(1.7); p.mark('queue');
   });
 }
-// 7. Drift off the tab, clear of every control, while the camera steps back to the window.
+// 7. Leave: out past the right edge, level with the tabs, while the camera is still close. The camera
+// steps back to the window only once it's gone, so the last frame is the window at rest, no cursor.
 {
   const tabs = await rect('.cs-tabs');
   await s.phase((p) => {
-    p.to({ x: tabs.x + tabs.w * 0.78, y: tabs.y + tabs.h * 0.55 }, { width: 60, overshoot: false });
-    p.hold(1.5); p.mark('end');
+    p.hold(0.2);
+    p.to({ x: 1060, y: tabs.y + tabs.h + 90 }, { width: 200, overshoot: false, dur: 0.75 }); p.mark('gone');
+    p.hold(2.4); p.mark('end');
   });
 }
 
