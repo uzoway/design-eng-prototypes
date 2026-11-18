@@ -36,6 +36,7 @@ PLATFORMS = {
     'x':         dict(fps=60, maxrate='20M'),
     'linkedin':  dict(fps=30, maxrate='20M'),
     'instagram': dict(fps=30, maxrate='10M'),
+    'contra':    dict(fps=60, maxrate='5M'),  # the upload path to Contra caps files at 10 MB; 5 Mbps keeps a 15s clip under it
 }
 SIZES = {'4:5': (1080, 1350), '1:1': (1080, 1080), '16:9': (1920, 1080), '9:16': (1080, 1920)}
 MASTER_FPS = 60

@@ -11,6 +11,7 @@ What each feed displays, so the file goes in at that size and nothing gets resam
 | LinkedIn | 1080×1350 | 30 | up to 4096×2304, 10–60fps, ~30 Mbps | Re-encodes to a fixed bitrate per size, so 30fps gives each frame twice the bits. Text stays crisp. |
 | X | 1080×1350 | 60 | up to 1920×1200 landscape, 1200×1900 portrait, ≤60fps, ~25 Mbps | Plays 60, and its encode holds up at that rate. |
 | Instagram | 1080×1350 | 30 | feed 4:5 at 1080 wide, 30fps constant | Converts 60 down itself, badly. Never upload 60. |
+| Contra | 1080×1350 | 60 | Claude in Chrome's upload path takes ≤10 MB | `maxrate` 5M keeps a 15s clip under the cap. Week 1 clips came out 0.8–4.3 MB. |
 
 **Aspect.** 4:5 is the default. It takes the most room in every feed and fits a panel-and-grid UI. Use 1:1 only when Uzo asks. 16:9 (1920×1080) suits wide layouts going to X or LinkedIn only. If a wide component framed at ~75% of a 4:5 width lands under 2.2×, don't shrink it to fit: go 16:9 for X and LinkedIn, or frame the part that changes.
 
@@ -48,7 +49,9 @@ At 1080 wide: view width 480 → 2.25×, 440 → 2.45×, 400 → 2.7×, 160 → 
 | Screenshot | `page.screenshot` | A raw CDP `captureScreenshot` ignores `deviceScaleFactor` and returns 1× frames |
 | Frame time | Midpoint of each screenshot call | |
 
-The time warp wraps `performance.now`, `Date.now`, `setTimeout`, `setInterval` and rAF in an init script. CDP `Animation.setPlaybackRate(1/slow)` slows CSS transitions, CSS animations and WAAPI (Motion's opacity runs on WAAPI). Change speed only through `setSlow()`, which keeps every clock continuous. Not slowed: the caret (handled), `<video>`, GIFs, smooth scrolling, anything in a cross-origin iframe.
+The time warp wraps `performance.now`, `Date.now`, `setTimeout`, `setInterval` and rAF in an init script. CDP `Animation.setPlaybackRate(1/slow)` slows CSS transitions, CSS animations and WAAPI (Motion's opacity runs on WAAPI). `<audio>` and `<video>` get their `playbackRate` scaled by 1/slow, while the page still reads back the rate it set. Chrome only plays media at 0.0625× or faster, so past slow 16 media runs fast: keep audio-driven UI (a progress bar) at slow ≤ 16. Change speed only through `setSlow()`, which keeps every clock continuous. Not slowed: the caret (handled), GIFs, smooth scrolling, anything in a cross-origin iframe.
+
+**Fixed-step animation.** Code that adds a fixed `dt` each rAF (a spring stepping 16ms a frame, like the photo pager's) runs `slow`× too fast, because the browser still paints 60 real frames a second. Pass `rafHz: 60` and rAF fires 60 times per real-speed second. Such an animation only has 60 steps a second, so don't slow-mo replay it.
 
 ## Motion
 

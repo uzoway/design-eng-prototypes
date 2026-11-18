@@ -37,6 +37,7 @@ export async function session({
   start = { x: 0.6, y: 0.6 }, // where the cursor rests at frame 0, as a fraction of the viewport, or {x, y} in px
   seed = 11,
   setup = async () => {}, // runs after load, before recording (click a 2x toggle, wait for fonts, etc.)
+  rafHz = null, // e.g. 60: fire rAF at that rate in real-speed time, for code that steps a fixed dt per frame
 } = {}) {
   // A take folder is only ever replaced on purpose: OVERWRITE=1, or a new `out` per take.
   if (fs.existsSync(path.join(out, 'take.json')) && !process.env.OVERWRITE) {
@@ -50,7 +51,7 @@ export async function session({
   const ctx = await browser.newContext({ viewport, deviceScaleFactor: dpr, colorScheme: theme, ...(touch ? { isMobile: true, hasTouch: true } : {}) });
   await ctx.route(GA, (r) => r.abort());
   await ctx.addInitScript(
-    ({ theme, themeStorage }) => {
+    ({ theme, themeStorage, rafHz }) => {
       try { for (const [k, v] of Object.entries(themeStorage)) localStorage.setItem(k, v ?? theme); } catch {}
 
       // Time warp: JS clocks, timers and rAF slow down once __setSlow runs.
@@ -60,12 +61,43 @@ export async function session({
       const rRAF = window.requestAnimationFrame.bind(window);
       let S = 1, baseR = rn(), baseV = baseR, baseDR = rdn(), baseDV = baseDR;
       const v = () => baseV + (rn() - baseR) / S;
-      window.__setSlow = (s) => { const nv = v(), nd = Date.now(); baseR = rn(); baseV = nv; baseDR = rdn(); baseDV = nd; S = s; };
+      // <audio>/<video> run on their own clock, so their playback rate is scaled by 1/S too. The page
+      // still reads back the rate it set. Chrome only plays 0.0625–16×, so past slow 16 media runs fast.
+      const rate = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, 'playbackRate');
+      const wanted = new WeakMap(), media = new Set();
+      const apply = (m) => { try { rate.set.call(m, Math.max(0.0625, (wanted.get(m) ?? 1) / S)); } catch {} };
+      Object.defineProperty(HTMLMediaElement.prototype, 'playbackRate', {
+        configurable: true,
+        get() { return wanted.get(this) ?? rate.get.call(this); },
+        set(r) { wanted.set(this, r); media.add(this); apply(this); },
+      });
+      const rPlay = HTMLMediaElement.prototype.play;
+      HTMLMediaElement.prototype.play = function () { media.add(this); apply(this); return rPlay.call(this); };
+      window.__setSlow = (s) => { const nv = v(), nd = Date.now(); baseR = rn(); baseV = nv; baseDR = rdn(); baseDV = nd; S = s; media.forEach(apply); };
       performance.now = v;
       Date.now = () => baseDV + (rdn() - baseDR) / S;
       window.setTimeout = (fn, d = 0, ...a) => rST(fn, (Number(d) || 0) * S, ...a);
       window.setInterval = (fn, d = 0, ...a) => rSI(fn, (Number(d) || 0) * S, ...a);
       window.requestAnimationFrame = (cb) => rRAF(() => cb(v()));
+      // Code that advances a fixed step per frame (a spring with dt = 16ms) would run S× too fast,
+      // since the browser still paints 60 real frames a second. With rafHz set, callbacks fire at that
+      // rate in slowed time, like a 60Hz screen. It stays 60Hz in a slow-mo replay too, so replay only
+      // what the pointer drives directly.
+      if (rafHz) {
+        const step = 1000 / rafHz, cancelled = new Set();
+        let queue = [], last = -1e9, driving = false, rid = 0;
+        const drive = () => {
+          const now = v();
+          if (now - last >= step - 0.01) {
+            last = now - last > 2 * step ? now : last + step;
+            const q = queue; queue = [];
+            for (const [id, cb] of q) if (!cancelled.delete(id)) cb(now);
+          }
+          if (queue.length) rRAF(drive); else driving = false;
+        };
+        window.requestAnimationFrame = (cb) => { const id = ++rid; queue.push([id, cb]); if (!driving) { driving = true; rRAF(drive); } return id; };
+        window.cancelAnimationFrame = (id) => { cancelled.add(id); };
+      }
 
       // The caret blinks on the browser's own clock, which nothing above can slow,
       // so it's hidden here and edit.py draws it at the real rate.
@@ -112,7 +144,7 @@ export async function session({
         return { kind, caret };
       };
     },
-    { theme, themeStorage },
+    { theme, themeStorage, rafHz },
   );
 
   const page = await ctx.newPage();
