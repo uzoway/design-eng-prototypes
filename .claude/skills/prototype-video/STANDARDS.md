@@ -141,7 +141,7 @@ The numbers behind SKILL.md's Packaging rules. Measured frame by frame from Emil
 | Loop | Ends in the start state (Visitors → Signups → Visitors) |
 | Audio | None |
 
-**When the post is about the craft itself** (a before/after, a tool, a technique), package the post the way Emil packaged his: a 16:10 canvas with the two versions side by side, each panel labelled with its file name and pixel size, one monospaced line above as the caption for that chapter, "Before" and "After" pills below, ~5s chapters with hard cuts. Frame 1 already shows the difference (his "before" panel was still blank while the "after" was finished), so the poster makes the argument on its own. The engine doesn't build these compositions yet; ask Uzo before making one by hand.
+**When the post is about the craft itself** (a before/after, a tool, a technique), package the post the way Emil packaged his: a 16:10 canvas with the two versions side by side, each panel labelled with its file name and pixel size, one monospaced line above as the caption for that chapter, "Before" and "After" pills below, ~5s chapters with hard cuts. Frame 1 already shows the difference (his "before" panel was still blank while the "after" was finished), so the poster makes the argument on its own. The engine's `render()` takes one take, so these are composed by hand: start from `examples/contra-popover-height` (two takes from production builds via `serve`, one with the fix reverted, composed with the engine's `Renderer`, checked to loop pixel-for-pixel before encoding). Ask Uzo before making one.
 
 ## Before delivering
 
