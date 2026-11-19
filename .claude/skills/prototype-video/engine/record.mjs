@@ -38,6 +38,7 @@ export async function session({
   seed = 11,
   setup = async () => {}, // runs after load, before recording (click a 2x toggle, wait for fonts, etc.)
   rafHz = null, // e.g. 60: fire rAF at that rate in real-speed time, for code that steps a fixed dt per frame
+  serve = null, // a static export folder (e.g. a worktree's out/): url's origin is answered from it, no server needed
 } = {}) {
   // A take folder is only ever replaced on purpose: OVERWRITE=1, or a new `out` per take.
   if (fs.existsSync(path.join(out, 'take.json')) && !process.env.OVERWRITE) {
@@ -50,6 +51,19 @@ export async function session({
   const touch = pointer === 'touch';
   const ctx = await browser.newContext({ viewport, deviceScaleFactor: dpr, colorScheme: theme, ...(touch ? { isMobile: true, hasTouch: true } : {}) });
   await ctx.route(GA, (r) => r.abort());
+  if (serve) {
+    // A production build without a server: every request to url's origin is read from the folder.
+    // Production, because a dev build's own overhead stalls frames and would muddy a timing comparison.
+    const origin = new URL(url).origin;
+    await ctx.route((u) => u.origin === origin, (route) => {
+      const pathname = decodeURIComponent(new URL(route.request().url()).pathname);
+      let file = path.join(path.resolve(serve), pathname);
+      if (pathname.endsWith('/')) file = path.join(file, 'index.html');
+      else if (!fs.existsSync(file) && fs.existsSync(file + '.html')) file += '.html';
+      if (!file.startsWith(path.resolve(serve)) || !fs.existsSync(file)) return route.fulfill({ status: 404, body: '' });
+      return route.fulfill({ path: file });
+    });
+  }
   await ctx.addInitScript(
     ({ theme, themeStorage, rafHz }) => {
       try { for (const [k, v] of Object.entries(themeStorage)) localStorage.setItem(k, v ?? theme); } catch {}
