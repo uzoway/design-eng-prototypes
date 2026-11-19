@@ -51,12 +51,20 @@ export const prototypes: Prototype[] = [
     featured: false,
   },
   {
+    slug: "contra-schedule",
+    title: "Contra scheduled posts",
+    description:
+      "A Contra concept that adds a clock beside Post in the community composer. Pick a time and the post waits in a Scheduled tab until it goes out on its own.",
+    disciplines: ["Product UI", "Interaction", "Accessibility"],
+    featured: true,
+  },
+  {
     slug: "voice-note",
     title: "WhatsApp voice note",
     description:
       "A WhatsApp concept where the voice note's transcript becomes the scrubber. Tap any word to play from it, and the words light up as it plays.",
     disciplines: ["Interaction", "Motion", "Audio"],
-    featured: true,
+    featured: false,
   },
   {
     slug: "spotify-two-streams",
