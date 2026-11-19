@@ -253,7 +253,9 @@ function PrototypeVideo({ slug, title }: PrototypeVideoProps) {
           onPause={function handlePause() {
             setPlaying(false);
           }}
-          className="relative block h-full w-full object-cover"
+          // Positioned like the poster: WebKit resolves h-full inside an
+          // aspect-ratio box against the border box, 2px taller than the image.
+          className="absolute inset-0 block h-full w-full object-cover"
         />
       )}
 
