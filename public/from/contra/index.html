@@ -1,0 +1,23 @@
+<!doctype html>
+<!--
+  The portfolio link on my Contra profile. Contra strips query strings from profile links,
+  so the UTM tags live here instead: this page forwards to the home page with them, and
+  Google Analytics counts the visit as Contra rather than "direct".
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <link rel="canonical" href="https://uzookafor.com/" />
+    <title>Uzo Okafor — Design Engineer</title>
+    <meta property="og:title" content="Uzo Okafor — Design Engineer" />
+    <meta property="og:image" content="https://uzookafor.com/og.png?v=2" />
+    <script>location.replace("/?utm_source=contra&utm_medium=profile" + location.hash);</script>
+    <meta http-equiv="refresh" content="0; url=/?utm_source=contra&amp;utm_medium=profile" />
+    <style>body{margin:0;background:#f4f4f1;color:#111;font:14px/1.6 system-ui,sans-serif}a{color:inherit}p{padding:24px}</style>
+  </head>
+  <body>
+    <p>Taking you to <a href="/?utm_source=contra&amp;utm_medium=profile">uzookafor.com</a>…</p>
+  </body>
+</html>
