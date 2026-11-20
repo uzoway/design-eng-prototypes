@@ -51,6 +51,11 @@ jobs:
       - name: Add Lunon Living Report to the site
         run: cp -R lunon-living-report/out ./out/lunon-living-report
 
+      # npm run build already wrote redirect pages for mangled links ("/plurise)");
+      # run it again so Lunon Living Report gets them too. Existing pages are kept.
+      - name: Add redirect pages for mangled links
+        run: node scripts/link-aliases.mjs out
+
       - name: Upload site
         uses: actions/upload-pages-artifact@v4
         with:
