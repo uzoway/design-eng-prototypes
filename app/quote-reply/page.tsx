@@ -1,10 +1,37 @@
 import type { Metadata, Viewport } from "next";
 import { QuoteReplyChat } from "./quote-reply-chat";
 
+const description =
+  "A WhatsApp concept: select a few words in a long message, tap Reply, and only those words get quoted. Tapping the quote takes you back to that exact sentence.";
+
+/* A page's openGraph and twitter replace the site's rather than merge, so they're complete here. */
+const image = {
+  url: "/quote-reply/og.png",
+  width: 2400,
+  height: 1260,
+  alt: "A concept of WhatsApp on iPhone: a long message is lifted with the words \"can Tobi crash at yours on Friday\" selected and the menu Copy, Reply, Look Up, Share above them.",
+};
+
 export const metadata: Metadata = {
   title: "WhatsApp: reply to just part of a message",
-  description:
-    "A WhatsApp concept: select a few words in a long message, tap Reply, and only those words get quoted. Tapping the quote takes you back to that exact sentence.",
+  description,
+  alternates: { canonical: "/quote-reply" },
+  openGraph: {
+    title: "Reply to just part of a message: a WhatsApp concept",
+    description,
+    type: "website",
+    url: "/quote-reply",
+    siteName: "Uzo Okafor",
+    locale: "en_US",
+    images: [image],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Reply to just part of a message: a WhatsApp concept",
+    description,
+    creator: "@uzodev",
+    images: [image.url],
+  },
 };
 
 // The chat reaches under the notch and home indicator on a real phone.
