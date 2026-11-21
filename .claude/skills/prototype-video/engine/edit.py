@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import bisect, json, math, os, subprocess, sys
 from dataclasses import dataclass, field
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageChops, ImageDraw, ImageFont
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -133,6 +133,181 @@ class Take:
         return x, y, self.kinds[i], amt
 
 
+# ---- iPhone body ------------------------------------------------------------------------------
+# iPhone 15 Pro / 16, in points. The take's viewport is the screen (393×852 for pointer: 'touch').
+# The screen has 55pt continuous corners. Around it is an 11pt black bezel, then a 3pt titanium band.
+# The Dynamic Island is 126×37, 11pt below the screen's top edge.
+# Side buttons were measured off an iOS Simulator recording: action, volume up and down on the left, power on the right.
+SCREEN_R = 55
+BEZEL, BAND = 11, 3
+ISLAND = (126, 37, 11)
+BUTTONS = [('left', 148, 33), ('left', 209, 62), ('left', 287, 62), ('right', 255, 92)]  # side, top, height (body pt)
+BUTTON_OUT = 3
+TITANIUM, TITANIUM_EDGE = (58, 58, 61), (118, 118, 123)
+
+
+def squircle(x0, y0, x1, y1, r, smoothing=0.6, steps=16):
+    """A rounded rectangle with Apple's continuous corners: Figma's corner smoothing, which at 60% is
+    its iOS preset. Each corner keeps a true circular arc of radius r in the middle and eases into the
+    straight edges with two cubic curves, so the rounding starts (1 + smoothing)·r from the corner.
+    A plain superellipse reads squarer, like an Android phone. (Figma, "Desperately seeking squircles".)"""
+    w, h = x1 - x0, y1 - y0
+    p = min((1 + smoothing) * r, min(w, h) / 2)
+    arc = 90 * (1 - smoothing)
+    arc_len = math.sin(math.radians(arc / 2)) * r * math.sqrt(2)
+    alpha = (90 - arc) / 2
+    p34 = r * math.tan(math.radians(alpha / 2))
+    beta = 45 * smoothing
+    c = p34 * math.cos(math.radians(beta))
+    d = c * math.tan(math.radians(beta))
+    b = (p - arc_len - c - d) / 3
+    a = 2 * b
+
+    def cubic(P0, P1, P2, P3):
+        return [tuple((1 - u) ** 3 * P0[i] + 3 * (1 - u) ** 2 * u * P1[i] + 3 * (1 - u) * u * u * P2[i] + u ** 3 * P3[i]
+                      for i in (0, 1)) for u in (k / steps for k in range(1, steps + 1))]
+
+    # The top-right corner in local coordinates (x right, y down, corner at the origin's top right),
+    # then rotated into each corner.
+    q0 = (-p, 0)
+    q1 = (-p + a + b + c, d)
+    corner = cubic(q0, (-p + a, 0), (-p + a + b, 0), q1)
+    cx, cy = -r, r  # the arc's centre: the same circle as an ordinary rounded corner
+    a0, a1 = math.atan2(q1[1] - cy, q1[0] - cx), math.atan2(q1[1] + arc_len - cy, q1[0] + arc_len - cx)
+    corner += [(cx + r * math.cos(a0 + (a1 - a0) * k / steps), cy + r * math.sin(a0 + (a1 - a0) * k / steps)) for k in range(1, steps + 1)]
+    q2 = (q1[0] + arc_len, q1[1] + arc_len)
+    corner += cubic(q2, (q2[0] + d, q2[1] + c), (q2[0] + d, q2[1] + b + c), (q2[0] + d, q2[1] + a + b + c))  # ends at (0, p)
+    pts = [(x1 + u, y0 + v) for (u, v) in [q0] + corner]                    # top right
+    pts += [(x1 - v, y1 + u) for (u, v) in [q0] + corner]                   # bottom right
+    pts += [(x0 - u, y1 - v) for (u, v) in [q0] + corner]                   # bottom left
+    pts += [(x0 + v, y0 - u) for (u, v) in [q0] + corner]                   # top left
+    return pts
+
+
+class Device:
+    """A phone take shown as the screen of an iPhone, on a soft light stage. Use it in place of the Take.
+
+        t = Take('briefs/refs/lab-masters/<slug>/take')     # recorded with pointer: 'touch'
+        dev = Device(t)
+        render(dev, out, aspect='4:5', segments=[Segment(0, m['end'], shots=[
+            dev.whole(0),                                   # the whole phone
+            dev.shot(m['tap'] - 1.0, 0.9, 196, 520, 470),   # push in: page CSS px, like any shot
+            dev.whole(m['back'], 1.0),                      # and out again
+        ])])
+
+    Shots are in stage points, so the camera can frame the whole body. dev.shot() takes page coordinates
+    like a normal shot and moves them onto the stage. The touch dot and caret are moved the same way.
+    """
+
+    def __init__(self, take, bg=((246, 247, 249), (226, 229, 235)), stage=(2400, 1600), shadow=0.16):
+        c = take.clip
+        if c['x'] or c['y']:
+            raise ValueError('Device needs the whole viewport as the screen: record without clip')
+        self.t = take
+        self.glass = None
+        self.dpr = D = take.dpr
+        sw, sh = c['width'], c['height']
+        bw, bh = sw + 2 * (BEZEL + BAND), sh + 2 * (BEZEL + BAND)
+        SW, SH = stage
+        self.clip = {'x': 0, 'y': 0, 'width': SW, 'height': SH}
+        bx, by = (SW - bw) / 2, (SH - bh) / 2
+        self.body = (bx, by, bw, bh)
+        self.origin = (bx + BEZEL + BAND, by + BEZEL + BAND)  # the screen's top-left on the stage
+
+        # Stage background: a soft radial wash, lighter behind the phone. Smooth, so 0.5 px/pt is plenty.
+        g = Image.radial_gradient('L').resize((SW // 2, SH // 2), Image.BICUBIC)
+        g = g.point(lambda v: min(255, int(v * 1.25)))
+        self.bg = Image.composite(Image.new('RGB', g.size, bg[1]), Image.new('RGB', g.size, bg[0]), g)
+        self.bg_scale = 0.5
+
+        # The body (band, bezel, buttons, shadow) drawn once at 2×dpr and downsampled for clean edges.
+        pad = 70
+        S = 2 * D
+        W0, H0 = round((bw + 2 * pad) * S), round((bh + 2 * pad) * S)
+        under = Image.new('RGBA', (W0, H0), (0, 0, 0, 0))
+        if shadow:
+            sm = Image.new('L', (round(bw + 2 * pad), round(bh + 2 * pad)), 0)
+            ImageDraw.Draw(sm).polygon(squircle(pad + 6, pad + 22, pad + bw - 6, pad + bh + 6, SCREEN_R + BEZEL + BAND), fill=round(255 * shadow))
+            from PIL import ImageFilter
+            sm = sm.filter(ImageFilter.GaussianBlur(28)).resize((W0, H0), Image.BICUBIC)
+            under.paste(Image.new('RGBA', (W0, H0), (20, 24, 34, 255)), (0, 0), sm)
+        d = ImageDraw.Draw(under)
+        P = lambda x, y: (x * S, y * S)
+        for side, top, height in BUTTONS:
+            x0 = pad - BUTTON_OUT if side == 'left' else pad + bw - 1
+            x1 = pad + 1 if side == 'left' else pad + bw + BUTTON_OUT
+            d.rounded_rectangle([*P(x0, pad + top), *P(x1, pad + top + height)], radius=1.6 * S, fill=TITANIUM + (255,))
+        R0 = SCREEN_R + BEZEL + BAND
+        d.polygon([P(*p) for p in squircle(pad, pad, pad + bw, pad + bh, R0)], fill=TITANIUM_EDGE + (255,))
+        d.polygon([P(*p) for p in squircle(pad + 0.6, pad + 0.6, pad + bw - 0.6, pad + bh - 0.6, R0 - 0.6)], fill=TITANIUM + (255,))
+        d.polygon([P(*p) for p in squircle(pad + BAND, pad + BAND, pad + bw - BAND, pad + bh - BAND, R0 - BAND)], fill=(6, 6, 7, 255))
+        self.under = under.resize((round(W0 / 2), round(H0 / 2)), Image.LANCZOS)
+        self.under_at = (bx - pad, by - pad)
+
+        # The screen's mask and the Dynamic Island, at the take's dpr.
+        m = Image.new('L', (round(sw * S), round(sh * S)), 0)
+        ImageDraw.Draw(m).polygon([P(*p) for p in squircle(0, 0, sw, sh, SCREEN_R)], fill=255)
+        self.mask = m.resize((round(sw * D), round(sh * D)), Image.LANCZOS)
+        iw, ih, iy = ISLAND
+        isl = Image.new('RGBA', (round((iw + 4) * S), round((ih + 4) * S)), (0, 0, 0, 0))
+        ImageDraw.Draw(isl).rounded_rectangle([*P(2, 2), *P(2 + iw, 2 + ih)], radius=ih / 2 * S, fill=(0, 0, 0, 255))
+        self.island = isl.resize((round((iw + 4) * D), round((ih + 4) * D)), Image.LANCZOS)
+        self.island_at = (self.origin[0] + (sw - iw) / 2 - 2, self.origin[1] + iy - 2)
+
+    def __getattr__(self, name):  # marks, density, P, sample, theme… come from the take
+        return getattr(self.t, name)
+
+    def shot(self, t0, dur, x, y, w):
+        """A camera keyframe in page CSS px, moved onto the stage."""
+        return (t0, dur, x + self.origin[0], y + self.origin[1], w)
+
+    def whole(self, t0=0, dur=0, aspect='4:5', margin=0.07):
+        """A keyframe that shows the whole phone, buttons included, with `margin` of the frame around it."""
+        bx, by, bw, bh = self.body
+        W, H = SIZES[aspect] if isinstance(aspect, str) else aspect
+        w = max((bw + 2 * BUTTON_OUT) / (1 - 2 * margin), bh / (1 - 2 * margin) * W / H)
+        return (t0, dur, bx + bw / 2, by + bh / 2, w)
+
+    def cursor(self, t):
+        x, y, kind, amt = self.t.cursor(t)
+        return x + self.origin[0], y + self.origin[1], kind, amt
+
+    def compose(self, t, view, W, H):
+        cx, cy, w, h = view
+        k = W / w
+        x0, y0 = cx - w / 2, cy - h / 2
+        s = self.bg_scale
+        fr = self.bg.resize((W, H), Image.BICUBIC, box=(x0 * s, y0 * s, (x0 + w) * s, (y0 + h) * s)).convert('RGBA')
+        self._blit(fr, self.under, self.dpr, *self.under_at, x0, y0, k)
+        self.glass = self._blit(fr, self.t.frame(t), self.dpr, *self.origin, x0, y0, k, mask=self.mask)
+        self._blit(fr, self.island, self.dpr, *self.island_at, x0, y0, k)
+        return fr
+
+    @staticmethod
+    def _blit(fr, img, s, X, Y, x0, y0, k, mask=None):
+        """Draw img (s px per pt, top-left at stage X, Y) into the frame, resampled straight from the
+        source so it lands at sub-pixel precision and is never resized twice."""
+        W, H = fr.size
+        iw, ih = img.size
+        dx0, dy0 = max(0, math.floor((X - x0) * k)), max(0, math.floor((Y - y0) * k))
+        dx1, dy1 = min(W, math.ceil((X + iw / s - x0) * k)), min(H, math.ceil((Y + ih / s - y0) * k))
+        if dx1 <= dx0 or dy1 <= dy0:
+            return None
+        box = tuple(v for v in ((x0 + dx0 / k - X) * s, (y0 + dy0 / k - Y) * s, (x0 + dx1 / k - X) * s, (y0 + dy1 / k - Y) * s))
+        box = (max(0, box[0]), max(0, box[1]), min(iw, box[2]), min(ih, box[3]))
+        size = (dx1 - dx0, dy1 - dy0)
+        piece = img.resize(size, Image.LANCZOS, box=box)
+        alpha = None
+        if mask is not None:
+            piece = piece.convert('RGBA')
+            alpha = mask.resize(size, Image.LANCZOS, box=box)
+            piece.putalpha(alpha)
+        elif piece.mode != 'RGBA':
+            piece = piece.convert('RGBA')
+        fr.alpha_composite(piece, (dx0, dy0))
+        return alpha, dx0, dy0  # where the glass is in this frame, so the finger can be kept on it
+
+
 @dataclass
 class Segment:
     """A stretch of the take. speed 1 = real time, 0.2 = five times slower.
@@ -191,7 +366,8 @@ class Renderer:
         alpha = 1 - (1 - u) ** 3
         cx, cy, w, h = view
         k = self.W / w
-        x0, y0 = (c['x'] - (cx - w / 2)) * k, (c['y'] - (cy - h / 2)) * k
+        ox, oy = T.origin if isinstance(T, Device) else (0, 0)
+        x0, y0 = (c['x'] + ox - (cx - w / 2)) * k, (c['y'] + oy - (cy - h / 2)) * k
         rgb = tuple(int(float(v)) for v in c['color'][c['color'].index('(') + 1:-1].split(',')[:3])
         layer = Image.new('RGBA', fr.size, (0, 0, 0, 0))
         ImageDraw.Draw(layer).rectangle([round(x0), round(y0), round(x0 + max(1, k)) - 1, round(y0 + c['h'] * k) - 1],
@@ -214,6 +390,13 @@ class Renderer:
         pad = pad.transform(pad.size, Image.AFFINE, (1, 0, -(ox - ix), 0, 1, -(oy - iy)), resample=Image.BICUBIC)
         layer = Image.new('RGBA', fr.size, (0, 0, 0, 0))
         layer.paste(pad, (ix - 1, iy - 1))
+        if isinstance(self.t, Device):
+            # A finger only shows where it touches the glass: off the screen it's gone, and it's cut
+            # by the rounded corners like everything else on the screen.
+            glass = Image.new('L', fr.size, 0)
+            if self.t.glass:
+                glass.paste(self.t.glass[0], self.t.glass[1:])
+            layer.putalpha(ImageChops.multiply(layer.getchannel('A'), glass))
         fr.alpha_composite(layer)
 
     def draw_label(self, fr, text, alpha):
@@ -244,9 +427,12 @@ class Renderer:
         t = seg.start + local * seg.speed
         view = self.camera(seg, t)
         cx, cy, w, h = view
-        c, D = self.t.clip, self.t.dpr
-        box = ((cx - w / 2 - c['x']) * D, (cy - h / 2 - c['y']) * D, (cx + w / 2 - c['x']) * D, (cy + h / 2 - c['y']) * D)
-        fr = self.t.frame(t).resize((self.W, self.H), Image.LANCZOS, box=box).convert('RGBA')
+        if isinstance(self.t, Device):
+            fr = self.t.compose(t, view, self.W, self.H)
+        else:
+            c, D = self.t.clip, self.t.dpr
+            box = ((cx - w / 2 - c['x']) * D, (cy - h / 2 - c['y']) * D, (cx + w / 2 - c['x']) * D, (cy + h / 2 - c['y']) * D)
+            fr = self.t.frame(t).resize((self.W, self.H), Image.LANCZOS, box=box).convert('RGBA')
         self.draw_caret(fr, t, view)
         if seg.cursor:
             self.draw_cursor(fr, t, view)
@@ -352,7 +538,7 @@ def render(take, out, segments, aspect='4:5', platforms=('linkedin', 'x', 'insta
         ff.stdin.close(); ff.wait()
         print('wrote', path)
 
-    if cover is not None:
+    if cover is not None and not preview:  # a preview never writes over the real cover
         seg = next((s for s in segments if s.start <= cover <= s.end), segments[0])
         rnd.frame(seg, (cover - seg.start) / seg.speed, seg.length).convert('RGB').save(f'{out}-cover.png')
         print('wrote', f'{out}-cover.png')

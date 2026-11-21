@@ -33,6 +33,7 @@ Cheap-looking videos fail in a handful of known ways. Each one has happened on t
 | The hand parked on the label it clicks | The state change happens under the cursor | Packaging 3 |
 | Ending somewhere else than it started | The loop snaps back | Packaging 5 |
 | A mouse cursor on a phone UI | Reads as a desktop site squeezed small | Packaging 7 |
+| A phone screen floating with no phone around it | A web page pretending, not an app | Packaging 8 |
 
 For every number (motion constants, cursor hotspots, caret timing, platform specs, encode settings), see [STANDARDS.md](STANDARDS.md). Load it before planning shots.
 
@@ -73,6 +74,10 @@ The rules above make a take that's correct. These make it look made. They come f
 5. **Round trip.** End in the state you started in: switch the tab and switch it back, add and remove, open and close. The loop then restarts without a jump.
 6. **Short, one idea.** 5–10s for a component. Put the length in the file name (`add-to-cart-7s`). A set of similar things is a reel: same framing for each, about 3s per item, a hard cut between identical rest states with no cursor in frame.
 7. **Phone UIs get a finger.** `pointer: 'touch'` records at a phone viewport with real touch events (taps, swipes with release velocity, no hover) and draws a soft touch dot instead of a cursor. It stays visible between touches and glides to the next one, so the eye can follow.
+8. **Phone UIs sit in a real iPhone.** Wrap the take in `Device(take)` and the edit puts it inside an iPhone body (the 393×852 size of the iPhone 15 Pro and 16): titanium band, black bezel, side buttons and the Dynamic Island, on a soft light stage. This is the look Uzo picked in Nov 2026 from Lorenzo Dossi's and Vishal Bhardwaj's posts.
+   - **The camera:** open on the whole phone (`dev.whole()`, a 1–2s beat), push in for every payoff so text stays ≥2× (the bottom of the phone goes off-frame), and pull back to the whole phone at the end so the loop is clean.
+   - **The finger** shows only on the glass, cut by the screen's corners.
+   - **The page draws its own status bar and leaves the island's space free** (59pt at the top, 34pt at the bottom). Prototypes built for this have a `?device` mode; record that URL. The edit never fakes a status bar.
 
 ## Build Sequence
 
@@ -119,6 +124,13 @@ const s = await session({ url, out, pointer: 'touch', start: { x: 440, y: 900 } 
 const photo = await s.box(s.page.locator('[aria-label="Photo 1 of 8"]'));
 await s.phase((p) => { p.hold(1); p.to(right, { width: 80 }); p.hold(0.25); p.swipe(left); p.hold(1); /* …and back */
                        p.to(s.offstage(photo, 60)); p.hold(0.6); });
+```
+
+```python
+# a phone UI in an iPhone body: shots are on the stage, dev.shot() takes page px like any other shot
+dev = Device(Take('briefs/refs/lab-masters/<slug>/take'))
+render(dev, out, aspect='4:5', segments=[Segment(0, m['end'], shots=[
+    dev.whole(0), dev.shot(m['enter'], 0.9, 196, 520, 470), dev.whole(m['gone'], 1.0)])])
 ```
 
 Phase API: `hold(s)`, `to(point, {width})`, `drag(point, s)`, `path(T, at, end)`, `click()`, `tap()`, `swipe(point, s)`, `down()`, `up()`, `type(text)`, `press(key)`, `call(fn)`, `mark(name)`. Session helpers: `box`, `rect`, `center`, `aim(box)`, `offstage(box, pad, side)`. Shots are `(take time, move duration, centre x, centre y, view width)` in CSS px. Segment options: `speed`, `label`, `cursor=False`, `fade_in`.

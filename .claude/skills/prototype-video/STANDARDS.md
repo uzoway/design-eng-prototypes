@@ -113,6 +113,27 @@ macOS Chrome blinks 500ms on, 500ms off. It turns solid again on focus and on ev
 - **Timing:** start moves just after an action lands (+0.05–0.3s) and finish them before the next one. Never move during a payoff.
 - **Order:** open readable, push in for detail, step back only at the very end.
 
+## iPhone body
+
+`Device(take)` in `edit.py`. An iPhone 15 Pro / 16 in points, with the take's viewport (393×852 for `pointer: 'touch'`) as the screen.
+
+| | Value |
+|---|---|
+| Screen corners | 55pt, continuous: Figma's corner smoothing at 60% (its iOS preset), a circular arc eased into the edges from 1.6× the radius. A plain superellipse looked like an Android phone (Uzo, Nov 2026) |
+| Bezel | 11pt black (#060607) inside a 3pt titanium band (#3A3A3D), with a 0.6pt lighter outer edge (#76767B) |
+| Dynamic Island | 126×37, fully round, 11pt below the screen's top edge, centred |
+| Buttons | Out 3pt. Left: action 148–181, volume 209–271 and 287–349. Right: power 255–347 (body pt from the top). Measured off an iOS Simulator recording |
+| Shadow | A soft 16% shadow, 22pt down, 28pt blur |
+| Stage | 2400×1600pt. A radial wash from #F6F7F9 behind the phone to #E2E5EB at the edges |
+| Whole-phone shot | `dev.whole()`: 7% margin. At 4:5 that's 1.32×, so it's an opening or closing beat (1–2s), never where anything is read |
+| Payoff shots | `dev.shot(t0, dur, x, y, w)` in page px. Keep w ≤ 490 at 4:5 (≥2.2×). The phone's bottom going off-frame is fine; Vishal's sat at 1.9× the whole time |
+| Safe areas | The page leaves 59pt at the top and 34pt at the bottom, draws its own status bar ("9:41", cellular, Wi-Fi, battery) and home indicator, and keeps the island's 126×37 clear |
+| Speed | Body, mask and island are drawn once at 2×dpr and downsampled. Each frame resamples straight from the source at sub-pixel position: ~80ms a frame at 1080×1350 |
+
+The two references (Nov 2026):
+- **Lorenzo Dossi:** the iOS Simulator's whole device on white, no camera moves. The Mac cursor shows because it's a Simulator window.
+- **Vishal Bhardwaj:** 1:1, a screen-only iPhone (no bezel) at 70% of the width, bleeding off the bottom, on a cool grey wash, with a 0.4s push-in at the start.
+
 ## Slow-mo replay
 
 - Show the moment at real speed in the main segment first.
