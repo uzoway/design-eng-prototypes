@@ -672,7 +672,13 @@ export const STYLES = `
     color: transparent;
   }
 
-  [data-qr-field]:has([data-qr-input]:focus-visible) {
+  /* A text field matches :focus-visible on a tap too, so its ring only shows
+     when focus came from the keyboard. The caret is enough otherwise. */
+  [data-qr-input]:focus-visible {
+    outline: none;
+  }
+
+  [data-qr-screen][data-modality="keyboard"] [data-qr-field]:focus-within {
     box-shadow: inset 0 0 0 1px var(--qr-field-edge), 0 0 0 2px var(--qr-focus);
   }
 
@@ -830,12 +836,18 @@ export const STYLES = `
     top: 7.5px;
   }
 
+  /* y is the line top for both; the end handle's box sits a line lower so its
+     touch area covers the caret and the ball under it. */
+  [data-qr-handle][data-end="end"] {
+    margin-top: -3px;
+  }
+
   [data-qr-handle][data-end="end"] i {
     top: 3px;
   }
 
   [data-qr-handle][data-end="end"] b {
-    top: 20px;
+    top: 21.5px;
   }
 
   [data-qr-reactions] {
@@ -867,10 +879,6 @@ export const STYLES = `
     font-size: 27px;
     line-height: 1;
     transition: background-color 160ms ease, scale 240ms var(--qr-ease);
-  }
-
-  [data-qr-emoji-button]:last-of-type {
-    clip-path: inset(0 12px 0 0);
   }
 
   [data-qr-react-more] {

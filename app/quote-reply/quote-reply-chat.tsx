@@ -1222,6 +1222,20 @@ function Chat({ device, edits }: { device: boolean; edits: boolean }) {
 
   useEffect(
     function trackPointer() {
+      function swallowNextClick() {
+        function swallow(event: MouseEvent) {
+          event.preventDefault();
+          event.stopPropagation();
+          stop();
+        }
+        function stop() {
+          window.clearTimeout(timer);
+          window.removeEventListener("click", swallow, true);
+        }
+        const timer = window.setTimeout(stop, 350);
+        window.addEventListener("click", swallow, true);
+      }
+
       function move(event: PointerEvent) {
         const g = gesture.current;
 
@@ -1352,6 +1366,9 @@ function Chat({ device, edits }: { device: boolean; edits: boolean }) {
         }
 
         if (g.kind === "held") {
+          // Chrome follows a long-press release with a click, which would land
+          // on whatever lifted under the finger (the menu). iOS sends none.
+          swallowNextClick();
           if (g.moved) commitSelection(range.current);
           return;
         }
@@ -1438,6 +1455,32 @@ function Chat({ device, edits }: { device: boolean; edits: boolean }) {
     return function stop() {
       screen.removeEventListener("touchmove", touchMove);
       screen.removeEventListener("contextmenu", contextMenu);
+    };
+  }, []);
+
+  // Focus rings that a tap would also trigger (the text field) only show for keyboard users.
+  useEffect(function trackModality() {
+    const screen = screenRef.current;
+
+    if (!screen) return;
+    const target = screen;
+
+    function keyboardUsed(event: KeyboardEvent) {
+      if (event.key === "Tab" || event.key.startsWith("Arrow")) {
+        target.dataset.modality = "keyboard";
+      }
+    }
+
+    function pointerUsed() {
+      delete target.dataset.modality;
+    }
+
+    window.addEventListener("keydown", keyboardUsed, true);
+    window.addEventListener("pointerdown", pointerUsed, true);
+
+    return function stop() {
+      window.removeEventListener("keydown", keyboardUsed, true);
+      window.removeEventListener("pointerdown", pointerUsed, true);
     };
   }, []);
 
