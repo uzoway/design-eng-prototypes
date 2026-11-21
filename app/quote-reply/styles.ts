@@ -487,6 +487,9 @@ export const STYLES = `
 
   [data-qr-quote-name] {
     display: block;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
     color: var(--qr-ada-text);
     font-size: 12px;
     font-weight: 600;
@@ -573,6 +576,9 @@ export const STYLES = `
 
   [data-qr-panel-name] {
     display: block;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
     color: var(--qr-ada-text);
     font-size: 12px;
     font-weight: 600;
@@ -785,6 +791,25 @@ export const STYLES = `
     outline: none;
   }
 
+  /* A message too tall for the lifted view scrolls inside its bubble. */
+  [data-qr-lift-scroll] {
+    margin: -6px -12px -7px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-radius: inherit;
+    scrollbar-width: none;
+  }
+
+  [data-qr-lift-scroll]::-webkit-scrollbar {
+    display: none;
+  }
+
+  [data-qr-lift-scroll-inner] {
+    position: relative;
+    padding: 6px 12px 7px;
+  }
+
   [data-qr-caret] {
     position: absolute;
     left: 0;
@@ -856,7 +881,7 @@ export const STYLES = `
     top: 0;
     display: flex;
     align-items: center;
-    width: 336px;
+    width: min(336px, calc(100% - 32px));
     height: 56px;
     padding: 0 10px 0 4px;
     border-radius: 28px;
@@ -870,8 +895,9 @@ export const STYLES = `
   [data-qr-emoji-button] {
     display: grid;
     place-items: center;
-    flex: 0 0 auto;
-    width: 42.8px;
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 42.8px;
     height: 46px;
     border-radius: 23px;
     font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji",

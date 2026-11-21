@@ -116,6 +116,8 @@ const MENU_HEIGHT = 41.33 * 6 + 7;
 const REACTIONS_HEIGHT = 56;
 const ABOVE_GAP = 12.6;
 const BELOW_GAP = 13.4;
+/** A bubble's padding above and below its words (6 + 7). */
+const LIFT_PAD = 13;
 const PILL_GAP = 12.4;
 const PILL_HEIGHT = 36;
 
@@ -364,6 +366,11 @@ type Lift = {
   target: number;
   menuTop: number;
   reactionsTop: number;
+  /**
+   * Max height of the lifted words when the message is taller than the room
+   * between the reactions and the menu. They scroll inside the bubble then.
+   */
+  clip: number | null;
   /** Opened from the keyboard: the word caret shows. */
   keyboard: boolean;
   phase: "open" | "closing";
@@ -480,6 +487,7 @@ function Chat({ device, edits }: { device: boolean; edits: boolean }) {
   const barRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const liftedTextRef = useRef<HTMLParagraphElement>(null);
+  const liftScrollRef = useRef<HTMLDivElement>(null);
   const liftedRef = useRef<HTMLDivElement>(null);
   const pillRef = useRef<HTMLDivElement>(null);
   const ghostRef = useRef<HTMLDivElement>(null);
@@ -687,6 +695,27 @@ function Chat({ device, edits }: { device: boolean; edits: boolean }) {
     return quoteOf(message, units, r[0], r[1]).text;
   }
 
+  /** Scroll a clipped lifted message so a word's line is in view. */
+  function revealUnit(index: number) {
+    const scroller = liftScrollRef.current;
+    const line = geo.current?.boxes[index]?.[0]?.line;
+
+    if (!scroller || line === undefined) return;
+    if (scroller.scrollHeight <= scroller.clientHeight + 1) return;
+    const top = 6 + line * LINE;
+    const bottom = top + LINE;
+
+    if (top < scroller.scrollTop + 6) scroller.scrollTop = top - 6;
+    else if (bottom > scroller.scrollTop + scroller.clientHeight - 7) {
+      scroller.scrollTop = bottom - scroller.clientHeight + 7;
+    }
+  }
+
+  function handleLiftScroll() {
+    // The pill follows the selection as the words scroll, like iOS.
+    if (range.current && !gesture.current && pill) placePill(range.current);
+  }
+
   function placePill(r: Range | null) {
     const g = geo.current;
     const text = liftedTextRef.current;
@@ -705,9 +734,19 @@ function Chat({ device, edits }: { device: boolean; edits: boolean }) {
     const lag = l.target - liftY.get();
     const left = Math.min(...bands.map((b) => b.left));
     const right = Math.max(...bands.map((b) => b.right));
-    const top = textBox.top - screenBox.top + lag + bands[0].line * LINE;
-    const bottom =
+    let top = textBox.top - screenBox.top + lag + bands[0].line * LINE;
+    let bottom =
       textBox.top - screenBox.top + lag + (bands[bands.length - 1].line + 1) * LINE;
+    const scroller = l.clip !== null ? liftScrollRef.current : null;
+
+    if (scroller) {
+      // Scrolled out of view: point at the edge of what's showing.
+      const box = scroller.getBoundingClientRect();
+      const visibleTop = box.top - screenBox.top + lag;
+      const visibleBottom = box.bottom - screenBox.top + lag;
+      top = clamp(top, visibleTop, visibleBottom);
+      bottom = clamp(bottom, visibleTop, visibleBottom);
+    }
     const center = textBox.left - screenBox.left + (left + right) / 2;
     const safeTop = (device ? 59 : 8) + 4;
     const above = top - PILL_GAP - PILL_HEIGHT;
@@ -732,8 +771,11 @@ function Chat({ device, edits }: { device: boolean; edits: boolean }) {
     const screenBox = screen.getBoundingClientRect();
     const box = bubble.getBoundingClientRect();
     const scale = screenBox.width / screen.offsetWidth || 1;
-    const width = bubble.offsetWidth;
-    const height = bubble.offsetHeight;
+    // Exact layout size: offsetWidth rounds, and a copy a fraction narrower
+    // can wrap a word onto an extra line.
+    const style = getComputedStyle(bubble);
+    const width = parseFloat(style.width) || bubble.offsetWidth;
+    const height = parseFloat(style.height) || bubble.offsetHeight;
     // The press scales the bubble from its centre; measure the resting box.
     const left = ((box.left + box.right) / 2 - screenBox.left) / scale - width / 2;
     const top = ((box.top + box.bottom) / 2 - screenBox.top) / scale - height / 2;
@@ -741,9 +783,18 @@ function Chat({ device, edits }: { device: boolean; edits: boolean }) {
     const minTop = (device ? 59 : 8) + 4;
     const maxBottom = screenHeight - (device ? 34 : 8) - 4;
     const highest = minTop + REACTIONS_HEIGHT + ABOVE_GAP;
-    const lowest = maxBottom - MENU_HEIGHT - BELOW_GAP - height;
-    const target = lowest < highest ? highest : clamp(top, highest, lowest);
-    const menuTop = Math.min(target + height + BELOW_GAP, maxBottom - MENU_HEIGHT);
+    const room = maxBottom - MENU_HEIGHT - BELOW_GAP - highest;
+    // Too tall for the room: the words scroll inside the bubble, so the
+    // reactions and the menu stay on screen and nothing overlaps.
+    const textElement = texts.current.get(id);
+    const textHeight = textElement
+      ? parseFloat(getComputedStyle(textElement).height) || textElement.offsetHeight
+      : height;
+    const chrome = height - textHeight;
+    const clip = height > room ? Math.max(LINE * 3, room - chrome) : null;
+    const shown = clip === null ? height : chrome + clip;
+    const target = clip === null ? clamp(top, highest, highest + room - height) : highest;
+    const menuTop = Math.min(target + shown + BELOW_GAP, maxBottom - MENU_HEIGHT);
 
     liftY.set(top);
     backdrop.set(0);
@@ -762,6 +813,7 @@ function Chat({ device, edits }: { device: boolean; edits: boolean }) {
       target,
       menuTop,
       reactionsTop: target - ABOVE_GAP - REACTIONS_HEIGHT,
+      clip,
       keyboard: keyboardOpened,
       phase: "open",
     };
@@ -836,6 +888,12 @@ function Chat({ device, edits }: { device: boolean; edits: boolean }) {
     const from = liftY.get();
     const fromBackdrop = backdrop.get();
     const start = restingTop(l.id);
+    // A clipped message opens back to full height as it lands.
+    const scroller = l.clip !== null ? liftScrollRef.current : null;
+    const fromClip = scroller?.clientHeight ?? 0;
+    // The words' own height; a handle hanging below the last line doesn't count.
+    const fullClip = (scroller?.firstElementChild as HTMLElement | null)?.offsetHeight ?? 0;
+    const fromScroll = scroller?.scrollTop ?? 0;
 
     if (reduced) {
       then();
@@ -852,6 +910,10 @@ function Chat({ device, edits }: { device: boolean; edits: boolean }) {
         const pending = clamp(shift - (start - live), 0, shift);
         liftY.set(lerp(from, live - pending, p));
         backdrop.set(lerp(fromBackdrop, 0, p));
+        if (scroller) {
+          scroller.style.maxHeight = `${lerp(fromClip, fullClip, p)}px`;
+          scroller.scrollTop = lerp(fromScroll, 0, p);
+        }
       },
       onComplete: then,
     });
@@ -1252,6 +1314,63 @@ function Chat({ device, edits }: { device: boolean; edits: boolean }) {
         window.addEventListener("click", swallow, true);
       }
 
+      // A drag held near the top or bottom of a clipped message scrolls it,
+      // faster the further past the edge, and keeps selecting as it goes.
+      let lastPoint: { clientX: number; clientY: number } | null = null;
+      let frame = 0;
+
+      function edgeSpeed(clientY: number) {
+        const scroller = liftScrollRef.current;
+
+        if (!scroller || scroller.scrollHeight <= scroller.clientHeight + 1) return 0;
+        const box = scroller.getBoundingClientRect();
+        const zone = 28;
+
+        if (clientY < box.top + zone) return -9 * clamp((box.top + zone - clientY) / zone, 0, 1.5);
+        if (clientY > box.bottom - zone) {
+          return 9 * clamp((clientY - (box.bottom - zone)) / zone, 0, 1.5);
+        }
+        return 0;
+      }
+
+      function autoScroll() {
+        frame = 0;
+        const g = gesture.current;
+        const scroller = liftScrollRef.current;
+
+        if (!g || !lastPoint || !scroller || (g.kind !== "text" && g.kind !== "handle")) return;
+        const speed = edgeSpeed(lastPoint.clientY);
+
+        if (!speed) return;
+        const before = scroller.scrollTop;
+        scroller.scrollTop += speed;
+        if (scroller.scrollTop === before) return;
+        extend(g, lastPoint);
+        frame = window.requestAnimationFrame(autoScroll);
+      }
+
+      function stopAutoScroll() {
+        if (frame) window.cancelAnimationFrame(frame);
+        frame = 0;
+        lastPoint = null;
+      }
+
+      /** Text and handle drags: move the selection's free end to the pointer. */
+      function extend(
+        g: Extract<Gesture, { kind: "text" } | { kind: "handle" }>,
+        point: { clientX: number; clientY: number },
+      ) {
+        const g2 = geo.current;
+
+        if (!g2) return;
+        const at = liftedPoint(point.clientX, point.clientY);
+        const next =
+          g.kind === "text"
+            ? ordered(g.anchor, hit(g2, at.x, at.y))
+            : ordered(g.fixed, hit(g2, at.x + g.offsetX, at.y + g.offsetY));
+        if (!sameRange(next, range.current)) drawSelection(next);
+      }
+
       function move(event: PointerEvent) {
         const g = gesture.current;
 
@@ -1317,7 +1436,10 @@ function Chat({ device, edits }: { device: boolean; edits: boolean }) {
           }
           const focus = hit(g2, x, y);
           const next = ordered(g.anchor ?? focus, focus);
-          if (!sameRange(next, range.current)) drawSelection(next);
+          if (!sameRange(next, range.current)) {
+            drawSelection(next);
+            revealUnit(focus);
+          }
           return;
         }
 
@@ -1329,17 +1451,14 @@ function Chat({ device, edits }: { device: boolean; edits: boolean }) {
             g.moved = true;
             startSelecting();
           }
-          const point = liftedPoint(event.clientX, event.clientY);
-          const next = ordered(g.anchor, hit(g2, point.x, point.y));
-          if (!sameRange(next, range.current)) drawSelection(next);
-          return;
         }
 
-        if (g.kind === "handle") {
-          const point = liftedPoint(event.clientX, event.clientY);
-          const focus = hit(g2, point.x + g.offsetX, point.y + g.offsetY);
-          const next = ordered(g.fixed, focus);
-          if (!sameRange(next, range.current)) drawSelection(next);
+        if (g.kind === "text" || g.kind === "handle") {
+          lastPoint = { clientX: event.clientX, clientY: event.clientY };
+          extend(g, lastPoint);
+          if (!frame && edgeSpeed(event.clientY)) {
+            frame = window.requestAnimationFrame(autoScroll);
+          }
         }
       }
 
@@ -1348,6 +1467,7 @@ function Chat({ device, edits }: { device: boolean; edits: boolean }) {
 
         if (!g || event.pointerId !== g.pointerId) return;
         gesture.current = null;
+        stopAutoScroll();
 
         if (g.kind === "press") {
           window.clearTimeout(g.timer);
@@ -1420,6 +1540,7 @@ function Chat({ device, edits }: { device: boolean; edits: boolean }) {
         const g = gesture.current;
 
         if (!g || event.pointerId !== g.pointerId) return;
+        stopAutoScroll();
         if (g.kind === "press") {
           window.clearTimeout(g.timer);
           delete g.element.dataset.pressed;
@@ -1436,6 +1557,7 @@ function Chat({ device, edits }: { device: boolean; edits: boolean }) {
       window.addEventListener("pointercancel", cancel);
 
       return function stop() {
+        stopAutoScroll();
         window.removeEventListener("pointermove", move);
         window.removeEventListener("pointerup", up);
         window.removeEventListener("pointercancel", cancel);
@@ -1570,6 +1692,7 @@ function Chat({ device, edits }: { device: boolean; edits: boolean }) {
           const moving = stepWord(units, current[focusEnd], direction);
           next = ordered(fixed, moving);
           setCaret(moving);
+          revealUnit(moving);
         }
         drawSelection(next, !current);
         commitSelection(next);
@@ -1578,6 +1701,7 @@ function Chat({ device, edits }: { device: boolean; edits: boolean }) {
 
       const next = stepWord(units, caret, direction);
       setCaret(next);
+      revealUnit(next);
       drawSelection(null);
       setSelection(null);
       setPill(null);
@@ -1857,6 +1981,8 @@ function Chat({ device, edits }: { device: boolean; edits: boolean }) {
       lifted?: boolean;
       textRef?: RefObject<HTMLParagraphElement | null>;
       layers?: ReactNode;
+      /** Lifted and too tall: the words and time scroll inside the bubble. */
+      clip?: number | null;
     },
   ) {
     const units = unitsById.get(message.id) ?? [];
@@ -1915,36 +2041,80 @@ function Chat({ device, edits }: { device: boolean; edits: boolean }) {
             <span data-qr-quote-text>{quoteSnippet}</span>
           </button>
         )}
-        <p
-          data-qr-text
-          ref={
-            options.textRef ??
-            function register(element) {
-              if (element) texts.current.set(message.id, element);
-              else texts.current.delete(message.id);
-            }
-          }
-          {...(lifted
-            ? {
-                tabIndex: 0,
-                role: "textbox",
-                "aria-readonly": true,
-                "aria-multiline": true,
-                "aria-label": "Message text",
-                "aria-describedby": "qr-text-help",
-                onKeyDown: handleLiftedTextKeyDown,
+        {options.clip != null ? (
+          <div
+            data-qr-lift-scroll
+            ref={liftScrollRef}
+            style={{ maxHeight: options.clip + LIFT_PAD }}
+            onScroll={handleLiftScroll}
+          >
+            <div data-qr-lift-scroll-inner>
+            <p
+              data-qr-text
+              ref={
+                options.textRef ??
+                function register(element) {
+                  if (element) texts.current.set(message.id, element);
+                  else texts.current.delete(message.id);
+                }
               }
-            : { "aria-hidden": isAda ? true : undefined })}
-        >
-          {options.layers}
-          <Words text={message.text} units={units} />
-          <span data-qr-meta-space aria-hidden="true" />
-        </p>
-        <span data-qr-meta aria-hidden={isAda ? true : undefined}>
-          {message.edited ? "Edited " : ""}
-          {message.time}
-          {message.ticks !== undefined && <Ticks state={message.ticks} />}
-        </span>
+              {...(lifted
+                ? {
+                    tabIndex: 0,
+                    role: "textbox",
+                    "aria-readonly": true,
+                    "aria-multiline": true,
+                    "aria-label": "Message text",
+                    "aria-describedby": "qr-text-help",
+                    onKeyDown: handleLiftedTextKeyDown,
+                  }
+                : { "aria-hidden": isAda ? true : undefined })}
+            >
+              {options.layers}
+              <Words text={message.text} units={units} />
+              <span data-qr-meta-space aria-hidden="true" />
+            </p>
+            <span data-qr-meta aria-hidden={isAda ? true : undefined}>
+              {message.edited ? "Edited " : ""}
+              {message.time}
+              {message.ticks !== undefined && <Ticks state={message.ticks} />}
+            </span>
+            </div>
+          </div>
+        ) : (
+          <>
+          <p
+            data-qr-text
+            ref={
+              options.textRef ??
+              function register(element) {
+                if (element) texts.current.set(message.id, element);
+                else texts.current.delete(message.id);
+              }
+            }
+            {...(lifted
+              ? {
+                  tabIndex: 0,
+                  role: "textbox",
+                  "aria-readonly": true,
+                  "aria-multiline": true,
+                  "aria-label": "Message text",
+                  "aria-describedby": "qr-text-help",
+                  onKeyDown: handleLiftedTextKeyDown,
+                }
+              : { "aria-hidden": isAda ? true : undefined })}
+          >
+            {options.layers}
+            <Words text={message.text} units={units} />
+            <span data-qr-meta-space aria-hidden="true" />
+          </p>
+          <span data-qr-meta aria-hidden={isAda ? true : undefined}>
+            {message.edited ? "Edited " : ""}
+            {message.time}
+            {message.ticks !== undefined && <Ticks state={message.ticks} />}
+          </span>
+          </>
+        )}
         {!lifted && flash?.id === message.id && (
           <motion.span
             key={`flash-${flash.n}`}
@@ -2251,6 +2421,7 @@ function Chat({ device, edits }: { device: boolean; edits: boolean }) {
               tail: false,
               lifted: true,
               textRef: liftedTextRef,
+              clip: lift.clip,
               layers: (
                 <motion.span
                   aria-hidden="true"
