@@ -822,14 +822,20 @@ function Chat({ device, edits }: { device: boolean; edits: boolean }) {
     );
   }
 
-  /** The lifted bubble settles back into the chat while the blur lifts. */
-  function settle(delay: number, then: () => void) {
+  /**
+   * The lifted bubble settles back into the chat while the blur lifts.
+   * `shift` is how far a reply panel that's about to open will push the chat
+   * up. The bubble heads for where it will end up, not where it is now, so it
+   * never dips past its spot and climbs back.
+   */
+  function settle(delay: number, then: () => void, shift = 0) {
     const l = liftRef.current;
 
     if (!l) return;
 
     const from = liftY.get();
     const fromBackdrop = backdrop.get();
+    const start = restingTop(l.id);
 
     if (reduced) {
       then();
@@ -842,7 +848,9 @@ function Chat({ device, edits }: { device: boolean; edits: boolean }) {
       ease: EASE,
       delay,
       onUpdate(p) {
-        liftY.set(lerp(from, restingTop(l.id), p));
+        const live = restingTop(l.id);
+        const pending = clamp(shift - (start - live), 0, shift);
+        liftY.set(lerp(from, live - pending, p));
         backdrop.set(lerp(fromBackdrop, 0, p));
       },
       onComplete: then,
@@ -866,7 +874,7 @@ function Chat({ device, edits }: { device: boolean; edits: boolean }) {
     }
   }
 
-  function closeLift(returnFocus = false) {
+  function closeLift(returnFocus = false, shift = 0) {
     const l = liftRef.current;
 
     if (!l || l.phase === "closing") return;
@@ -875,9 +883,13 @@ function Chat({ device, edits }: { device: boolean; edits: boolean }) {
     setLift(closing);
     setLeaving(true);
     animate(tintOpacity, 0, reduced ? { duration: 0 } : FADE);
-    settle(0, function done() {
-      finishLift(returnFocus);
-    });
+    settle(
+      0,
+      function done() {
+        finishLift(returnFocus);
+      },
+      shift,
+    );
   }
 
   /* Reply ------------------------------------------------------------------- */
@@ -895,7 +907,7 @@ function Chat({ device, edits }: { device: boolean; edits: boolean }) {
     panelDelay.current = reduced ? 0 : 0.08;
     setQuote(wholeQuote(message));
     panelText.set(1);
-    closeLift();
+    closeLift(false, PANEL - panel.get());
     later(focusComposer, reduced ? 0 : 470);
   }
 
@@ -923,7 +935,7 @@ function Chat({ device, edits }: { device: boolean; edits: boolean }) {
         focusComposer();
       } else {
         panelText.set(1);
-        closeLift();
+        closeLift(false, PANEL - panel.get());
         later(focusComposer, 470);
       }
       return;
@@ -971,10 +983,14 @@ function Chat({ device, edits }: { device: boolean; edits: boolean }) {
     setQuote(next);
 
     // 2. The lifted bubble settles back and the blur lifts as the words fly.
-    settle(0.08, function landed() {
-      finishLift(false);
-      focusComposer();
-    });
+    settle(
+      0.08,
+      function landed() {
+        finishLift(false);
+        focusComposer();
+      },
+      PANEL - panel.get(),
+    );
   }
 
   // The ghost's flight is driven per frame toward the live quote position.

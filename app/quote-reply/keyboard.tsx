@@ -166,7 +166,13 @@ export function IosKeyboard({
 
       return function hide() {
         apiRef.current = null;
-        timerMap.forEach((id) => window.clearTimeout(id));
+        // This also runs when shift changes (sending turns it back on), so a
+        // key still flashing is released, not left up with its balloon.
+        timerMap.forEach(function releaseKey(id, name) {
+          window.clearTimeout(id);
+          if (fingerKey.current !== name) release(name);
+        });
+        timerMap.clear();
       };
     },
     // `press` reads `shift` for the preview's letter, so it's refreshed with it.
