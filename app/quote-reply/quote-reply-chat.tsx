@@ -488,6 +488,7 @@ function Chat({ device, edits }: { device: boolean; edits: boolean }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const liftedTextRef = useRef<HTMLParagraphElement>(null);
   const liftScrollRef = useRef<HTMLDivElement>(null);
+  const focusAfterClose = useRef<string | null>(null);
   const liftedRef = useRef<HTMLDivElement>(null);
   const pillRef = useRef<HTMLDivElement>(null);
   const ghostRef = useRef<HTMLDivElement>(null);
@@ -931,10 +932,21 @@ function Chat({ device, edits }: { device: boolean; edits: boolean }) {
     setLeaving(false);
     setMenuGone(false);
 
-    if (returnFocus && l) {
-      bubbles.current.get(l.id)?.focus({ preventScroll: true });
-    }
+    // The bubble is still hidden under the lifted copy until React renders,
+    // and a hidden element can't take focus, so this waits for that render.
+    if (returnFocus && l) focusAfterClose.current = l.id;
   }
+
+  useEffect(
+    function returnFocus() {
+      const id = focusAfterClose.current;
+
+      if (lift || !id) return;
+      focusAfterClose.current = null;
+      bubbles.current.get(id)?.focus({ preventScroll: true });
+    },
+    [lift],
+  );
 
   function closeLift(returnFocus = false, shift = 0) {
     const l = liftRef.current;
