@@ -210,14 +210,14 @@ export const STYLES = `
     display: grid;
     flex: 1 1 auto;
     min-width: 0;
-    padding-left: 10px;
+    padding-left: 12px;
   }
 
   [data-qr-who] strong {
     overflow: hidden;
-    font-size: 17px;
+    font-size: 16px;
     font-weight: 600;
-    line-height: 21px;
+    line-height: 20px;
     white-space: nowrap;
     text-overflow: ellipsis;
   }
@@ -405,8 +405,8 @@ export const STYLES = `
     align-items: center;
     gap: 3px;
     color: var(--qr-meta);
-    font-size: 10px;
-    line-height: 12px;
+    font-size: 9px;
+    line-height: 11px;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
   }
@@ -459,7 +459,7 @@ export const STYLES = `
     width: calc(100% + 16px);
     min-width: 0;
     margin: 0 -8px 4px;
-    padding: 10px 12px 10px 16px;
+    padding: 12px 8px 13px 15px;
     overflow: hidden;
     border-radius: 13px;
     background: var(--qr-quote-in);
@@ -495,7 +495,7 @@ export const STYLES = `
 
   [data-qr-quote-text] {
     display: -webkit-box;
-    margin-top: 2px;
+    margin-top: 4px;
     overflow: hidden;
     color: var(--qr-dim);
     font-size: 12px;
@@ -557,8 +557,8 @@ export const STYLES = `
 
   [data-qr-panel-quote] {
     position: absolute;
-    inset: 0 50px 0 0;
-    padding: 9px 0 0 13px;
+    inset: 0 40px 0 0;
+    padding: 10px 0 0 12px;
   }
 
   [data-qr-panel-quote]::before {
@@ -592,7 +592,7 @@ export const STYLES = `
 
   [data-qr-panel-close] {
     position: absolute;
-    right: 8px;
+    right: 0;
     top: 50%;
     display: grid;
     place-items: center;
@@ -605,8 +605,8 @@ export const STYLES = `
   }
 
   [data-qr-panel-close] svg {
-    width: 23px;
-    height: 23px;
+    width: 25px;
+    height: 25px;
   }
 
   [data-qr-row-bar] {
