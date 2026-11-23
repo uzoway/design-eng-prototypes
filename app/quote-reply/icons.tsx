@@ -60,16 +60,18 @@ export function PlusIcon() {
   );
 }
 
+/** Drawn in pt to the ink box of WhatsApp's composer camera: 23 x 18, 1.6 strokes.
+ * Rendered at 23 x 18. */
 export function CameraIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <svg viewBox="0 0 23 18" fill="none" aria-hidden="true">
       <path
-        d="M3.4 8.6a2.2 2.2 0 012.2-2.2h1.9l1.3-1.95a1.2 1.2 0 011-.53h4.4a1.2 1.2 0 011 .53l1.3 1.95h1.9a2.2 2.2 0 012.2 2.2v8.6a2.2 2.2 0 01-2.2 2.2H5.6a2.2 2.2 0 01-2.2-2.2V8.6z"
+        d="M.75 6.9a3.5 3.5 0 0 1 3.5-3.5h2.6l1.5-2.05a1.4 1.4 0 0 1 1.13-.6h4.04a1.4 1.4 0 0 1 1.13.6l1.5 2.05h2.6a3.5 3.5 0 0 1 3.5 3.5v6.85a3.5 3.5 0 0 1-3.5 3.5H4.25a3.5 3.5 0 0 1-3.5-3.5Z"
         stroke="currentColor"
-        strokeWidth="1.7"
+        strokeWidth="1.6"
         strokeLinejoin="round"
       />
-      <circle cx="12" cy="12.6" r="3.5" stroke="currentColor" strokeWidth="1.7" />
+      <circle cx="11.5" cy="10.4" r="3.8" stroke="currentColor" strokeWidth="1.6" />
     </svg>
   );
 }

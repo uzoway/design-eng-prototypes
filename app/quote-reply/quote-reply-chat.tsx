@@ -2314,7 +2314,7 @@ function Chat({ device, edits }: { device: boolean; edits: boolean }) {
             data-qr-camera
             aria-hidden="true"
             initial={false}
-            animate={{ width: hasText ? 8 : 47, opacity: hasText ? 0 : 1 }}
+            animate={{ width: hasText ? 8 : 54, opacity: hasText ? 0 : 1 }}
             transition={{ duration: 0.22, ease: EASE }}
             style={{ height: 44 }}
           >

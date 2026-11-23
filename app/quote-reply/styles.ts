@@ -611,9 +611,10 @@ export const STYLES = `
     transition: background-color 160ms ease, scale 240ms var(--qr-ease);
   }
 
+  /* 27.7px puts the plus's ink at WhatsApp's 19.3pt. */
   [data-qr-round] svg {
-    width: 24px;
-    height: 24px;
+    width: 27.7px;
+    height: 27.7px;
   }
 
   [data-qr-field] {
@@ -665,27 +666,33 @@ export const STYLES = `
     flex: 0 0 auto;
     width: 30px;
     height: 27px;
+    /* The icon's ink ends 12pt inside the field's edge, as in WhatsApp. */
+    margin-right: 5.9px;
     display: grid;
     place-items: center;
     color: var(--qr-icon);
   }
 
   [data-qr-sticker] svg {
-    width: 20px;
-    height: 20px;
+    width: 23.1px;
+    height: 23.1px;
   }
 
   [data-qr-camera] {
     display: grid;
     place-items: center;
     flex: 0 0 auto;
+    box-sizing: border-box;
+    /* 54px wide with this inset leaves 18.7pt from the field and 12.3pt to the mic. */
+    padding-left: 6.4px;
     overflow: clip;
     color: var(--qr-icon);
   }
 
   [data-qr-camera] svg {
-    width: 25px;
-    height: 25px;
+    flex: 0 0 auto;
+    width: 23px;
+    height: 18px;
   }
 
   [data-qr-send-slot] {
