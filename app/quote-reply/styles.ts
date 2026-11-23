@@ -1,38 +1,3 @@
-// A faint doodle wallpaper, drawn for app/voice-note and copied here.
-const DOODLES = `
-<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300" fill="none" stroke="#b9ab94" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.42">
-  <path d="M38 46c-7-5-11-9-11-13.5a5.5 5.5 0 0 1 11-1.7 5.5 5.5 0 0 1 11 1.7C49 37 45 41 38 46z"/>
-  <path d="M118 20l3.2 6.6 7.2 1-5.2 5 1.3 7.2-6.5-3.4-6.5 3.4 1.3-7.2-5.2-5 7.2-1z"/>
-  <path d="M196 24h30a6 6 0 0 1 6 6v14a6 6 0 0 1-6 6h-18l-8 7v-7h-4a6 6 0 0 1-6-6V30a6 6 0 0 1 6-6z"/>
-  <path d="M206 37h14"/>
-  <path d="M268 84v22a5 5 0 1 1-3-4.6V88l12-3v17a5 5 0 1 1-3-4.6"/>
-  <path d="M54 104h22v14a9 9 0 0 1-9 9h-4a9 9 0 0 1-9-9z"/>
-  <path d="M76 109h3a4 4 0 0 1 0 8h-3"/>
-  <path d="M60 97c0-3 3-3 3-6M68 97c0-3 3-3 3-6"/>
-  <path d="M162 88a14 14 0 1 0 12 22 11 11 0 1 1-12-22z"/>
-  <path d="M212 168l40-16-14 38-8-14z"/>
-  <path d="M230 176l8-14"/>
-  <path d="M26 196a10 10 0 0 1 19-4 8 8 0 0 1 13 8h-32a6 6 0 0 1 0-4z"/>
-  <circle cx="128" cy="178" r="15"/>
-  <path d="M122 175h.1M134 175h.1M121 184c4 4 10 4 14 0"/>
-  <path d="M176 252c0-16 12-26 28-26 0 16-12 26-28 26z"/>
-  <path d="M176 252l18-16"/>
-  <path d="M56 252h30a4 4 0 0 1 4 4v18a4 4 0 0 1-4 4H56a4 4 0 0 1-4-4v-18a4 4 0 0 1 4-4z"/>
-  <path d="M64 252l4-6h14l4 6"/>
-  <circle cx="71" cy="265" r="6"/>
-  <path d="M264 230l-10 18h10l-8 18"/>
-  <path d="M96 60v8M92 64h8"/>
-  <path d="M182 134v8M178 138h8"/>
-  <path d="M22 132v8M18 136h8"/>
-  <path d="M278 12v8M274 16h8"/>
-  <path d="M120 226a12 12 0 0 1 12 12c0 9-12 16-12 16s-12-7-12-16a12 12 0 0 1 12-12z"/>
-  <path d="M120 254v12"/>
-  <circle cx="250" cy="134" r="7"/>
-  <path d="M250 120v3M250 145v3M236 134h3M261 134h3"/>
-</svg>`;
-
-const WALLPAPER = `url("data:image/svg+xml,${encodeURIComponent(DOODLES.trim())}")`;
-
 /*
  * Sizes are WhatsApp's at the text size on Uzo's phone, measured from the
  * screenshots in briefs/refs/whatsapp-quote-reply (pt = CSS px). Colours are
@@ -43,7 +8,8 @@ export const STYLES = `
     --qr-ease: cubic-bezier(0.32, 0.72, 0, 1);
     --qr-top: 8px;
     --qr-bottom: 8px;
-    --qr-wallpaper: ${WALLPAPER};
+    /* An original doodle tile in WhatsApp's style; app/quote-reply/doodles.mjs draws it. */
+    --qr-wallpaper: url("/quote-reply/doodles.svg");
     --qr-wall: #f5f1eb;
     --qr-text: #0b0b0b;
     --qr-dim: #667075;
@@ -259,7 +225,7 @@ export const STYLES = `
     overscroll-behavior: contain;
     background-color: var(--qr-wall);
     background-image: var(--qr-wallpaper);
-    background-size: 300px 300px;
+    background-size: 380px 380px;
     background-attachment: local;
     scrollbar-width: none;
     touch-action: pan-y;
