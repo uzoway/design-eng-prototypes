@@ -275,16 +275,14 @@ function Surface({ tail }: { tail: boolean }) {
   );
 }
 
-/** WhatsApp's default avatar for a contact without a photo. */
+/** WhatsApp's default avatar for a contact without a photo: a head and broad
+ * shoulders that run out of the bottom of the circle. */
 function DefaultAvatar() {
   return (
     <span data-qr-avatar aria-hidden="true">
-      <svg viewBox="0 0 40 40">
-        <circle cx="20" cy="15.2" r="6.9" fill="currentColor" />
-        <path
-          d="M6.6 34.4c1.9-6.9 7.1-10.6 13.4-10.6s11.5 3.7 13.4 10.6A19.9 19.9 0 0120 40a19.9 19.9 0 01-13.4-5.6z"
-          fill="currentColor"
-        />
+      <svg viewBox="0 0 36 36">
+        <circle cx="18" cy="13.6" r="6.9" fill="currentColor" />
+        <path d="M3 36c.8-7.9 7-12.3 15-12.3S32.2 28.1 33 36Z" fill="currentColor" />
       </svg>
     </span>
   );

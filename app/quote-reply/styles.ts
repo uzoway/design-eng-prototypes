@@ -178,7 +178,8 @@ export const STYLES = `
     place-items: center;
     width: 44px;
     height: 44px;
-    margin-left: -2px;
+    /* The chevron's ink sits 9.3-20.3pt from the edge, as in WhatsApp. */
+    margin-left: -7px;
     border-radius: 22px;
     color: var(--qr-icon);
   }
@@ -192,9 +193,9 @@ export const STYLES = `
     display: grid;
     place-items: end center;
     flex: 0 0 auto;
-    width: 38px;
-    height: 38px;
-    margin-left: 15px;
+    width: 36px;
+    height: 36px;
+    margin-left: 23px;
     overflow: hidden;
     border-radius: 50%;
     color: var(--qr-avatar-glyph);
@@ -232,14 +233,20 @@ export const STYLES = `
     display: flex;
     align-items: center;
     flex: 0 0 auto;
-    gap: 17px;
-    padding: 0 20px 0 12px;
+    gap: 20.4px;
+    padding: 0 20.3px 0 12px;
     color: var(--qr-icon);
   }
 
-  [data-qr-calls] svg {
-    width: 27px;
-    height: 27px;
+  /* Each icon's box is its ink, so the sizes and gap are WhatsApp's measured ones. */
+  [data-qr-calls] svg:first-child {
+    width: 26.4px;
+    height: 17.8px;
+  }
+
+  [data-qr-calls] svg:last-child {
+    width: 20.3px;
+    height: 20.3px;
   }
 
   /* Chat ------------------------------------------------------------------- */

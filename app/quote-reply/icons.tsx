@@ -16,35 +16,31 @@ export function BackIcon() {
   );
 }
 
+/** Drawn in pt to the ink box of WhatsApp's header icon: a 19.3 x 17.8 body, a lens
+ * that widens from 5 to ~14 tall, 1.4 strokes. Rendered at 26.4 x 17.8. */
 export function VideoIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <rect
-        x="2.6"
-        y="6"
-        width="13.4"
-        height="12"
-        rx="3.2"
-        stroke="currentColor"
-        strokeWidth="1.7"
-      />
+    <svg viewBox="0 0 26.4 17.8" fill="none" aria-hidden="true">
+      <rect x="0.7" y="0.7" width="17.9" height="16.4" rx="4" stroke="currentColor" strokeWidth="1.4" />
       <path
-        d="M16 10.4l4.05-2.55a.8.8 0 011.22.68v6.94a.8.8 0 01-1.22.68L16 13.6"
+        d="M18.6 6.4l5.3-3.4a1.2 1.2 0 0 1 1.8 1v9.8a1.2 1.2 0 0 1-1.8 1l-5.3-3.4"
         stroke="currentColor"
-        strokeWidth="1.7"
+        strokeWidth="1.4"
         strokeLinejoin="round"
       />
     </svg>
   );
 }
 
+/** The viewBox hugs the path plus its stroke, so at 20.3 x 20.3 the ink matches
+ * WhatsApp's header icon and the stroke lands at 1.5. */
 export function PhoneIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <svg viewBox="2.505 2.143 19.38 19.38" fill="none" aria-hidden="true">
       <path
         d="M8.2 3.6l1.55 3.58a1.3 1.3 0 01-.33 1.5L7.9 10a11.2 11.2 0 006.1 6.1l1.32-1.52a1.3 1.3 0 011.5-.33l3.58 1.55a1.3 1.3 0 01.76 1.34l-.2 1.62a2.3 2.3 0 01-2.28 2.02C10.12 20.78 3.22 13.88 3.22 5.35A2.3 2.3 0 015.24 3.07l1.62-.2a1.3 1.3 0 011.34.73z"
         stroke="currentColor"
-        strokeWidth="1.7"
+        strokeWidth="1.43"
         strokeLinejoin="round"
       />
     </svg>
