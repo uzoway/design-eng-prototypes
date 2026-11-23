@@ -674,8 +674,8 @@ export const STYLES = `
   }
 
   [data-qr-sticker] svg {
-    width: 23.1px;
-    height: 23.1px;
+    width: 18px;
+    height: 17.5px;
   }
 
   [data-qr-camera] {
@@ -714,8 +714,8 @@ export const STYLES = `
   }
 
   [data-qr-mic] svg {
-    width: 19px;
-    height: 19px;
+    width: 11.7px;
+    height: 17.7px;
   }
 
   [data-qr-send] svg {

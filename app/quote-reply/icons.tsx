@@ -60,52 +60,50 @@ export function PlusIcon() {
   );
 }
 
-/** Drawn in pt to the ink box of WhatsApp's composer camera: 23 x 18, 1.6 strokes.
- * Rendered at 23 x 18. */
+/** Drawn in pt to the ink box of WhatsApp's composer camera: a 23 x 18 body with
+ * tight corners, a rounded hump, a large lens and a flash dot, 1.4 strokes. */
 export function CameraIcon() {
   return (
     <svg viewBox="0 0 23 18" fill="none" aria-hidden="true">
       <path
-        d="M.75 6.9a3.5 3.5 0 0 1 3.5-3.5h2.6l1.5-2.05a1.4 1.4 0 0 1 1.13-.6h4.04a1.4 1.4 0 0 1 1.13.6l1.5 2.05h2.6a3.5 3.5 0 0 1 3.5 3.5v6.85a3.5 3.5 0 0 1-3.5 3.5H4.25a3.5 3.5 0 0 1-3.5-3.5Z"
+        d="M.7 6a2.6 2.6 0 0 1 2.6-2.6h4C8.3 3.4 8.2.7 9.4.7h4.2c1.2 0 1.1 2.7 2.1 2.7h4a2.6 2.6 0 0 1 2.6 2.6v8.7a2.6 2.6 0 0 1-2.6 2.6H3.3a2.6 2.6 0 0 1-2.6-2.6Z"
         stroke="currentColor"
-        strokeWidth="1.6"
+        strokeWidth="1.4"
         strokeLinejoin="round"
       />
-      <circle cx="11.5" cy="10.4" r="3.8" stroke="currentColor" strokeWidth="1.6" />
+      <circle cx="11.5" cy="10.1" r="4.4" stroke="currentColor" strokeWidth="1.4" />
+      <circle cx="18.2" cy="6.5" r="1.1" fill="currentColor" />
     </svg>
   );
 }
 
+/** WhatsApp's mic, in pt: a solid 6.3 x 11 capsule on an 11.7-wide stand and a
+ * short stem. Rendered at 11.7 x 17.7, centred in the 32pt button. */
 export function MicIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <rect
-        x="8.6"
-        y="2.9"
-        width="6.8"
-        height="11.6"
-        rx="3.4"
-        stroke="currentColor"
-        strokeWidth="1.7"
-      />
+    <svg viewBox="0 0 11.7 17.7" fill="none" aria-hidden="true">
+      <rect x="2.7" y="0" width="6.3" height="11" rx="3.15" fill="currentColor" />
       <path
-        d="M5.4 11.2a6.6 6.6 0 0013.2 0M12 17.8v3.2"
+        d="M.68 8a5.17 5.17 0 0 0 10.34 0M5.85 13.4v3.55"
         stroke="currentColor"
-        strokeWidth="1.7"
+        strokeWidth="1.4"
         strokeLinecap="round"
       />
     </svg>
   );
 }
 
+/** WhatsApp's sticker, in pt: an 18 x 17.5 squircle (drawn at 17, stretched 3%) whose lower-right corner peels
+ * back, the flap's top a little over halfway down and its inner edge bowed. */
 export function StickerIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <svg viewBox="0 0 18 17" preserveAspectRatio="none" fill="none" aria-hidden="true">
       <path
-        d="M20.4 12.8V7.6a4 4 0 00-4-4H7.6a4 4 0 00-4 4v8.8a4 4 0 004 4h5.2m7.6-7.6l-7.6 7.6m7.6-7.6h-3.6a4 4 0 00-4 4v3.6"
+        d="M17.35 9.7V5.65a5 5 0 0 0-5-5h-6.7a5 5 0 0 0-5 5v5.7a5 5 0 0 0 5 5h4.65Q15.2 14.6 17.35 9.7ZM17.2 9.75l-4.6.15c-1.4.05-2.4 1.3-2.5 3.1l.2 3.35"
         stroke="currentColor"
-        strokeWidth="1.6"
+        strokeWidth="1.3"
         strokeLinejoin="round"
+        strokeLinecap="round"
       />
     </svg>
   );
