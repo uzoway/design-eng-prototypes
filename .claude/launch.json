@@ -18,6 +18,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "../andon-needs-you", "run", "dev", "--", "--port", "5187", "--strictPort"],
       "port": 5187
+    },
+    {
+      "name": "andon-preview",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "../andon-needs-you", "run", "preview"],
+      "port": 4187
     }
   ]
 }
