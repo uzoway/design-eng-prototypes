@@ -11,8 +11,8 @@ import os, sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'engine'))
 from edit import Take, Segment, render, sheet
 
-TAKE = os.environ.get('TAKE', 'briefs/refs/lab-masters/bolto-unconfirmed/take3')
-OUT = os.environ.get('OUT', 'briefs/refs/lab-masters/bolto-unconfirmed/bolto-unconfirmed-16x9-4k-v2')
+TAKE = os.environ.get('TAKE', 'briefs/refs/lab-masters/bolto-unconfirmed/take4')
+OUT = os.environ.get('OUT', 'briefs/refs/lab-masters/bolto-unconfirmed/bolto-unconfirmed-16x9-4k-v3')
 t = Take(TAKE)
 m = t.marks
 

@@ -16,7 +16,7 @@
 // The "Status unconfirmed" scenario is loaded off camera through the demo controls.
 import { session } from '../../engine/record.mjs';
 
-const OUT = process.env.OUT || 'briefs/refs/lab-masters/bolto-unconfirmed/take3';
+const OUT = process.env.OUT || 'briefs/refs/lab-masters/bolto-unconfirmed/take4';
 
 const s = await session({
   url: process.env.URL || 'https://bolto.uzookafor.com/contractor-payments?payment=BOL-1101',
