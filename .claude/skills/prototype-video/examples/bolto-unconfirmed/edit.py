@@ -2,6 +2,8 @@
 follows the cursor up the rows to Amara's, her payment's "We're missing a confirmation." card,
 Check payment status, a scroll to the history entry that says no new attempt was created, then
 back out to the whole dashboard. About 16s, real speed, no replay. One LinkedIn video, no cover.
+Rendered at 4K (3840×2160, LinkedIn takes up to 4096×2304): at 1080p the close-ups looked soft once
+a retina screen or fullscreen player scaled them up.
 
     ~/.cache/prototype-video/venv/bin/python .claude/skills/prototype-video/examples/bolto-unconfirmed/edit.py [--preview]
 """
@@ -9,12 +11,13 @@ import os, sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'engine'))
 from edit import Take, Segment, render, sheet
 
-TAKE = os.environ.get('TAKE', 'briefs/refs/lab-masters/bolto-unconfirmed/take1')
-OUT = os.environ.get('OUT', 'briefs/refs/lab-masters/bolto-unconfirmed/bolto-unconfirmed-16x9')
+TAKE = os.environ.get('TAKE', 'briefs/refs/lab-masters/bolto-unconfirmed/take2')
+OUT = os.environ.get('OUT', 'briefs/refs/lab-masters/bolto-unconfirmed/bolto-unconfirmed-16x9-4k')
 t = Take(TAKE)
 m = t.marks
 
 # (start, move duration, centre x, centre y, view width) in CSS px of the 1920×1080 window.
+# The scales below are for a 1920-wide frame; the 4K render doubles them (2.0–4.6 px per CSS px).
 #   whole    the window: sidebar, title, totals, banner, all six rows. Sets the scene.
 #   table    x 556–1392, y 560–1030: header and six rows with name, amount and status; it stops
 #            short of "Last update" (x 1408). The highlight runs off the right edge.
@@ -35,7 +38,7 @@ flow = [
     (m['gone'], 1.2, *WHOLE),              # back out to the whole dashboard once the cursor has left
 ]
 
-render(t, OUT, aspect='16:9', platforms=('linkedin',), preview='--preview' in sys.argv, segments=[
+render(t, OUT, aspect=(3840, 2160), platforms=('linkedin',), preview='--preview' in sys.argv, segments=[
     Segment(0.5, m['end'] - 0.1, shots=flow),
 ])
 if '--preview' in sys.argv:

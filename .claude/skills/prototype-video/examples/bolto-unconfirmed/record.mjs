@@ -10,18 +10,19 @@
 // A 1920×1080 window is 16:9 and shows the whole dashboard (title, totals, banner, all six rows).
 // The panel is then 1064 tall, so the new history entry needs ~200px of scroll. A wheel scroll
 // would animate on the browser's own clock, so the scroll is a rAF ease-out in the page, which the
-// engine slows like every other animation. Close shots are 836–920 wide (2.1–2.3×), so dpr 2.3;
-// frames are 4416×2484, so slow 18 keeps capture near ~100fps.
+// engine slows like every other animation. The video is 4K (3840×2160) so it stays sharp on retina
+// screens and fullscreen; at 1080p the close-ups were upscaled there and looked soft. Close shots
+// are 836–960 wide (4.0–4.6 output px per CSS px), so dpr 4.6; frames are 8832×4968, so slow 60.
 // The "Status unconfirmed" scenario is loaded off camera through the demo controls.
 import { session } from '../../engine/record.mjs';
 
-const OUT = process.env.OUT || 'briefs/refs/lab-masters/bolto-unconfirmed/take1';
+const OUT = process.env.OUT || 'briefs/refs/lab-masters/bolto-unconfirmed/take2';
 
 const s = await session({
   url: process.env.URL || 'https://bolto.uzookafor.com/contractor-payments?payment=BOL-1101',
   out: OUT,
-  slow: 18,
-  dpr: 2.3,
+  slow: 60,
+  dpr: 4.6,
   viewport: { width: 1920, height: 1080 },
   theme: 'light',
   themeStorage: { 'bolto-concept-theme': null },
