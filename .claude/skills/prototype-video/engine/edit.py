@@ -507,6 +507,11 @@ def render(take, out, segments, aspect='4:5', platforms=('linkedin', 'x', 'insta
             # Near-transparent quality, capped under the platform's upload limit.
             cmd += ['-preset', 'slow', '-crf', '12', '-tune', 'animation', '-maxrate', cfg['maxrate'],
                     '-bufsize', str(int(cfg['maxrate'][:-1]) * 2) + 'M', '-g', str(cfg['fps'] * 2)]
+            if W * H > 1920 * 1080:
+                # -tune animation doubles the reference frames. Past 1080p that pushes x264 to level 6.0,
+                # which Apple's hardware decoder (QuickTime, Safari, iPhone) can't play: it smears blocks
+                # of other frames over the picture (Bolto 4K, 2026-11-24). Level 5.1 with 4 refs plays.
+                cmd += ['-level', '5.1', '-refs', '4']
         # FFmpeg 9 drops -color_trc on encode, so write the tags into the stream itself (Chrome reads
         # these) and the container's colr atom (Safari reads that). BT.709 is what feed transcoders expect.
         cmd += ['-bsf:v', 'h264_metadata=colour_primaries=1:transfer_characteristics=1:matrix_coefficients=1',
@@ -537,11 +542,32 @@ def render(take, out, segments, aspect='4:5', platforms=('linkedin', 'x', 'insta
     for _, ff, path in encoders:
         ff.stdin.close(); ff.wait()
         print('wrote', path)
+        if sys.platform == 'darwin' and not preview:
+            apple_decode_check(path)
 
     if cover is not None and not preview:  # a preview never writes over the real cover
         seg = next((s for s in segments if s.start <= cover <= s.end), segments[0])
         rnd.frame(seg, (cover - seg.start) / seg.speed, seg.length).convert('RGB').save(f'{out}-cover.png')
         print('wrote', f'{out}-cover.png')
+
+
+def apple_decode_check(video):
+    """Decode the file with Apple's hardware decoder (what QuickTime, Safari and iPhones use) and
+    compare every frame with FFmpeg's own decoder. FFmpeg plays streams Apple can't, so a frame
+    check through FFmpeg alone misses corruption that viewers on a Mac or iPhone would see."""
+    def frames(extra):
+        r = subprocess.run(['ffmpeg', '-v', 'error', *extra, '-i', video, '-vf', 'scale=480:270,format=gray',
+                            '-f', 'rawvideo', '-'], capture_output=True)
+        return r.stdout, r.stderr.decode(errors='replace')
+    hw, err = frames(['-hwaccel', 'videotoolbox'])
+    sw, _ = frames([])
+    bad = [i for i in range(min(len(hw), len(sw)) // (480 * 270))
+           if sum(abs(a - b) for a, b in zip(hw[i * 129600:(i + 1) * 129600:97], sw[i * 129600:(i + 1) * 129600:97])) > 0.5 * 1337]
+    if 'fail' in err.lower() or len(hw) != len(sw) or bad:
+        print(f'! Apple\'s decoder does not play {video} cleanly ({len(bad)} frames differ). '
+              'Mac and iPhone viewers will see smeared blocks. Do not deliver it.')
+    else:
+        print('  Apple decoder: every frame matches')
 
 
 def sheet(video, out=None, every=0.5, cols=6, width=360):
