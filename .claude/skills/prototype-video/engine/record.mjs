@@ -47,7 +47,10 @@ export async function session({
   fs.rmSync(out, { recursive: true, force: true });
   fs.mkdirSync(path.join(out, 'frames'), { recursive: true });
 
-  const browser = await chromium.launch({ channel: 'chrome' });
+  // Chrome's default GPU tile budget runs out on big frames (dpr 4.6 at 1920×1080 is 44MP): layers
+  // under an overlay and content mid-animation come back unpainted, so frames flash blank. A larger
+  // budget keeps every tile painted (Bolto 4K take, 2026-11-24).
+  const browser = await chromium.launch({ channel: 'chrome', args: ['--force-gpu-mem-available-mb=16384'] });
   const touch = pointer === 'touch';
   const ctx = await browser.newContext({ viewport, deviceScaleFactor: dpr, colorScheme: theme, ...(touch ? { isMobile: true, hasTouch: true } : {}) });
   await ctx.route(GA, (r) => r.abort());
