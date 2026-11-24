@@ -20,6 +20,12 @@
       "port": 5187
     },
     {
+      "name": "bolto-preview",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "../bolto-payment-resolution", "run", "preview"],
+      "port": 4178
+    },
+    {
       "name": "andon-preview",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "../andon-needs-you", "run", "preview"],
