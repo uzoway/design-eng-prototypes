@@ -37,9 +37,10 @@ import {
   PremiumIcon,
   SendIcon,
   VerifiedIcon,
-  type NavTab,
 } from "./icons";
 import { HomeIndicator, IosKeyboard, StatusBar, type KeyboardApi } from "./keyboard";
+import { NavIcon as AnimatedIcon, type Tab as AnimatedTab } from "./nav-icons";
+import { useIconMoves } from "./nav-moves";
 import { EASE_OUT, NoteBox, type Flash } from "./note-box";
 import type { DialogState, Editing, Screen, Surface } from "./pending-note";
 
@@ -193,7 +194,7 @@ export function Phone(props: PhoneProps) {
         </motion.div>
       </div>
 
-      <TabBar inert={overlay} edge={screen === "profile"} onNetwork={() => props.onScreen("sent")} />
+      <TabBar inert={overlay} edge={screen === "profile"} reduced={reduced} onNetwork={() => props.onScreen("sent")} />
 
       <AnimatePresence>
         {withdrawing && (
@@ -616,10 +617,10 @@ function ProfileScreen({
 }
 
 /* -------------------------------------------------------------------------- */
-/* Tab bar (from app/linkedin-nav's phone bar, static)                        */
+/* Tab bar (from app/linkedin-nav's phone bar, with its animated icons)      */
 /* -------------------------------------------------------------------------- */
 
-const TABS: { tab: NavTab | "post"; label: string }[] = [
+const TABS: { tab: AnimatedTab | "post"; label: string }[] = [
   { tab: "home", label: "Home" },
   { tab: "network", label: "My Network" },
   { tab: "post", label: "Post" },
@@ -628,7 +629,20 @@ const TABS: { tab: NavTab | "post"; label: string }[] = [
 ];
 
 /** `edge`: LinkedIn's iOS app draws the bar's top hairline on a profile but not on My Network or the Sent list (IMG_3152–3156). */
-function TabBar({ inert, edge, onNetwork }: { inert: boolean; edge: boolean; onNetwork: () => void }) {
+function TabBar({
+  inert,
+  edge,
+  reduced,
+  onNetwork,
+}: {
+  inert: boolean;
+  edge: boolean;
+  reduced: boolean;
+  onNetwork: () => void;
+}) {
+  // A tap plays the icon's animation; only My Network goes anywhere, and the selection never moves.
+  const moves = useIconMoves();
+
   return (
     <nav data-pn-tabbar aria-label="Primary" inert={inert} data-edge={edge ? "" : undefined}>
       <ul data-pn-tabbar-items>
@@ -638,9 +652,27 @@ function TabBar({ inert, edge, onNetwork }: { inert: boolean; edge: boolean; onN
               type="button"
               data-pn-tabbar-item
               aria-current={tab === "network" ? "page" : undefined}
-              onClick={tab === "network" ? onNetwork : undefined}
+              onPointerDown={(event) => {
+                if (event.button === 0 && tab !== "post") moves.press(tab);
+              }}
+              onPointerUp={() => tab !== "post" && moves.release(tab)}
+              onPointerLeave={() => tab !== "post" && moves.release(tab)}
+              onPointerCancel={() => tab !== "post" && moves.release(tab)}
+              onClick={() => {
+                if (tab === "post") return;
+                if (tab === "network") {
+                  moves.reselect(tab);
+                  onNetwork();
+                } else {
+                  moves.play(tab);
+                }
+              }}
             >
-              <NavIcon tab={tab} selected={tab === "network"} />
+              {tab === "post" ? (
+                <NavIcon tab="post" />
+              ) : (
+                <AnimatedIcon tab={tab} selected={tab === "network"} reduced={reduced} handle={moves.iconRef(tab)} />
+              )}
               <span>{label}</span>
             </button>
           </li>

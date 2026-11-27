@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import type { ReactNode } from "react";
+import type { FocusEvent, PointerEvent, ReactNode } from "react";
 import { ME_AVATAR, PROFILE, sentLabel, SUBJECT_ID, type Invite } from "./data";
 import {
   AdvertiseIcon,
@@ -14,13 +14,13 @@ import {
   GridIcon,
   IntroIllustration,
   LogoIcon,
-  NavIcon,
   SchoolLogo,
   SearchIcon,
   SendIcon,
   VerifiedIcon,
-  type NavTab,
 } from "./icons";
+import { NavIcon as AnimatedIcon, type Tab as NavTab } from "./nav-icons";
+import { useIconMoves } from "./nav-moves";
 import { EASE_OUT, NoteBox, type NoteBoxProps } from "./note-box";
 
 /* -------------------------------------------------------------------------- */
@@ -35,7 +35,33 @@ const NAV: { tab: NavTab; label: string }[] = [
   { tab: "notifications", label: "Notifications" },
 ];
 
-export function TopBar({ selected, onNetwork }: { selected: NavTab | null; onNetwork: () => void }) {
+export function TopBar({
+  selected,
+  reduced,
+  onNetwork,
+}: {
+  selected: NavTab | null;
+  reduced: boolean;
+  onNetwork: () => void;
+}) {
+  const moves = useIconMoves();
+
+  const tabOf = (event: { currentTarget: HTMLElement }) => event.currentTarget.dataset.tab as NavTab;
+
+  const enter = (event: PointerEvent<HTMLButtonElement>) => {
+    // Touch has no hover.
+    if (event.pointerType === "touch") return;
+
+    const box = event.currentTarget.getBoundingClientRect();
+
+    // In from the left half: the pointer is travelling right, so the hint leans that way.
+    moves.hint(tabOf(event), event.clientX < box.left + box.width / 2 ? 1 : -1);
+  };
+
+  const focus = (event: FocusEvent<HTMLButtonElement>) => {
+    if (event.currentTarget.matches(":focus-visible")) moves.hint(tabOf(event));
+  };
+
   return (
     <header data-pn-bar>
       <div data-pn-bar-inner>
@@ -54,11 +80,24 @@ export function TopBar({ selected, onNetwork }: { selected: NavTab | null; onNet
               key={tab}
               type="button"
               data-pn-nav-item
+              data-tab={tab}
               aria-current={selected === tab ? "page" : undefined}
-              onClick={tab === "network" ? onNetwork : undefined}
+              onPointerEnter={enter}
+              onFocus={focus}
+              onPointerDown={(event) => {
+                if (event.button === 0) moves.press(tab);
+              }}
+              onPointerUp={() => moves.release(tab)}
+              onPointerLeave={() => moves.release(tab)}
+              onPointerCancel={() => moves.release(tab)}
+              onClick={() => {
+                if (selected === tab) moves.reselect(tab);
+                else moves.play(tab);
+                if (tab === "network") onNetwork();
+              }}
             >
               <span data-pn-nav-icon-box>
-                <NavIcon tab={tab} selected={selected === tab} />
+                <AnimatedIcon tab={tab} selected={selected === tab} reduced={reduced} handle={moves.iconRef(tab)} />
                 {tab === "home" && <span data-pn-dot aria-hidden="true" />}
               </span>
               <span data-pn-nav-label>

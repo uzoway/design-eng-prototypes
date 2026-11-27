@@ -232,6 +232,38 @@
   display: block;
 }
 
+/*
+ * The animated nav icons (nav-icons.tsx, from app/linkedin-nav) are drawn in solid ink and faded as a whole:
+ * while they move, their split halves overlap a hair at each cut, and a translucent colour would show a dark seam
+ * there. At rest this is the same rgba(0, 0, 0, .75) as before, pixel for pixel.
+ */
+.pn-ln-icon {
+  display: block;
+  overflow: visible;
+}
+
+.pn-ln-xfade {
+  transition: opacity 120ms linear;
+}
+
+[data-pn-nav-item] .pn-ln-icon {
+  color: #000;
+  opacity: 0.75;
+  transition: opacity 167ms ease;
+}
+
+[data-pn-nav-item]:focus-visible .pn-ln-icon,
+[data-pn-nav-item]:active .pn-ln-icon,
+[data-pn-nav-item][aria-current="page"] .pn-ln-icon {
+  opacity: 0.9;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  [data-pn-nav-item]:hover .pn-ln-icon {
+    opacity: 0.9;
+  }
+}
+
 [data-pn-nav-label] {
   display: flex;
   align-items: flex-start;
