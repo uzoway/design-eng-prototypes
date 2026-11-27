@@ -865,6 +865,7 @@
   flex-direction: column;
   height: var(--pn-viewport, 100%);
   background: #fff;
+  overflow: hidden;
 }
 
 [data-pn-editor] [data-pn-ibar-back] {
@@ -1062,9 +1063,18 @@
   color: var(--pn-blue);
 }
 
+/* Holds the keyboard's room in the column; never shorter than the home indicator inset. */
 [data-pn-editor-keys] {
-  position: relative;
   flex: none;
+  height: 336px;
+  min-height: var(--pn-bottom);
+}
+
+[data-pn-editor-kb] {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
   height: 336px;
 }
 

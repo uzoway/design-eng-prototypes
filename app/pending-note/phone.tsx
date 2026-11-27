@@ -49,6 +49,7 @@ const SHEET_IN = { duration: 0.42, ease: IOS };
 const SHEET_OUT = { duration: 0.32, ease: IOS };
 const EDITOR_IN = { duration: 0.42, ease: IOS };
 const EDITOR_OUT = { duration: 0.38, ease: IOS };
+const KEYBOARD = { duration: 0.35, ease: IOS };
 const PUSH = { duration: 0.42, ease: IOS };
 const ROW_OUT = { duration: 0.26, ease: EASE_OUT };
 const NONE = { duration: 0 };
@@ -1108,9 +1109,26 @@ function Editor({
       </div>
 
       {device && (
-        <div data-pn-editor-keys>
-          <IosKeyboard shift={shift} apiRef={keyboardApi} onType={typeKey} />
-        </div>
+        <>
+          {/* When the window closes, focus leaves the field for Copy text, so iOS drops the keyboard: it slides all the
+              way off, and the footer follows its top down to the home indicator inset (the spacer's min-height). */}
+          <motion.div
+            data-pn-editor-keys
+            aria-hidden="true"
+            initial={false}
+            animate={{ height: closedError ? 0 : 336 }}
+            transition={reduced ? NONE : KEYBOARD}
+          />
+          <motion.div
+            data-pn-editor-kb
+            inert={closedError}
+            initial={false}
+            animate={{ y: closedError ? 336 : 0 }}
+            transition={reduced ? NONE : KEYBOARD}
+          >
+            <IosKeyboard shift={shift} apiRef={keyboardApi} onType={typeKey} />
+          </motion.div>
+        </>
       )}
     </motion.div>
   );
