@@ -931,10 +931,10 @@
   box-sizing: border-box;
   width: 100%;
   margin: 0;
-  padding: 1.7px 16px 12px;
+  padding: 2.7px 16px 12px;
   border: 0;
   color: var(--pn-ink);
-  font: 400 12.5px/21px var(--pn-ios-font);
+  font: 400 13px/19.5px var(--pn-ios-font);
   letter-spacing: 0;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
