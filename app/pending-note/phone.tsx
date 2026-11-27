@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, animate, motion, useMotionValue, useTransform } from "motion/react";
 import {
   useCallback,
   useEffect,
@@ -47,6 +47,13 @@ import type { DialogState, Editing, Screen, Surface } from "./pending-note";
 const IOS = [0.32, 0.72, 0, 1] as const;
 const SHEET_IN = { duration: 0.42, ease: IOS };
 const SHEET_OUT = { duration: 0.32, ease: IOS };
+/** A sheet let go short of dismissing settles back like UIKit's. */
+const SHEET_BACK = { type: "spring", stiffness: 520, damping: 46 } as const;
+/** Pixels a press can wander before it's a drag; down faster than FLICK px/s dismisses wherever it's let go. */
+const DRAG_SLOP = 6;
+const FLICK = 500;
+/** How far a sheet can be pulled up at most. */
+const RUBBER = 40;
 const EDITOR_IN = { duration: 0.42, ease: IOS };
 const EDITOR_OUT = { duration: 0.38, ease: IOS };
 const KEYBOARD = { duration: 0.35, ease: IOS };
@@ -711,30 +718,128 @@ function Sheet({
     trapTab(event, ref.current);
   };
 
+  /* Drag down to dismiss, as on iOS. ---------------------------------------- */
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [scrolls, setScrolls] = useState(false);
+  const dragY = useMotionValue(0);
+  // Upwards it only gives a little, like UIKit's rubber band.
+  const sheetY = useTransform(dragY, (y) => (y >= 0 ? y : -RUBBER * (1 - 1 / (1 + -y / RUBBER))));
+  const scrimFade = useTransform(dragY, (y) => {
+    const height = ref.current?.offsetHeight ?? 0;
+
+    return height > 0 ? 1 - Math.min(Math.max(y, 0), height) / height : 1;
+  });
+  const drag = useRef<{ id: number; startY: number; dragging: boolean; samples: { y: number; t: number }[] } | null>(null);
+  const springBack = useRef<{ stop: () => void } | null>(null);
+
+  useLayoutEffect(() => {
+    const scroller = scrollRef.current;
+
+    if (!scroller) return;
+
+    // Content that overflows (very large text) keeps its scroll, so only the grabber strip drags it.
+    const observer = new ResizeObserver(() => setScrolls(scroller.scrollHeight > scroller.clientHeight + 1));
+
+    observer.observe(scroller);
+
+    return () => observer.disconnect();
+  }, []);
+
+  const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0 || drag.current) return;
+    if (scrolls && !(event.target as HTMLElement).closest("[data-pn-grab-zone]")) return;
+
+    springBack.current?.stop();
+    drag.current = { id: event.pointerId, startY: event.clientY - dragY.get(), dragging: false, samples: [] };
+  };
+
+  const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const current = drag.current;
+
+    if (!current || current.id !== event.pointerId) return;
+
+    const y = event.clientY - current.startY;
+
+    if (!current.dragging) {
+      if (Math.abs(y) < DRAG_SLOP) return;
+
+      // From here it's a drag: the pointer belongs to the sheet, so the button it started on won't be clicked.
+      current.dragging = true;
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
+
+    dragY.set(y);
+    current.samples = [...current.samples.filter((sample) => event.timeStamp - sample.t < 100), { y, t: event.timeStamp }];
+  };
+
+  const handlePointerEnd = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const current = drag.current;
+
+    if (!current || current.id !== event.pointerId) return;
+
+    drag.current = null;
+
+    if (!current.dragging) return;
+
+    const y = dragY.get();
+    // The finger's speed over its last moves; nothing if it has been still for a moment.
+    const recent = current.samples.filter((sample) => event.timeStamp - sample.t < 80);
+    const first = recent[0];
+    const last = recent[recent.length - 1];
+    const velocity = first && last && last.t > first.t ? ((last.y - first.y) / (last.t - first.t)) * 1000 : 0;
+    const height = ref.current?.offsetHeight ?? Infinity;
+
+    if (event.type === "pointerup" && y > 0 && (y > height / 3 || velocity > FLICK)) {
+      // The exit slides on from here, so the sheet keeps going down.
+      onClose();
+
+      return;
+    }
+
+    springBack.current = reduced ? (dragY.jump(0), null) : animate(dragY, 0, { ...SHEET_BACK, velocity });
+  };
+
   return (
     <div data-pn-sheet-layer data-over-editor={overEditor || undefined} inert={inert}>
+      <motion.div data-pn-sheet-fade style={{ opacity: scrimFade }}>
+        <motion.div
+          data-pn-sheet-scrim
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0, transition: reduced ? NONE : SHEET_OUT }}
+          transition={reduced ? NONE : SHEET_IN}
+          onClick={onClose}
+        />
+      </motion.div>
       <motion.div
-        data-pn-sheet-scrim
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0, transition: reduced ? NONE : SHEET_OUT }}
-        transition={reduced ? NONE : SHEET_IN}
-        onClick={onClose}
-      />
-      <motion.div
-        ref={ref}
-        data-pn-sheet
-        role="dialog"
-        aria-modal="true"
-        aria-label={label}
+        data-pn-sheet-slide
         initial={{ y: "100%" }}
         animate={{ y: 0 }}
         exit={{ y: "100%", transition: reduced ? NONE : SHEET_OUT }}
         transition={reduced ? NONE : SHEET_IN}
-        onKeyDown={handleKeyDown}
       >
-        <div data-pn-grabber aria-hidden="true" />
-        {children}
+        <motion.div
+          ref={ref}
+          data-pn-sheet
+          data-scrolls={scrolls || undefined}
+          role="dialog"
+          aria-modal="true"
+          aria-label={label}
+          style={{ y: sheetY }}
+          onKeyDown={handleKeyDown}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerEnd}
+          onPointerCancel={handlePointerEnd}
+        >
+          <div ref={scrollRef} data-pn-sheet-scroll>
+            <div data-pn-grab-zone>
+              <div data-pn-grabber aria-hidden="true" />
+            </div>
+            {children}
+          </div>
+        </motion.div>
       </motion.div>
     </div>
   );

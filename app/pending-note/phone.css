@@ -758,22 +758,50 @@
   z-index: 30;
 }
 
+/* Slides the sheet in and out; the sheet inside follows a drag. */
+[data-pn-sheet-slide] {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+[data-pn-sheet-fade] {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
 [data-pn-sheet] {
   position: absolute;
   right: 0;
   bottom: 0;
   left: 0;
+  display: flex;
+  flex-direction: column;
   max-height: calc(100% - var(--pn-top) - 12px);
-  overflow-y: auto;
-  padding: 0 16px calc(24px + var(--pn-bottom));
   border-radius: 12.67px 12.67px 0 0;
   background: #fff;
   pointer-events: auto;
-  overscroll-behavior: contain;
-  scrollbar-width: none;
+  touch-action: none;
 }
 
-/* The sheet's own white runs on below it, so its spring never shows a gap. */
+/* The scroller is a scroll container, so it needs its own touch-action, or the browser claims the pan.
+   Overflowing content keeps its scroll, and only the grabber strip drags. */
+[data-pn-sheet-scroll] {
+  touch-action: none;
+}
+
+[data-pn-sheet][data-scrolls],
+[data-pn-sheet][data-scrolls] [data-pn-sheet-scroll] {
+  touch-action: auto;
+}
+
+[data-pn-sheet][data-scrolls] [data-pn-grab-zone] {
+  touch-action: none;
+}
+
+/* The sheet's own white runs on below it, so a pull upwards never shows a gap. It sits outside the scroller, so it
+   isn't something to scroll to. */
 [data-pn-sheet]::after {
   content: "";
   position: absolute;
@@ -784,10 +812,23 @@
   background: #fff;
 }
 
+[data-pn-sheet-scroll] {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 16px calc(24px + var(--pn-bottom));
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+
+[data-pn-grab-zone] {
+  padding-top: 16px;
+}
+
 [data-pn-grabber] {
   width: 60px;
   height: 5.67px;
-  margin: 16px auto 0;
+  margin: 0 auto;
   border-radius: 3px;
   background: var(--pn-ink-3);
 }
