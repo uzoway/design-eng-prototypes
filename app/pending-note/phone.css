@@ -267,13 +267,14 @@
   white-space: nowrap;
 }
 
+/* The rule sits inside the row, so a closing row takes its rule with it. */
 [data-pn-prow] {
   overflow: hidden;
-  border-bottom: 1px solid var(--pn-rule);
 }
 
 [data-pn-prow-inner] {
   padding: 12px 12px 12.67px;
+  border-bottom: 1px solid var(--pn-rule);
 }
 
 [data-pn-prow-main] {
@@ -393,7 +394,9 @@
   color: var(--pn-ink-2);
 }
 
+/* A fixed line, so "show less" coming and going never changes its height. */
 [data-pn-phone] [data-pn-foot="read"] {
+  height: 19.33px;
   padding-top: 6px;
   padding-right: 0;
 }

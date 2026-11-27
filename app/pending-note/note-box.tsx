@@ -212,9 +212,10 @@ export function NoteBox(props: NoteBoxProps) {
             measure();
           }
 
-          if (!collapsingRef.current) settle(textHeight, body.offsetHeight, textTween);
+          // Exact heights: offsetHeight rounds, and the phone's lines are fractional.
+          if (!collapsingRef.current) settle(textHeight, body.getBoundingClientRect().height, textTween);
         } else {
-          settle(footHeight, target.offsetHeight, null);
+          settle(footHeight, target.getBoundingClientRect().height, null);
         }
       }
     });

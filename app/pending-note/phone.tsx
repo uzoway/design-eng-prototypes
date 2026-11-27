@@ -100,15 +100,13 @@ type NoteContext = Pick<PhoneProps, "now" | "limit" | "reduced" | "flash" | "foc
 export function Phone(props: PhoneProps) {
   const { device, reduced, editing, dialog, screen, subject } = props;
 
-  // The edited note opens underneath while the editor is up, so it's whole when the editor slides away.
+  // The edited note opens underneath once the editor covers it, so it's whole when the editor slides away.
+  // (Not while the editor rises: that frame has enough to do.)
   const [expand, setExpand] = useState({ id: "", serial: 0 });
-  const [editingKey, setEditingKey] = useState<string | null>(null);
-  const key = editing ? `${editing.id}:${editing.session}` : null;
-
-  if (key !== editingKey) {
-    setEditingKey(key);
-    if (editing) setExpand((current) => ({ id: editing.id, serial: current.serial + 1 }));
-  }
+  const editingId = editing?.id ?? null;
+  const covered = useCallback(() => {
+    if (editingId) setExpand((current) => ({ id: editingId, serial: current.serial + 1 }));
+  }, [editingId]);
 
   const [discard, setDiscard] = useState(false);
   const [wasEditing, setWasEditing] = useState(editing !== null);
@@ -252,6 +250,7 @@ export function Phone(props: PhoneProps) {
             closedError={props.closedError}
             copied={props.copied}
             blocked={discard}
+            onCovered={covered}
             onDraft={props.onDraft}
             onClose={(changed) => (changed ? setDiscard(true) : props.onCancel())}
             onSave={props.onSave}
@@ -364,7 +363,7 @@ function SentScreen({
                 key={invite.id}
                 data-pn-prow
                 data-invite={invite.id}
-                exit={{ height: 0, opacity: 0, borderBottomWidth: 0 }}
+                exit={{ height: 0, opacity: 0 }}
                 transition={context.reduced ? NONE : ROW_OUT}
               >
                 <div data-pn-prow-inner>
@@ -742,6 +741,7 @@ function Editor({
   closedError,
   copied,
   blocked,
+  onCovered,
   onDraft,
   onClose,
   onSave,
@@ -757,6 +757,8 @@ function Editor({
   closedError: boolean;
   copied: boolean;
   blocked: boolean;
+  /** The editor is all the way up. */
+  onCovered: () => void;
   onDraft: (text: string) => void;
   onClose: (changed: boolean) => void;
   onSave: () => void;
@@ -941,6 +943,9 @@ function Editor({
       animate={{ y: 0 }}
       exit={{ y: "100%", transition: reduced ? NONE : EDITOR_OUT }}
       transition={reduced ? NONE : EDITOR_IN}
+      onAnimationComplete={(definition) => {
+        if (typeof definition === "object" && definition !== null && "y" in definition && definition.y === 0) onCovered();
+      }}
       onKeyDown={handleRootKeyDown}
     >
       <header data-pn-ibar data-pn-hairline>
