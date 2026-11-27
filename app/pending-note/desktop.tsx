@@ -7,6 +7,7 @@ import {
   AdvertiseIcon,
   BellIcon,
   CaretIcon,
+  WordmarkIcon,
   ClockIcon,
   CompanyLogo,
   ConnectIcon,
@@ -41,9 +42,10 @@ export function TopBar({ selected, onNetwork }: { selected: NavTab | null; onNet
         <a data-pn-logo href="#" aria-label="LinkedIn" onClick={(event) => event.preventDefault()}>
           <LogoIcon />
         </a>
+        {/* Below 960px LinkedIn folds the field into its glass; the field itself is decorative here. */}
         <label data-pn-search>
           <SearchIcon />
-          <span>I’m looking for...</span>
+          <span data-pn-search-text>I’m looking for…</span>
         </label>
 
         <nav data-pn-nav aria-label="Primary">
@@ -59,7 +61,9 @@ export function TopBar({ selected, onNetwork }: { selected: NavTab | null; onNet
                 <NavIcon tab={tab} selected={selected === tab} />
                 {tab === "home" && <span data-pn-dot aria-hidden="true" />}
               </span>
-              <span data-pn-nav-label>{label}</span>
+              <span data-pn-nav-label>
+                <span data-pn-nav-text>{label}</span>
+              </span>
             </button>
           ))}
           <button type="button" data-pn-nav-item aria-label="Me" aria-haspopup="menu">
@@ -68,7 +72,7 @@ export function TopBar({ selected, onNetwork }: { selected: NavTab | null; onNet
               <img data-pn-nav-avatar src={ME_AVATAR} width={24} height={24} alt="" />
             </span>
             <span data-pn-nav-label>
-              Me
+              <span data-pn-nav-text>Me</span>
               <CaretIcon />
             </span>
           </button>
@@ -78,7 +82,7 @@ export function TopBar({ selected, onNetwork }: { selected: NavTab | null; onNet
               <GridIcon />
             </span>
             <span data-pn-nav-label>
-              For Business
+              <span data-pn-nav-text>For Business</span>
               <CaretIcon />
             </span>
           </button>
@@ -86,7 +90,9 @@ export function TopBar({ selected, onNetwork }: { selected: NavTab | null; onNet
             <span data-pn-nav-icon-box>
               <AdvertiseIcon />
             </span>
-            <span data-pn-nav-label>Advertise</span>
+            <span data-pn-nav-label>
+              <span data-pn-nav-text>Advertise</span>
+            </span>
           </button>
         </nav>
       </div>
@@ -118,11 +124,14 @@ export function Rail() {
           {FOOTER.map((link) => (
             <span key={link}>
               {link}
-              {(link === "More" || link === "Privacy & Terms") && <CaretIcon />}
+              {(link === "Privacy & Terms" || link === "Business Services") && <CaretIcon />}
             </span>
           ))}
         </p>
-        <p data-pn-footer-mark>LinkedIn Corporation © 2026</p>
+        <p data-pn-footer-mark>
+          <WordmarkIcon />
+          <span>LinkedIn Corporation © 2026</span>
+        </p>
       </footer>
     </aside>
   );

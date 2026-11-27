@@ -78,34 +78,26 @@ export function NavIcon({ tab, selected }: { tab: NavTab | "post"; selected?: bo
   );
 }
 
-/** For Business: LinkedIn's 3 × 3 app launcher. */
+/** grid-fill-medium: For Business, LinkedIn's 3 × 3 app launcher (read from linkedin.com, 27 Nov 2026). */
 export function GridIcon() {
   return (
     <Svg>
       <path
         fill="currentColor"
-        d="M3 3h4v4H3zm7 0h4v4h-4zm7 0h4v4h-4zM3 10h4v4H3zm7 0h4v4h-4zm7 0h4v4h-4zM3 17h4v4H3zm7 0h4v4h-4zm7 0h4v4h-4z"
+        d="M3 4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1zm7 2a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1h-2a1 1 0 0 0-1 1zm8-3a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1zM3 13a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1zm7 0a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1h-2a1 1 0 0 0-1 1zm7 0a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1h-2a1 1 0 0 0-1 1zM3 20a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1zm7 0a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1h-2a1 1 0 0 0-1 1zm7 0a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1h-2a1 1 0 0 0-1 1z"
       />
     </Svg>
   );
 }
 
-/** Advertise: a compass needle turning inside a broken ring. */
+/** ads-small: Advertise, a ring at 70% with an arrow into its centre (read from linkedin.com). */
 export function AdvertiseIcon() {
   return (
     <Svg>
+      <path fill="currentColor" opacity="0.7" d="M12 17.13a5.13 5.13 0 0 1 0-10.25V4a8 8 0 1 0 8 8h-2.87A5.13 5.13 0 0 1 12 17.13" />
       <path
         fill="currentColor"
-        fillRule="evenodd"
-        clipRule="evenodd"
-        d="M12 2.5a9.5 9.5 0 0 1 9.5 9.5H20A8 8 0 1 0 12 20v1.5a9.5 9.5 0 0 1 0-19"
-      />
-      <path fill="currentColor" d="m21.5 2.5-3 9-2-4-4-2zM13.06 9.88l1.06 1.06-4.18 4.18-1.06-1.06z" />
-      <path
-        fill="currentColor"
-        fillRule="evenodd"
-        clipRule="evenodd"
-        d="M12 6.5a5.5 5.5 0 0 1 5.4 4.43l-1.47.3A4 4 0 1 0 12 16v1.5a5.5 5.5 0 0 1 0-11"
+        d="m23.31 6.34-4.95-.71-.7-4.94-3.54 3.53.35 2.48-3.89 3.89a2 2 0 0 0 2.83 2.83l3.89-3.89 2.48.35z"
       />
     </Svg>
   );
@@ -114,25 +106,25 @@ export function AdvertiseIcon() {
 /** caret-down-fill-small (16). */
 export function CaretIcon() {
   return (
-    <Svg size={16} viewBox="0 0 16 16" data-pn-caret="">
+    <Svg size={16} viewBox="0 0 16 16" data-pn-chevron="">
       <path fill="currentColor" d="M8 11 3.5 6.5h9z" />
     </Svg>
   );
 }
 
-/** LinkedIn's "in" bug, in its own blue. */
+/** linkedin-bug-blue-medium: the "in" is cut out of the blue, so the bar shows through it (read from linkedin.com). */
 export function LogoIcon() {
   return (
     <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true" focusable="false">
-      <rect width="34" height="34" rx="4" fill="#0a66c2" />
       <path
-        fill="#fff"
-        d="M7.2 13.4h4.05V26.6H7.2zM9.23 6.9a2.34 2.34 0 1 1 0 4.69 2.34 2.34 0 0 1 0-4.69M13.8 13.4h3.88v1.8h.06c.54-1.02 1.86-2.1 3.83-2.1 4.1 0 4.86 2.7 4.86 6.2v7.3h-4.05v-6.47c0-1.54-.03-3.53-2.15-3.53-2.15 0-2.48 1.68-2.48 3.42v6.58H13.8z"
+        fill="#0a66c2"
+        d="M34 2.5v29a2.5 2.5 0 0 1-2.5 2.5h-29A2.5 2.5 0 0 1 0 31.5v-29A2.5 2.5 0 0 1 2.5 0h29A2.5 2.5 0 0 1 34 2.5M10 13H5v16h5zm.45-5.5a2.88 2.88 0 0 0-2.86-2.9H7.5a2.9 2.9 0 0 0 0 5.8 2.88 2.88 0 0 0 2.95-2.81zM29 19.28c0-4.81-3.06-6.68-6.1-6.68a5.7 5.7 0 0 0-5.06 2.58h-.14V13H13v16h5v-8.51a3.32 3.32 0 0 1 3-3.58h.19c1.59 0 2.77 1 2.77 3.52V29h5z"
       />
     </svg>
   );
 }
 
+/** magnifying-glass-outline-small (read from linkedin.com). */
 export function SearchIcon() {
   return (
     <Svg size={16} viewBox="0 0 16 16">
@@ -140,7 +132,7 @@ export function SearchIcon() {
         fill="currentColor"
         fillRule="evenodd"
         clipRule="evenodd"
-        d="M6.75 1.5a5.25 5.25 0 0 1 4.19 8.41l3.59 3.59-1.06 1.06-3.59-3.59A5.25 5.25 0 1 1 6.75 1.5m0 1.5a3.75 3.75 0 1 0 0 7.5 3.75 3.75 0 0 0 0-7.5"
+        d="M6.75 1.25a5.5 5.5 0 0 1 4.382 8.821l3.398 3.399-1.06 1.06-3.399-3.398A5.5 5.5 0 1 1 6.75 1.25m0 1.5a4 4 0 1 0 0 8 4 4 0 0 0 0-8"
       />
     </Svg>
   );
@@ -409,6 +401,18 @@ export function EmojiKeyIcon() {
       <circle cx="9" cy="9.6" r="1.25" fill="var(--pn-key-fn, #abb0ba)" />
       <circle cx="15" cy="9.6" r="1.25" fill="var(--pn-key-fn, #abb0ba)" />
       <path d="M6.9 13.2h10.2a5.1 5.1 0 01-10.2 0z" fill="var(--pn-key-fn, #abb0ba)" />
+    </svg>
+  );
+}
+
+/** linkedin-logo-xxsmall: the wordmark in the rail footer (read from linkedin.com). */
+export function WordmarkIcon() {
+  return (
+    <svg width="56" height="14" viewBox="0 0 56 14" aria-hidden="true" focusable="false" data-pn-wordmark="">
+      <path
+        fill="#0a66c2"
+        d="m22.1 8.2 3.09 3.8h-2.44L20 8.51V12h-2V2h2v5.88L22.54 5h2.55zm-8-3.4A2.71 2.71 0 0 0 11.89 6V5H10v7h2V8.73a1.74 1.74 0 0 1 1.66-1.93C14.82 6.8 15 7.94 15 8.73V12h2V8.29c0-2.2-.73-3.49-2.86-3.49zM32 8.66a4 4 0 0 1 0 .44h-5.25v.07a1.79 1.79 0 0 0 1.83 1.43 2.5 2.5 0 0 0 1.84-.69l1.33 1a4.3 4.3 0 0 1-3.25 1.29 3.49 3.49 0 0 1-3.7-3.75 3.58 3.58 0 0 1 3.76-3.65C30.44 4.8 32 6.13 32 8.66m-1.86-.86a1.46 1.46 0 0 0-1.59-1.4 1.64 1.64 0 0 0-1.8 1.4zM2 2H0v10h6v-2H2zm36 0h2v10h-1.89v-.7a2.44 2.44 0 0 1-2 .9 3.41 3.41 0 0 1-3.31-3.7 3.36 3.36 0 0 1 3.3-3.7 2.62 2.62 0 0 1 1.9.7zm.15 6.5a1.63 1.63 0 0 0-1.62-1.85A1.76 1.76 0 0 0 34.9 8.5a1.76 1.76 0 0 0 1.63 1.85 1.63 1.63 0 0 0 1.62-1.85M8 1.8A1.27 1.27 0 0 0 6.75 3a1.25 1.25 0 0 0 2.5 0A1.27 1.27 0 0 0 8 1.8M7 12h2V5H7zM56 1v12a1 1 0 0 1-1 1H43a1 1 0 0 1-1-1V1a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1M46 5h-2v7h2zm.25-2a1.25 1.25 0 0 0-2.5 0 1.25 1.25 0 0 0 2.5 0M54 8.29c0-2.2-.73-3.49-2.86-3.49A2.71 2.71 0 0 0 48.89 6V5H47v7h2V8.73a1.74 1.74 0 0 1 1.66-1.93C51.82 6.8 52 7.94 52 8.73V12h2z"
+      />
     </svg>
   );
 }

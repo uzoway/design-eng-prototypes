@@ -348,7 +348,8 @@ function App({
 
   return (
     <div data-pn-root data-pn-desktop>
-      <TopBar selected={screen === "sent" ? "network" : null} onNetwork={() => showScreen("sent")} />
+      {/* linkedin.com marks no item current on Invitation Manager or a profile (checked 27 Nov 2026). */}
+      <TopBar selected={null} onNetwork={() => showScreen("sent")} />
       <div data-pn-layout>
         {screen === "sent" ? (
           <SentPage

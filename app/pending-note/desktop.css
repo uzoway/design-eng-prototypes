@@ -130,6 +130,18 @@
   margin: 0 auto;
 }
 
+/*
+ * The bar's breakpoints, read off linkedin.com (27 Nov 2026) by resizing a
+ * signed-in window: 16px gutters under 1200, icon-only items 65 wide at 1108
+ * and 48 at 968, the search folded into its glass at 959 (items back to 80),
+ * then 65 again at 780. Under 641 the phone layout takes over.
+ */
+@media (max-width: 1199px) {
+  [data-pn-bar-inner] {
+    padding: 0 16px;
+  }
+}
+
 [data-pn-logo] {
   flex: none;
   display: block;
@@ -156,7 +168,7 @@
 
 [data-pn-search] svg {
   position: absolute;
-  left: 14px;
+  left: 15px;
   color: rgba(0, 0, 0, 0.75);
 }
 
@@ -181,7 +193,6 @@
 
 [data-pn-nav-item][data-wide] {
   width: auto;
-  padding: 0 12px;
 }
 
 [data-pn-nav-item][aria-current="page"] {
@@ -227,10 +238,6 @@
   height: 16px;
 }
 
-[data-pn-nav-label] [data-pn-caret] {
-  margin-top: -1px;
-}
-
 [data-pn-nav-avatar] {
   width: 24px;
   height: 24px;
@@ -261,48 +268,134 @@
 [data-pn-nav-rule] {
   align-self: stretch;
   width: 1px;
-  margin: 0 0 0 0;
+  margin: 0 12px 0 0;
   background: var(--pn-border);
+}
+
+[data-pn-search-text] {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 1108px) {
+  [data-pn-nav-item],
+  [data-pn-nav-item][data-wide] {
+    width: 65px;
+    padding: 0;
+  }
+
+  [data-pn-nav-icon-box] {
+    margin-top: 14px;
+  }
+
+  [data-pn-nav-text] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+
+  /* The caret stays, dropped under the icon: Me's 12px right of the avatar, For Business's 40px right of the grid. */
+  [data-pn-nav-label] [data-pn-chevron] {
+    position: absolute;
+    top: 37px;
+    left: 50%;
+    margin: 0;
+  }
+
+  [data-pn-nav-item][data-wide] [data-pn-chevron] {
+    left: calc(50% + 28px);
+  }
+}
+
+@media (max-width: 968px) {
+  [data-pn-nav-item],
+  [data-pn-nav-item][data-wide] {
+    width: 48px;
+  }
+}
+
+@media (max-width: 959px) {
+  [data-pn-nav-item],
+  [data-pn-nav-item][data-wide] {
+    width: 80px;
+  }
+
+  [data-pn-search] {
+    width: 66px;
+    height: 26px;
+    padding: 0 0 0 12px;
+    border: 0;
+    border-radius: 0;
+    background: none;
+  }
+
+  [data-pn-search] svg {
+    position: static;
+    width: 24px;
+    height: 24px;
+    color: rgba(0, 0, 0, 0.6);
+  }
+
+  [data-pn-search-text] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+  }
+}
+
+@media (max-width: 780px) {
+  [data-pn-nav-item],
+  [data-pn-nav-item][data-wide] {
+    width: 65px;
+  }
 }
 
 /* -------------------------------------------------------------------------- */
 /* Layout                                                                     */
 /* -------------------------------------------------------------------------- */
 
+/* linkedin.com's page grid (27 Nov 2026): 792 + 312 from 1200, 632 + 304 in a 960 column below that, one 720 column with the rail under it from 959, and fluid with a 20/44 gutter from 767. */
 [data-pn-layout] {
   display: grid;
-  grid-template-columns: minmax(0, 792px) 300px;
-  justify-content: space-between;
-  column-gap: 28px;
+  grid-template-columns: 792px 312px;
+  justify-content: center;
+  column-gap: 24px;
   max-width: 1128px;
   margin: 24px auto 0;
   padding-bottom: 32px;
 }
 
-@media (max-width: 1176px) {
+@media (max-width: 1199px) {
   [data-pn-layout] {
-    grid-template-columns: minmax(0, 1fr) 300px;
-    column-gap: 24px;
-    padding: 0 24px 32px;
-  }
-
-  [data-pn-bar-inner] {
-    padding: 0 24px;
+    grid-template-columns: 632px 304px;
+    max-width: 960px;
   }
 }
 
-@media (max-width: 960px) {
+@media (max-width: 959px) {
+  [data-pn-layout] {
+    grid-template-columns: minmax(0, 720px);
+    row-gap: 24px;
+    max-width: 720px;
+  }
+}
+
+@media (max-width: 767px) {
   [data-pn-layout] {
     grid-template-columns: minmax(0, 1fr);
+    max-width: none;
+    margin-top: 36px;
+    padding: 0 44px 32px 20px;
   }
 
   [data-pn-rail] {
-    display: none;
-  }
-
-  [data-pn-nav-item][data-wide],
-  [data-pn-nav-rule] {
-    display: none;
+    margin: 0 -44px 0 -20px;
   }
 }
 
@@ -804,32 +897,40 @@ button[data-pn-name] {
   min-width: 0;
 }
 
+/* Measured on linkedin.com (27 Nov 2026): 12px links at 60% black, 4px 8px around each, carets 4px after
+   Privacy & Terms and Business Services, then the blue wordmark 8px before the copyright, 16px below. */
 [data-pn-footer] {
-  padding: 8px 24px 0;
+  padding-top: 8px;
   color: var(--pn-muted);
   font: 400 12px/15px var(--pn-font);
-  text-align: center;
 }
 
 [data-pn-footer-links] {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 6px 16px;
 }
 
 [data-pn-footer-links] span {
   display: inline-flex;
   align-items: center;
+  margin: 4px 8px;
+}
+
+[data-pn-footer-links] [data-pn-chevron] {
+  margin-left: 4px;
 }
 
 [data-pn-footer-mark] {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
   margin-top: 16px;
   color: var(--pn-strong);
+}
+
+[data-pn-footer-mark] span {
+  margin: 0 8px;
 }
 
 /* -------------------------------------------------------------------------- */
