@@ -211,7 +211,7 @@
   position: relative;
   display: flex;
   align-items: center;
-  padding: 0 17px 2px;
+  padding: 0 16.2px 2px;
   color: var(--pn-ink-3);
   font: 600 13px/18px var(--pn-ios-font);
 }
@@ -259,7 +259,7 @@
   display: inline-flex;
   align-items: center;
   height: 32px;
-  padding: 0 13px 1px;
+  padding: 0 12px 1px;
   border-radius: 16px;
   background: var(--pn-green);
   color: #fff;
@@ -877,7 +877,7 @@
   padding: 1.7px 16px 12px;
   border: 0;
   color: var(--pn-ink);
-  font: 400 12px/21px var(--pn-ios-font);
+  font: 400 12.5px/21px var(--pn-ios-font);
   letter-spacing: 0;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -983,15 +983,16 @@
 [data-pn-premium] {
   display: flex;
   align-items: center;
-  gap: 6.33px;
+  gap: 5.33px;
   color: #1a1a1a;
-  font: 700 11.6px/1 var(--pn-ios-font);
-  letter-spacing: 2.35px;
+  font: 700 11px/1 var(--pn-ios-font);
+  letter-spacing: 2.27px;
 }
 
 [data-pn-premium] svg {
   width: 8px;
   height: 8px;
+  transform: translateY(1px);
 }
 
 [data-pn-editor-count] {
