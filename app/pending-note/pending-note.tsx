@@ -395,6 +395,7 @@ function App({
             title="Pending invitation"
             size="medium"
             reduced={reduced}
+            footerHidden={editing?.surface === "dialog" && editing.id === subject.id}
             onClose={closePending}
             initialFocus={() => document.querySelector<HTMLElement>("[data-pn-dialog] [data-pn-text-button][data-strong]")}
             // Safari doesn't focus a button on click, so the opener can't be read from document.activeElement.

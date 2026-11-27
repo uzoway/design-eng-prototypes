@@ -33,7 +33,7 @@ import { ErrorIcon } from "./icons";
 
 /** Strong ease-out: quick to react, soft to land. */
 export const EASE_OUT = [0.23, 1, 0.32, 1] as const;
-const HEIGHT = { duration: 0.2, ease: EASE_OUT };
+export const HEIGHT = { duration: 0.2, ease: EASE_OUT };
 /** Footers come in once the box has started to move, never before it. */
 const FOOT_IN = { duration: 0.18, delay: 0.07, ease: EASE_OUT };
 const FOOT_OUT = { duration: 0.09, ease: "easeOut" } as const;

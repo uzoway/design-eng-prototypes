@@ -1197,6 +1197,10 @@ button[data-pn-name] {
   font: 400 14px/17.5px var(--pn-font);
 }
 
+[data-pn-dialog-fold] {
+  overflow: hidden;
+}
+
 [data-pn-dialog-foot] {
   display: flex;
   justify-content: flex-end;

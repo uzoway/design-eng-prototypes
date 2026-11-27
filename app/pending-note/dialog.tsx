@@ -1,10 +1,10 @@
 "use client";
 
-import { motion } from "motion/react";
+import { animate, motion, useMotionValue, useTransform } from "motion/react";
 import { useEffect, useId, useLayoutEffect, useRef, type KeyboardEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { CloseIcon } from "./icons";
-import { EASE_OUT } from "./note-box";
+import { EASE_OUT, HEIGHT } from "./note-box";
 
 const FOCUSABLE =
   'button:not([disabled]), [href], input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -16,6 +16,8 @@ type DialogProps = {
   onClose: () => void;
   children: ReactNode;
   footer: ReactNode;
+  /** Folds the footer away, e.g. while a note inside is being edited, so there's only one Cancel on screen. */
+  footerHidden?: boolean;
   /** Where focus goes on open; the first button otherwise. */
   initialFocus?: () => HTMLElement | null | undefined;
   /** Where focus goes back to on close; whatever had it before otherwise. */
@@ -27,7 +29,17 @@ type DialogProps = {
  * downwards, over a 75% black scrim. Focus stays inside, Escape closes it,
  * and focus goes back to whatever opened it.
  */
-export function Dialog({ title, size, reduced, onClose, children, footer, initialFocus, returnFocus }: DialogProps) {
+export function Dialog({
+  title,
+  size,
+  reduced,
+  onClose,
+  children,
+  footer,
+  footerHidden = false,
+  initialFocus,
+  returnFocus,
+}: DialogProps) {
   const ref = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const opener = useRef<HTMLElement | null>(null);
@@ -36,6 +48,56 @@ export function Dialog({ title, size, reduced, onClose, children, footer, initia
   useEffect(() => {
     returnRef.current = returnFocus;
   }, [returnFocus]);
+
+  /* The footer fold. ----------------------------------------------------- */
+
+  const foldRef = useRef<HTMLDivElement>(null);
+  const foldHeight = useMotionValue(footerHidden ? 0 : -1);
+  const foldOpacity = useMotionValue(footerHidden ? 0 : 1);
+  const foldStyle = useTransform(foldHeight, (h) => (h < 0 ? "auto" : h));
+  const foldShown = useRef(!footerHidden);
+
+  useLayoutEffect(() => {
+    const inner = foldRef.current?.firstElementChild as HTMLElement | null | undefined;
+
+    if (!inner || foldShown.current === !footerHidden) return;
+
+    foldShown.current = !footerHidden;
+
+    const full = inner.getBoundingClientRect().height;
+
+    // A note box starts its height change from a ResizeObserver, a frame after render. Starting the fold from one
+    // too puts both on the same frame, so the dialog's bottom edge moves one way only (or jumps once, reduced).
+    const tweens: { stop: () => void }[] = [];
+    const observer = new ResizeObserver(() => {
+      observer.disconnect();
+
+      if (reduced) {
+        foldHeight.jump(footerHidden ? 0 : -1);
+        foldOpacity.jump(footerHidden ? 0 : 1);
+
+        return;
+      }
+
+      if (foldHeight.get() < 0) foldHeight.jump(full);
+      tweens.push(
+        animate(foldHeight, footerHidden ? 0 : full, {
+          ...HEIGHT,
+          onComplete: () => {
+            if (!footerHidden) foldHeight.jump(-1);
+          },
+        }),
+        animate(foldOpacity, footerHidden ? 0 : 1, HEIGHT),
+      );
+    });
+
+    observer.observe(inner);
+
+    return () => {
+      observer.disconnect();
+      tweens.forEach((tween) => tween.stop());
+    };
+  }, [footerHidden, reduced, foldHeight, foldOpacity]);
 
   const pendingReturn = useRef(0);
 
@@ -132,7 +194,9 @@ export function Dialog({ title, size, reduced, onClose, children, footer, initia
             </button>
           </div>
           <div data-pn-dialog-body>{children}</div>
-          <div data-pn-dialog-foot>{footer}</div>
+          <motion.div ref={foldRef} data-pn-dialog-fold inert={footerHidden} style={{ height: foldStyle, opacity: foldOpacity }}>
+            <div data-pn-dialog-foot>{footer}</div>
+          </motion.div>
         </motion.div>
       </div>
     </div>,
