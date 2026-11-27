@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, MotionConfig, useReducedMotion } from "motion/react";
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useEffectEvent, useRef, useState, useSyncExternalStore } from "react";
 import {
   changedWords,
   FREE_NOTE_LIMIT,
@@ -111,6 +111,8 @@ function App({
   const [now, setNow] = useState(loadedAt);
   const [invites, setInvites] = useState(() => makeInvites(loadedAt, { expire }));
   const [screen, setScreen] = useState<Screen>(() => (startOnProfile ? "profile" : "sent"));
+  /** The browser already drew the way back (Safari's edge swipe), so the pop shouldn't slide again. */
+  const [instant, setInstant] = useState(false);
   const [editing, setEditing] = useState<Editing | null>(null);
   const [closedError, setClosedError] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -295,11 +297,53 @@ function App({
     later(reduced ? 0 : 140, () => remove(id));
   };
 
-  const showScreen = (next: Screen) => {
+  const applyScreen = (next: Screen) => {
     if (editing) setEditing(null);
     setScreen(next);
-    window.scrollTo(0, 0);
+    if (layout === "desktop") window.scrollTo(0, 0);
   };
+
+  /* Browser history: a profile is its own entry, as on LinkedIn, so back, forward and Safari's edge swipe all
+     work. Next.js keeps its own state alongside ours in the entry. */
+
+  const showScreen = (next: Screen) => {
+    if (next === screen) return;
+
+    setInstant(false);
+
+    if (next === "profile") {
+      window.history.pushState({ ...window.history.state, pnScreen: "profile" }, "");
+    } else if (window.history.state?.pnScreen === "profile") {
+      // Pop our own entry; popstate does the rest.
+      window.history.back();
+
+      return;
+    }
+
+    applyScreen(next);
+  };
+
+  const onPopState = useEffectEvent((event: PopStateEvent) => {
+    setInstant("hasUAVisualTransition" in event && event.hasUAVisualTransition === true);
+    setDialog(null);
+    applyScreen(event.state?.pnScreen === "profile" ? "profile" : "sent");
+  });
+
+  useEffect(() => {
+    // A reload or a Reset starts over, so an entry left from before no longer stands for a screen.
+    if (window.history.state?.pnScreen) {
+      const rest = { ...window.history.state };
+
+      delete rest.pnScreen;
+      window.history.replaceState(rest, "");
+    }
+
+    const listener = (event: PopStateEvent) => onPopState(event);
+
+    window.addEventListener("popstate", listener);
+
+    return () => window.removeEventListener("popstate", listener);
+  }, []);
 
   const live = (
     <p className="pn-sr-only" role="status" aria-live="polite">
@@ -319,7 +363,8 @@ function App({
           invites={invites}
           subject={subject}
           screen={screen}
-          onScreen={setScreen}
+          instant={instant}
+          onScreen={showScreen}
           editing={editing}
           closedError={closedError}
           copied={copied}

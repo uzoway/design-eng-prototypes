@@ -68,6 +68,8 @@ export type PhoneProps = {
   invites: Invite[];
   subject: Invite | null;
   screen: Screen;
+  /** Skip the push/pop slide: the browser already animated the way back. */
+  instant: boolean;
   onScreen: (next: Screen) => void;
   editing: Editing | null;
   closedError: boolean;
@@ -132,6 +134,7 @@ export function Phone(props: PhoneProps) {
   };
 
   const withdrawing = dialog?.kind === "withdraw" ? props.invites.find((invite) => invite.id === dialog.id) : null;
+  const push = reduced || props.instant ? NONE : PUSH;
 
   return (
     <div data-pn-root data-pn-phone data-device={device || undefined}>
@@ -146,7 +149,7 @@ export function Phone(props: PhoneProps) {
               ? { x: 0, visibility: "visible" }
               : { x: "-30%", transitionEnd: { visibility: "hidden" } }
           }
-          transition={reduced ? NONE : PUSH}
+          transition={push}
           inert={screen !== "sent"}
         >
           <SentScreen
@@ -158,7 +161,7 @@ export function Phone(props: PhoneProps) {
             data-pn-screen-dim
             initial={false}
             animate={{ opacity: screen === "sent" ? 0 : 0.1 }}
-            transition={reduced ? NONE : PUSH}
+            transition={push}
           />
         </motion.div>
 
@@ -170,7 +173,7 @@ export function Phone(props: PhoneProps) {
               ? { x: 0, visibility: "visible" }
               : { x: "100%", transitionEnd: { visibility: "hidden" } }
           }
-          transition={reduced ? NONE : PUSH}
+          transition={push}
           inert={screen !== "profile"}
         >
           <ProfileScreen
