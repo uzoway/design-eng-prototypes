@@ -298,16 +298,13 @@
     white-space: nowrap;
   }
 
-  /* The caret stays, dropped under the icon: Me's 12px right of the avatar, For Business's 40px right of the grid. */
+  /* A deliberate departure: linkedin.com drops the caret to the bar's bottom edge here (top 37), where it looks
+     detached. It sits beside the icon instead, centred on it, 1.5px clear of the icon box. */
   [data-pn-nav-label] [data-pn-chevron] {
     position: absolute;
-    top: 37px;
-    left: 50%;
+    top: 17.25px;
+    left: calc(50% + 10px);
     margin: 0;
-  }
-
-  [data-pn-nav-item][data-wide] [data-pn-chevron] {
-    left: calc(50% + 28px);
   }
 }
 
