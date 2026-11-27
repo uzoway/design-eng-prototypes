@@ -62,7 +62,7 @@ const SEEDS: Seed[] = [
     firstName: "Priya",
     headline: "Product Designer @ Northwind Health",
     ago: 5 * HOUR,
-    note: "Hi Priya, your talk on designing intake forms for patients who are anxious or in pain stuck with me. I'm working on onboarding for a care app and would love to follow your work.",
+    note: "Hi Priya, we moved the pain question to the end of our intake form after your talk. Fewer people drop off now. I'm on onboarding at a small care app, would be good to connect.",
   },
   {
     id: "jonah-feld",
@@ -84,7 +84,7 @@ const SEEDS: Seed[] = [
     firstName: "Lucas",
     headline: "Senior Product Designer, Design Systems at Halcyon",
     ago: 2 * DAY + 5 * HOUR,
-    note: "Hi Lucas, thanks for open-sourcing the token pipeline from your design systems post. We adapted it for our component library last month and it saved us a lot of back and forth. Happy to share what we changed.",
+    note: "Hi Lucas, we forked your token pipeline from the design systems post. Had to change how it names dark mode tokens but the rest just worked. Thanks for putting it out.",
   },
   {
     id: "sofia-brandt",
