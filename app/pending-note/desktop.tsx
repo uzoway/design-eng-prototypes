@@ -344,6 +344,7 @@ export function ProfilePage({
                 <button
                   type="button"
                   data-pn-button="muted"
+                  data-pn-connect-action
                   aria-haspopup="dialog"
                   onClick={(event) => onPending(event.currentTarget)}
                 >
@@ -351,7 +352,7 @@ export function ProfilePage({
                   Pending
                 </button>
               ) : (
-                <button type="button" data-pn-button="secondary">
+                <button type="button" data-pn-button="secondary" data-pn-connect-action>
                   <ConnectIcon />
                   Connect
                 </button>

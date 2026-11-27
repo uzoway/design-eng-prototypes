@@ -212,6 +212,8 @@ export function Phone(props: PhoneProps) {
             reduced={reduced}
             inert={editing !== null}
             onClose={props.onCloseDialog}
+            // Safari doesn't focus a button on tap, so the opener can't be read from document.activeElement.
+            returnFocus={() => document.querySelector<HTMLElement>("[data-pn-connect-action]")}
             initialFocus={(sheet) =>
               sheet.querySelector<HTMLElement>("[data-pn-text-button][data-strong]") ??
               sheet.querySelector<HTMLElement>("[data-pn-sheet-actions] button")
@@ -496,12 +498,12 @@ function ProfileScreen({
               Message
             </button>
             {subject ? (
-              <button type="button" data-pn-pbtn="outline" aria-haspopup="dialog" onClick={onPending}>
+              <button type="button" data-pn-pbtn="outline" data-pn-connect-action aria-haspopup="dialog" onClick={onPending}>
                 <ClockIcon />
                 Pending
               </button>
             ) : (
-              <button type="button" data-pn-pbtn="blue-outline">
+              <button type="button" data-pn-pbtn="blue-outline" data-pn-connect-action>
                 <ConnectIcon />
                 Connect
               </button>
