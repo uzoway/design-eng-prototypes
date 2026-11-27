@@ -61,6 +61,12 @@ const KEYBOARD = { duration: 0.35, ease: IOS };
 const PUSH = { duration: 0.42, ease: IOS };
 const ROW_OUT = { duration: 0.26, ease: EASE_OUT };
 const NONE = { duration: 0 };
+/*
+ * Overlays that mount and slide in at once animate the whole transform string rather than motion's y, so the
+ * browser can run the slide off the main thread. With y, the mount's own render (the keyboard is a lot of keys)
+ * landed in the first frames, and on a slow phone the slide lurched forward and then crawled.
+ */
+const COVERED = { transform: "translateY(0%)" };
 
 const FOCUSABLE =
   'button:not([disabled]), [href], input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -846,9 +852,9 @@ function Sheet({
       </motion.div>
       <motion.div
         data-pn-sheet-slide
-        initial={{ y: "100%" }}
-        animate={{ y: 0 }}
-        exit={{ y: "100%", transition: reduced ? NONE : SHEET_OUT }}
+        initial={{ transform: "translateY(100%)" }}
+        animate={COVERED}
+        exit={{ transform: "translateY(100%)", transition: reduced ? NONE : SHEET_OUT }}
         transition={reduced ? NONE : SHEET_IN}
       >
         <motion.div
@@ -1157,12 +1163,15 @@ function Editor({
       aria-labelledby={titleId}
       inert={blocked}
       style={viewport ? { height: viewport } : undefined}
-      initial={{ y: "100%" }}
-      animate={{ y: 0 }}
-      exit={{ y: "100%", transition: reduced ? NONE : EDITOR_OUT }}
+      initial={{ transform: "translateY(100%)" }}
+      animate={COVERED}
+      exit={{ transform: "translateY(100%)", transition: reduced ? NONE : EDITOR_OUT }}
       transition={reduced ? NONE : EDITOR_IN}
       onAnimationComplete={(definition) => {
-        if (typeof definition === "object" && definition !== null && "y" in definition && definition.y === 0) onCovered();
+        // Called for the exit too; only the slide in covers the page.
+        const target = typeof definition === "object" && definition !== null ? definition : {};
+
+        if ("transform" in target && target.transform === COVERED.transform) onCovered();
       }}
       onKeyDown={handleRootKeyDown}
     >
