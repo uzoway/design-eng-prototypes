@@ -1107,6 +1107,7 @@ button[data-pn-name] {
 
 [data-pn-dialog-warning] {
   margin-top: 16px;
+  text-wrap: pretty;
 }
 
 /* -------------------------------------------------------------------------- */

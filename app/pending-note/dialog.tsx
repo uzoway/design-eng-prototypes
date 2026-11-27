@@ -37,8 +37,12 @@ export function Dialog({ title, size, reduced, onClose, children, footer, initia
     returnRef.current = returnFocus;
   }, [returnFocus]);
 
+  const pendingReturn = useRef(0);
+
   useLayoutEffect(() => {
-    opener.current = document.activeElement as HTMLElement | null;
+    // Strict mode mounts twice: the first cleanup's focus return is cancelled, and the opener is kept.
+    window.cancelAnimationFrame(pendingReturn.current);
+    opener.current ??= document.activeElement as HTMLElement | null;
 
     const target = initialFocus?.() ?? ref.current?.querySelector<HTMLElement>("[data-pn-dialog-foot] button");
 
@@ -52,10 +56,10 @@ export function Dialog({ title, size, reduced, onClose, children, footer, initia
     return () => {
       html.style.overflow = previous;
 
-      const back = returnRef.current?.() ?? opener.current;
-
       // After the exit: whatever opened the dialog may have moved or gone.
-      window.requestAnimationFrame(() => {
+      pendingReturn.current = window.requestAnimationFrame(() => {
+        const back = returnRef.current?.() ?? opener.current;
+
         if (back && back.isConnected) back.focus({ preventScroll: true });
       });
     };
