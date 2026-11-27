@@ -1,11 +1,37 @@
 import type { Metadata, Viewport } from "next";
 import { PendingNote } from "./pending-note";
 
+const description =
+  "A LinkedIn concept: spot a typo in the note you sent with a connection request, and fix it in place instead of withdrawing and waiting three weeks.";
+
+/* A page's openGraph and twitter replace the site's rather than merge, so they're complete here. */
+const image = {
+  url: "/pending-note/og.png",
+  width: 2400,
+  height: 1260,
+  alt: "A concept of LinkedIn's Sent invitations, with the note to Maya just fixed: “design” is highlighted and the note reads Edited.",
+};
+
 export const metadata: Metadata = {
   title: "LinkedIn: fix the note on a pending invite",
-  description:
-    "A LinkedIn concept: spot a typo in the note you sent with a connection request, and fix it in place instead of withdrawing and waiting three weeks.",
+  description,
   alternates: { canonical: "/pending-note" },
+  openGraph: {
+    title: "Fix the note on a pending invite: a LinkedIn concept",
+    description,
+    type: "website",
+    url: "/pending-note",
+    siteName: "Uzo Okafor",
+    locale: "en_US",
+    images: [image],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Fix the note on a pending invite: a LinkedIn concept",
+    description,
+    creator: "@uzodev",
+    images: [image.url],
+  },
 };
 
 // The phone screens reach under the notch and the home indicator.
