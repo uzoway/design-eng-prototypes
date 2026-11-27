@@ -54,6 +54,8 @@ export type NoteBoxProps = {
   draft?: string;
   closedError?: boolean;
   flash?: Flash | null;
+  /** Start open (the phone's Pending sheet shows the whole note). */
+  defaultExpanded?: boolean;
   /** Goes up to ask the box to open (the phone does this as its editor rises). */
   expandSerial?: number;
   /** Goes up to put focus back on Edit after a save or cancel. */
@@ -78,7 +80,7 @@ export function NoteBox(props: NoteBoxProps) {
   const editable = isEditable(invite, now);
   const phone = variant === "phone";
 
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(props.defaultExpanded ?? false);
   const [collapsing, setCollapsing] = useState(false);
   /** How much of the note fits in two lines with "…show more"; null when it all fits. */
   const [cut, setCut] = useState<number | null>(null);

@@ -242,15 +242,17 @@ export function BackIcon() {
   );
 }
 
+/** The Invitation Manager's settings cog: eight teeth and a hub, in 1.5 contours. */
 export function GearIcon() {
   return (
     <Svg>
       <path
-        fill="currentColor"
-        fillRule="evenodd"
-        clipRule="evenodd"
-        d="M13.73 2.5 14.4 5a7.3 7.3 0 0 1 1.62.94l2.5-.68 1.73 3-1.83 1.82a7.4 7.4 0 0 1 0 1.86l1.83 1.82-1.73 3-2.5-.68a7.3 7.3 0 0 1-1.62.94l-.67 2.48h-3.46L9.6 19a7.3 7.3 0 0 1-1.62-.94l-2.5.68-1.73-3 1.83-1.82a7.4 7.4 0 0 1 0-1.86L3.75 10.24l1.73-3 2.5.68A7.3 7.3 0 0 1 9.6 7l.67-2.5zM11.42 4l-.6 2.2-.66.24a5.8 5.8 0 0 0-1.9 1.1l-.53.45-2.2-.6-.58 1 1.62 1.61-.13.69a5.9 5.9 0 0 0 0 2.2l.13.69-1.62 1.61.58 1 2.2-.6.53.45a5.8 5.8 0 0 0 1.9 1.1l.66.24.6 2.2h1.16l.6-2.2.66-.24a5.8 5.8 0 0 0 1.9-1.1l.53-.45 2.2.6.58-1-1.62-1.61.13-.69a5.9 5.9 0 0 0 0-2.2l-.13-.69 1.62-1.61-.58-1-2.2.6-.53-.45a5.8 5.8 0 0 0-1.9-1.1l-.66-.24-.6-2.2zM12 8.75a3.25 3.25 0 1 1 0 6.5 3.25 3.25 0 0 1 0-6.5m0 1.5a1.75 1.75 0 1 0 0 3.5 1.75 1.75 0 0 0 0-3.5"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+        d="M10.02 5.08 10.58 3.01A9.1 9.1 0 0 1 13.42 3.01L13.98 5.08A7.2 7.2 0 0 1 15.49 5.7L17.35 4.64A9.1 9.1 0 0 1 19.36 6.65L18.3 8.51A7.2 7.2 0 0 1 18.92 10.02L20.99 10.58A9.1 9.1 0 0 1 20.99 13.42L18.92 13.98A7.2 7.2 0 0 1 18.3 15.49L19.36 17.35A9.1 9.1 0 0 1 17.35 19.36L15.49 18.3A7.2 7.2 0 0 1 13.98 18.92L13.42 20.99A9.1 9.1 0 0 1 10.58 20.99L10.02 18.92A7.2 7.2 0 0 1 8.51 18.3L6.65 19.36A9.1 9.1 0 0 1 4.64 17.35L5.7 15.49A7.2 7.2 0 0 1 5.08 13.98L3.01 13.42A9.1 9.1 0 0 1 3.01 10.58L5.08 10.02A7.2 7.2 0 0 1 5.7 8.51L4.64 6.65A9.1 9.1 0 0 1 6.65 4.64L8.51 5.7A7.2 7.2 0 0 1 10.02 5.08Z"
       />
+      <circle cx="12" cy="12" r="3.1" stroke="currentColor" strokeWidth="1.5" />
     </Svg>
   );
 }
@@ -346,6 +348,67 @@ export function BatteryIcon() {
       <rect x="0.5" y="0.5" width="22.6" height="12" rx="3.8" fill="none" stroke="currentColor" strokeOpacity="0.36" />
       <rect x="2" y="2" width="19.6" height="9" rx="2.5" fill="currentColor" />
       <path d="M24.6 4.4v4.2a2.3 2.3 0 000-4.2z" fill="currentColor" fillOpacity="0.4" />
+    </svg>
+  );
+}
+
+export function ShiftIcon({ on }: { on: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M12 3.6a.9.9 0 01.66.29l7.4 8.1a.8.8 0 01-.6 1.34h-3.86v5.67a1.4 1.4 0 01-1.4 1.4H9.8a1.4 1.4 0 01-1.4-1.4v-5.67H4.54a.8.8 0 01-.6-1.34l7.4-8.1A.9.9 0 0112 3.6z"
+        fill={on ? "currentColor" : "none"}
+        stroke="currentColor"
+        strokeWidth={on ? 0 : 1.6}
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function DeleteKeyIcon() {
+  return (
+    <svg viewBox="0 0 28 22" fill="none" aria-hidden="true">
+      <path
+        d="M9.2 3.2h14.2a2.4 2.4 0 012.4 2.4v10.8a2.4 2.4 0 01-2.4 2.4H9.2a1.6 1.6 0 01-1.2-.55L2.5 11.8a1.2 1.2 0 010-1.6L8 3.75a1.6 1.6 0 011.2-.55z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      <path d="M12.6 7.6l6.8 6.8M19.4 7.6l-6.8 6.8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function GlobeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="9.2" stroke="currentColor" strokeWidth="1.5" />
+      <path
+        d="M2.8 12h18.4M12 2.8c2.6 2.6 3.9 5.7 3.9 9.2s-1.3 6.6-3.9 9.2M12 2.8C9.4 5.4 8.1 8.5 8.1 12s1.3 6.6 3.9 9.2M4.6 6.6h14.8M4.6 17.4h14.8"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      />
+    </svg>
+  );
+}
+
+export function DictationIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="8.4" y="2.2" width="7.2" height="12.6" rx="3.6" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M5 11.4a7 7 0 0014 0M12 18.4v3.2M8.6 21.6h6.8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function EmojiKeyIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="9.4" fill="currentColor" />
+      <circle cx="9" cy="9.6" r="1.25" fill="var(--pn-key-fn, #abb0ba)" />
+      <circle cx="15" cy="9.6" r="1.25" fill="var(--pn-key-fn, #abb0ba)" />
+      <path d="M6.9 13.2h10.2a5.1 5.1 0 01-10.2 0z" fill="var(--pn-key-fn, #abb0ba)" />
     </svg>
   );
 }

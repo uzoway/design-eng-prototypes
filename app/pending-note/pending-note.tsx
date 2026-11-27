@@ -51,9 +51,11 @@ function useLayout(device: boolean) {
   );
 }
 
-export type Surface = "row" | "dialog" | "sheet";
+/** Where the note was being edited from: a Sent row, or the profile's Pending dialog (a sheet on the phone). */
+export type Surface = "row" | "dialog";
 export type Editing = { id: string; surface: Surface; draft: string; session: number };
 export type Screen = "sent" | "profile";
+export type DialogState = null | { kind: "withdraw"; id: string } | { kind: "pending" };
 
 export function PendingNote() {
   const [run, setRun] = useState(0);
@@ -71,6 +73,37 @@ function Demo({ onReset }: { onReset: () => void }) {
   const free = useHtmlFlag("data-pn-free");
   const startOnProfile = useHtmlFlag("data-pn-profile");
   const layout = useLayout(device);
+
+  // The flags can only be read on the client, so the state starts once they're known.
+  if (layout === null) return <div data-pn-root data-pn-blank />;
+
+  return (
+    <App
+      device={device}
+      expire={expire}
+      free={free}
+      startOnProfile={startOnProfile}
+      layout={layout}
+      onReset={onReset}
+    />
+  );
+}
+
+function App({
+  device,
+  expire,
+  free,
+  startOnProfile,
+  layout,
+  onReset,
+}: {
+  device: boolean;
+  expire: boolean;
+  free: boolean;
+  startOnProfile: boolean;
+  layout: "phone" | "desktop";
+  onReset: () => void;
+}) {
   const reduced = useReducedMotion() ?? false;
   const limit = free ? FREE_NOTE_LIMIT : NOTE_LIMIT;
 
@@ -83,7 +116,7 @@ function Demo({ onReset }: { onReset: () => void }) {
   const [copied, setCopied] = useState(false);
   const [flash, setFlash] = useState<(Flash & { id: string }) | null>(null);
   const [focus, setFocus] = useState({ id: "", serial: 0 });
-  const [dialog, setDialog] = useState<null | { kind: "withdraw"; id: string } | { kind: "pending" }>(null);
+  const [dialog, setDialog] = useState<DialogState>(null);
   const [announcement, setAnnouncement] = useState("");
 
   const session = useRef(0);
@@ -169,11 +202,11 @@ function Demo({ onReset }: { onReset: () => void }) {
       id: invite.id,
       spans,
       serial: (current?.serial ?? 0) + 1,
-      delay: editing.surface === "sheet" ? 0.42 : 0,
+      delay: layout === "phone" && !reduced ? 0.42 : 0,
     }));
     setFocus((current) => ({ id: `${editing.surface}:${invite.id}`, serial: current.serial + 1 }));
     say(`Note updated. ${invite.firstName} will see it as edited.`);
-  }, [editing, invites, say]);
+  }, [editing, invites, layout, reduced, say]);
 
   const copy = useCallback(() => {
     if (!editing) return;
@@ -253,13 +286,20 @@ function Demo({ onReset }: { onReset: () => void }) {
     setDialog(null);
   };
 
+  const withdrawPending = () => {
+    if (!subject) return;
+
+    const id = subject.id;
+
+    closePending();
+    later(reduced ? 0 : 140, () => remove(id));
+  };
+
   const showScreen = (next: Screen) => {
     if (editing) setEditing(null);
     setScreen(next);
     window.scrollTo(0, 0);
   };
-
-  if (layout === null) return <div data-pn-root data-pn-blank />;
 
   const live = (
     <p className="pn-sr-only" role="status" aria-live="polite">
@@ -277,6 +317,7 @@ function Demo({ onReset }: { onReset: () => void }) {
           limit={limit}
           free={free}
           invites={invites}
+          subject={subject}
           screen={screen}
           onScreen={setScreen}
           editing={editing}
@@ -284,12 +325,18 @@ function Demo({ onReset }: { onReset: () => void }) {
           copied={copied}
           flash={flash}
           focus={focus}
+          dialog={dialog}
+          onOpenWithdraw={openWithdraw}
+          onConfirmWithdraw={confirmWithdraw}
+          onCloseDialog={closePending}
+          onOpenPending={() => setDialog({ kind: "pending" })}
+          onWithdrawPending={withdrawPending}
+          withdrawReturn={() => withdrawReturn.current}
           onEdit={startEdit}
           onDraft={changeDraft}
           onCancel={cancel}
           onSave={save}
           onCopy={copy}
-          onWithdraw={remove}
           onReset={onReset}
         />
         {live}
@@ -354,14 +401,7 @@ function Demo({ onReset }: { onReset: () => void }) {
                 <button type="button" data-pn-button="secondary" onClick={closePending}>
                   Cancel
                 </button>
-                <button
-                  type="button"
-                  data-pn-button="primary"
-                  onClick={() => {
-                    closePending();
-                    later(reduced ? 0 : 140, () => remove(subject.id));
-                  }}
-                >
+                <button type="button" data-pn-button="primary" onClick={withdrawPending}>
                   Withdraw
                 </button>
               </>
