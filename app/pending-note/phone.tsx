@@ -67,6 +67,10 @@ const NONE = { duration: 0 };
  * landed in the first frames, and on a slow phone the slide lurched forward and then crawled.
  */
 const COVERED = { transform: "translateY(0%)" };
+const BELOW = "translateY(100%)";
+/* With reduced motion, overlays fade in place instead of cutting, the way iOS dissolves them with Reduce Motion on. */
+const FADE_IN = { duration: 0.2, ease: EASE_OUT };
+const FADE_OUT = { duration: 0.15, ease: EASE_OUT };
 
 const FOCUSABLE =
   'button:not([disabled]), [href], input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -845,17 +849,17 @@ function Sheet({
           data-pn-sheet-scrim
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          exit={{ opacity: 0, transition: reduced ? NONE : SHEET_OUT }}
-          transition={reduced ? NONE : SHEET_IN}
+          exit={{ opacity: 0, transition: reduced ? FADE_OUT : SHEET_OUT }}
+          transition={reduced ? FADE_IN : SHEET_IN}
           onClick={onClose}
         />
       </motion.div>
       <motion.div
         data-pn-sheet-slide
-        initial={{ transform: "translateY(100%)" }}
-        animate={COVERED}
-        exit={{ transform: "translateY(100%)", transition: reduced ? NONE : SHEET_OUT }}
-        transition={reduced ? NONE : SHEET_IN}
+        initial={reduced ? { ...COVERED, opacity: 0 } : { transform: BELOW, opacity: 1 }}
+        animate={{ ...COVERED, opacity: 1 }}
+        exit={reduced ? { opacity: 0, transition: FADE_OUT } : { transform: BELOW, transition: SHEET_OUT }}
+        transition={reduced ? FADE_IN : SHEET_IN}
       >
         <motion.div
           ref={ref}
@@ -1163,10 +1167,10 @@ function Editor({
       aria-labelledby={titleId}
       inert={blocked}
       style={viewport ? { height: viewport } : undefined}
-      initial={{ transform: "translateY(100%)" }}
-      animate={COVERED}
-      exit={{ transform: "translateY(100%)", transition: reduced ? NONE : EDITOR_OUT }}
-      transition={reduced ? NONE : EDITOR_IN}
+      initial={reduced ? { ...COVERED, opacity: 0 } : { transform: BELOW, opacity: 1 }}
+      animate={{ ...COVERED, opacity: 1 }}
+      exit={reduced ? { opacity: 0, transition: FADE_OUT } : { transform: BELOW, transition: EDITOR_OUT }}
+      transition={reduced ? FADE_IN : EDITOR_IN}
       onAnimationComplete={(definition) => {
         // Called for the exit too; only the slide in covers the page.
         const target = typeof definition === "object" && definition !== null ? definition : {};

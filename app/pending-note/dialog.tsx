@@ -157,9 +157,13 @@ export function Dialog({
     }
   };
 
-  const fade = reduced ? { duration: 0 } : { duration: 0.2, ease: "easeOut" as const };
-  const enter = reduced ? { duration: 0 } : { duration: 0.22, ease: EASE_OUT };
-  const leave = reduced ? { duration: 0 } : { duration: 0.15, ease: [0.4, 0, 1, 1] as const };
+  // The dialog answers a click, so it leaves fast from its first frame (ease-out, not ease-in). With reduced
+  // motion it still fades, it just doesn't move.
+  const fade = { duration: 0.2, ease: EASE_OUT };
+  const enter = reduced ? fade : { duration: 0.22, ease: EASE_OUT };
+  const leave = { duration: 0.15, ease: EASE_OUT };
+  const rise = reduced ? 0 : 16;
+  const sink = reduced ? 0 : 8;
 
   return createPortal(
     <div data-pn-portal data-pn-desktop>
@@ -179,9 +183,9 @@ export function Dialog({
           role="dialog"
           aria-modal="true"
           aria-labelledby={titleId}
-          initial={{ opacity: 0, y: 16 }}
+          initial={{ opacity: 0, y: rise }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 8, transition: leave }}
+          exit={{ opacity: 0, y: sink, transition: leave }}
           transition={enter}
           onKeyDown={handleKeyDown}
         >
