@@ -1,0 +1,1139 @@
+/*
+ * LinkedIn on the desktop. The type values were measured on linkedin.com
+ * (26 Nov 2026, Chrome); the layout and the dialog from Uzo's screenshots in
+ * briefs/refs/linkedin-pending-note/desktop (a 1710px window, so ×1.1385):
+ * a 792px main column and a 300px rail, 72px avatars on 96px rows, a 320px
+ * confirm dialog with 32px pill buttons over a 75% black scrim. The top bar's
+ * values come from app/linkedin-nav.
+ */
+
+[data-pn-root],
+[data-pn-portal] {
+  --pn-font: system-ui, -apple-system, "system-ui", "Segoe UI", Roboto, Ubuntu, Oxygen, Cantarell, "Fira Sans",
+    "Droid Sans", "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  --pn-page: #f4f2ee;
+  --pn-card: #fff;
+  --pn-strong: rgba(0, 0, 0, 0.9);
+  --pn-text: rgba(0, 0, 0, 0.75);
+  --pn-muted: rgba(0, 0, 0, 0.6);
+  --pn-border: rgba(140, 140, 140, 0.2);
+  --pn-card-ring: 0 0 0 1px rgba(140, 140, 140, 0.2);
+  --pn-blue: #0a66c2;
+  --pn-blue-hover: #004182;
+  --pn-blue-active: #09223b;
+  --pn-blue-tint: rgba(112, 181, 249, 0.2);
+  --pn-green: rgb(1, 117, 79);
+  --pn-red: #cc1016;
+  --pn-badge: #cb112d;
+  --pn-hover: rgba(140, 140, 140, 0.15);
+  --pn-press: rgba(140, 140, 140, 0.3);
+  --pn-focus: rgba(0, 0, 0, 0.9);
+  --pn-disabled-bg: rgba(0, 0, 0, 0.08);
+  --pn-disabled-text: rgba(0, 0, 0, 0.3);
+  /* The changed-word highlight: LinkedIn's soft blue selection tint read better than its green on white. */
+  --pn-flash: rgba(112, 181, 249, 0.38);
+
+  color-scheme: light;
+  color: var(--pn-strong);
+  font: 400 14px/17.5px var(--pn-font);
+}
+
+[data-pn-root] {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--pn-page);
+}
+
+/* LinkedIn keeps the browser's default smoothing; the site sets antialiased. */
+[data-pn-desktop] {
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
+}
+
+[data-pn-root] *,
+[data-pn-root] *::before,
+[data-pn-root] *::after,
+[data-pn-portal] *,
+[data-pn-portal] *::before,
+[data-pn-portal] *::after {
+  box-sizing: border-box;
+}
+
+:is([data-pn-root], [data-pn-portal]) :where(h1, h2, h3, p, ul, ol) {
+  margin: 0;
+  padding: 0;
+}
+
+:is([data-pn-root], [data-pn-portal]) :where(ul, ol) {
+  list-style: none;
+}
+
+:is([data-pn-root], [data-pn-portal]) :where(button) {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:is([data-pn-root], [data-pn-portal]) :where(button):disabled {
+  cursor: default;
+}
+
+:is([data-pn-root], [data-pn-portal]) :where(img) {
+  display: block;
+}
+
+:is([data-pn-root], [data-pn-portal]) :focus {
+  outline: none;
+}
+
+:is([data-pn-root], [data-pn-portal]) :focus-visible {
+  outline: 2px solid var(--pn-focus);
+  outline-offset: 2px;
+}
+
+.pn-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Top bar                                                                    */
+/* -------------------------------------------------------------------------- */
+
+[data-pn-bar] {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  height: 52px;
+  background: var(--pn-card);
+  border-bottom: 1px solid var(--pn-border);
+}
+
+[data-pn-bar-inner] {
+  display: flex;
+  align-items: center;
+  max-width: 1128px;
+  height: 52px;
+  margin: 0 auto;
+}
+
+[data-pn-logo] {
+  flex: none;
+  display: block;
+  width: 34px;
+  height: 34px;
+  border-radius: 4px;
+}
+
+[data-pn-search] {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 280px;
+  height: 34px;
+  margin-left: 8px;
+  padding: 0 12px 0 36px;
+  border: 1px solid rgba(0, 0, 0, 0.3);
+  border-radius: 17px;
+  background: var(--pn-card);
+  color: var(--pn-muted);
+  font: 400 14px/17.5px var(--pn-font);
+  cursor: text;
+}
+
+[data-pn-search] svg {
+  position: absolute;
+  left: 14px;
+  color: rgba(0, 0, 0, 0.75);
+}
+
+[data-pn-nav] {
+  display: flex;
+  height: 52px;
+  margin-left: auto;
+}
+
+[data-pn-nav-item] {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 80px;
+  height: 52px;
+  color: rgba(0, 0, 0, 0.75);
+  font: 400 12px/15px var(--pn-font);
+  white-space: nowrap;
+  transition: color 167ms ease;
+}
+
+[data-pn-nav-item][data-wide] {
+  width: auto;
+  padding: 0 12px;
+}
+
+[data-pn-nav-item][aria-current="page"] {
+  color: var(--pn-strong);
+}
+
+[data-pn-nav-item][aria-current="page"]::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  background: rgb(26, 26, 26);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  [data-pn-nav-item]:hover {
+    color: var(--pn-strong);
+  }
+}
+
+[data-pn-nav-item]:focus-visible {
+  outline-offset: -2px;
+  border-radius: 4px;
+}
+
+[data-pn-nav-icon-box] {
+  position: relative;
+  display: block;
+  width: 24px;
+  height: 24px;
+  margin-top: 6px;
+}
+
+[data-pn-nav-icon-box] svg {
+  display: block;
+}
+
+[data-pn-nav-label] {
+  display: flex;
+  align-items: flex-start;
+  height: 16px;
+}
+
+[data-pn-nav-label] [data-pn-caret] {
+  margin-top: -1px;
+}
+
+[data-pn-nav-avatar] {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+}
+
+[data-pn-dot] {
+  position: absolute;
+  top: -2px;
+  left: 16px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--pn-badge);
+}
+
+[data-pn-dot]::after {
+  content: "";
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #fff;
+}
+
+[data-pn-nav-rule] {
+  align-self: stretch;
+  width: 1px;
+  margin: 0 0 0 0;
+  background: var(--pn-border);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Layout                                                                     */
+/* -------------------------------------------------------------------------- */
+
+[data-pn-layout] {
+  display: grid;
+  grid-template-columns: minmax(0, 792px) 300px;
+  justify-content: space-between;
+  column-gap: 28px;
+  max-width: 1128px;
+  margin: 24px auto 0;
+  padding-bottom: 32px;
+}
+
+@media (max-width: 1176px) {
+  [data-pn-layout] {
+    grid-template-columns: minmax(0, 1fr) 300px;
+    column-gap: 24px;
+    padding: 0 24px 32px;
+  }
+
+  [data-pn-bar-inner] {
+    padding: 0 24px;
+  }
+}
+
+@media (max-width: 960px) {
+  [data-pn-layout] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  [data-pn-rail] {
+    display: none;
+  }
+
+  [data-pn-nav-item][data-wide],
+  [data-pn-nav-rule] {
+    display: none;
+  }
+}
+
+[data-pn-card] {
+  border-radius: 8px;
+  background: var(--pn-card);
+  box-shadow: var(--pn-card-ring);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Sent tab                                                                   */
+/* -------------------------------------------------------------------------- */
+
+/* The title and tabs are one card; the list hangs under it as another. */
+[data-pn-manage] {
+  border-radius: 8px 8px 0 0;
+}
+
+[data-pn-manage-title] {
+  height: 44px;
+  padding: 12px 20px 0;
+  color: var(--pn-strong);
+  font: 400 18px/22.5px var(--pn-font);
+}
+
+[data-pn-tabs] {
+  display: flex;
+  height: 48px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--pn-border);
+}
+
+[data-pn-tab] {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 48px;
+  padding: 0 16px;
+  color: var(--pn-muted);
+  font: 600 16px/20px var(--pn-font);
+}
+
+[data-pn-tab][aria-selected="true"] {
+  color: var(--pn-green);
+}
+
+[data-pn-tab][aria-selected="true"]::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  background: var(--pn-green);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  [data-pn-tab][aria-selected="false"]:hover {
+    color: var(--pn-strong);
+    background: var(--pn-hover);
+  }
+}
+
+[data-pn-tab]:focus-visible {
+  outline-offset: -2px;
+  border-radius: 4px;
+}
+
+[data-pn-list] {
+  border-radius: 0 0 8px 8px;
+}
+
+[data-pn-filter] {
+  display: flex;
+  align-items: center;
+  height: 48px;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--pn-border);
+}
+
+[data-pn-pill] {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 12px;
+  border-radius: 12px;
+  background: var(--pn-green);
+  color: #fff;
+  font: 600 14px/17.5px var(--pn-font);
+}
+
+[data-pn-rows] {
+  overflow: clip;
+}
+
+/* A removed row collapses inside this wrapper, so its border goes with it. */
+[data-pn-row-wrap] {
+  overflow: clip;
+}
+
+[data-pn-row-wrap]:not(:last-child) [data-pn-row] {
+  border-bottom: 1px solid var(--pn-border);
+}
+
+[data-pn-row] {
+  padding: 12px 12px 12px 12px;
+}
+
+[data-pn-row-main] {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+[data-pn-avatar] {
+  flex: none;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+}
+
+[data-pn-avatar-link] {
+  flex: none;
+  display: block;
+  border-radius: 50%;
+}
+
+[data-pn-row-text] {
+  flex: 1;
+  min-width: 0;
+}
+
+[data-pn-name] {
+  display: block;
+  overflow: hidden;
+  color: var(--pn-strong);
+  font: 600 16px/20px var(--pn-font);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+a[data-pn-name],
+button[data-pn-name] {
+  max-width: 100%;
+  width: fit-content;
+  text-decoration: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  a[data-pn-name]:hover,
+  button[data-pn-name]:hover {
+    color: var(--pn-blue);
+    text-decoration: underline;
+  }
+}
+
+[data-pn-headline] {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--pn-muted);
+  font: 400 14px/17.5px var(--pn-font);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow-wrap: anywhere;
+}
+
+[data-pn-sent] {
+  color: var(--pn-muted);
+  font: 400 12px/15px var(--pn-font);
+}
+
+/* LinkedIn's muted tertiary button. */
+[data-pn-withdraw] {
+  flex: none;
+  height: 32px;
+  padding: 0 8px;
+  border-radius: 4px;
+  color: var(--pn-text);
+  font: 600 16px/20px var(--pn-font);
+  transition: background-color 167ms ease, color 167ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  [data-pn-withdraw]:hover {
+    background: var(--pn-hover);
+    color: var(--pn-strong);
+  }
+}
+
+[data-pn-withdraw]:active {
+  background: var(--pn-press);
+  color: var(--pn-strong);
+}
+
+[data-pn-row] [data-pn-note] {
+  margin: 8px 0 0 80px;
+}
+
+/* -------------------------------------------------------------------------- */
+/* The note box                                                               */
+/* -------------------------------------------------------------------------- */
+
+[data-pn-note] {
+  position: relative;
+  padding: 8px 8px 8px 12px;
+  border-radius: 8px;
+  background: var(--pn-card);
+  box-shadow: 0 0 0 1px rgba(140, 140, 140, 0.2);
+  color: var(--pn-strong);
+  font: 400 12px/15px var(--pn-font);
+  transition: box-shadow 167ms ease;
+}
+
+/* LinkedIn's text-field focus: a 2px dark ring. */
+[data-pn-note][data-editing] {
+  box-shadow: 0 0 0 2px var(--pn-strong);
+}
+
+[data-pn-note-clip] {
+  overflow: clip;
+}
+
+[data-pn-note-body] {
+  position: relative;
+  padding-right: 24px;
+}
+
+[data-pn-note-text],
+[data-pn-note-input] {
+  display: block;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: var(--pn-strong);
+  font: inherit;
+  letter-spacing: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+[data-pn-note-text] {
+  position: relative;
+  z-index: 1;
+}
+
+[data-pn-note-mirror] {
+  visibility: hidden;
+}
+
+[data-pn-note-input] {
+  position: absolute;
+  top: 0;
+  right: 24px;
+  bottom: 0;
+  left: 0;
+  z-index: 1;
+  width: calc(100% - 24px);
+  height: 100%;
+  overflow: hidden;
+  background: transparent;
+  outline: none;
+  resize: none;
+  caret-color: var(--pn-strong);
+  cursor: text;
+}
+
+[data-pn-note-input]:focus-visible {
+  outline: none;
+}
+
+/* Measures how much of the note fits in two lines; never seen. */
+[data-pn-note-text][data-pn-note-probe] {
+  position: absolute;
+  top: 0;
+  right: 24px;
+  left: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+[data-pn-more] {
+  color: var(--pn-muted);
+  font: inherit;
+  white-space: nowrap;
+}
+
+[data-pn-flash-layer] {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+[data-pn-flash] {
+  position: absolute;
+  border-radius: 3px;
+  background: var(--pn-flash);
+}
+
+/* Footers ------------------------------------------------------------------- */
+
+[data-pn-foot-clip] {
+  position: relative;
+  overflow: clip;
+}
+
+/* A footer on its way out is lifted out of the flow, so the next one takes its place. */
+[data-pn-foot][data-leaving] {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+[data-pn-foot="read"] {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding-top: 3px;
+  padding-right: 4px;
+}
+
+[data-pn-foot-group] {
+  display: inline-flex;
+  align-items: center;
+}
+
+[data-pn-foot-sep] {
+  color: var(--pn-muted);
+  white-space: pre;
+}
+
+[data-pn-edited] {
+  color: var(--pn-muted);
+}
+
+[data-pn-text-button] {
+  position: relative;
+  color: var(--pn-muted);
+  font: inherit;
+  white-space: nowrap;
+  border-radius: 2px;
+}
+
+[data-pn-text-button][data-strong] {
+  font-weight: 600;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  [data-pn-text-button]:hover,
+  [data-pn-more]:hover {
+    color: var(--pn-strong);
+    text-decoration: underline;
+  }
+}
+
+[data-pn-text-button]:active,
+[data-pn-more]:active {
+  color: var(--pn-strong);
+}
+
+[data-pn-foot="edit"] {
+  display: flex;
+  align-items: center;
+  gap: 8px 12px;
+  padding-top: 8px;
+}
+
+[data-pn-window] {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--pn-muted);
+  text-wrap: pretty;
+}
+
+[data-pn-window][data-error] {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  color: var(--pn-red);
+}
+
+[data-pn-window][data-error] svg {
+  flex: none;
+  margin-top: -0.5px;
+}
+
+[data-pn-actions] {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+[data-pn-counter] {
+  margin-right: 4px;
+  color: var(--pn-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+[data-pn-counter][data-over] {
+  color: var(--pn-red);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Buttons                                                                    */
+/* -------------------------------------------------------------------------- */
+
+[data-pn-button] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 32px;
+  padding: 0 16px;
+  border-radius: 16px;
+  font: 600 16px/20px var(--pn-font);
+  white-space: nowrap;
+  transition: background-color 167ms ease, box-shadow 167ms ease, color 167ms ease;
+}
+
+[data-pn-button="primary"] {
+  background: var(--pn-blue);
+  color: #fff;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  [data-pn-button="primary"]:not(:disabled):hover {
+    background: var(--pn-blue-hover);
+  }
+}
+
+[data-pn-button="primary"]:not(:disabled):active {
+  background: var(--pn-blue-active);
+}
+
+[data-pn-button="primary"]:disabled {
+  background: var(--pn-disabled-bg);
+  color: var(--pn-disabled-text);
+}
+
+[data-pn-button="secondary"] {
+  box-shadow: inset 0 0 0 1px var(--pn-blue);
+  color: var(--pn-blue);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  [data-pn-button="secondary"]:hover {
+    background: rgba(112, 181, 249, 0.1);
+    box-shadow: inset 0 0 0 2px var(--pn-blue);
+    color: var(--pn-blue-hover);
+  }
+}
+
+[data-pn-button="secondary"]:active {
+  background: var(--pn-blue-tint);
+  box-shadow: inset 0 0 0 2px var(--pn-blue-hover);
+  color: var(--pn-blue-active);
+}
+
+/* The grey outline LinkedIn uses for Pending and More on a profile. */
+[data-pn-button="muted"] {
+  box-shadow: inset 0 0 0 1px var(--pn-text);
+  color: var(--pn-text);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  [data-pn-button="muted"]:hover {
+    background: var(--pn-hover);
+    box-shadow: inset 0 0 0 2px var(--pn-text);
+    color: var(--pn-strong);
+  }
+}
+
+[data-pn-button="muted"]:active {
+  background: var(--pn-press);
+  box-shadow: inset 0 0 0 2px var(--pn-strong);
+  color: var(--pn-strong);
+}
+
+[data-pn-button][data-size="small"] {
+  height: 24px;
+  padding: 0 12px;
+  border-radius: 12px;
+  font: 600 14px/17.5px var(--pn-font);
+}
+
+[data-pn-button][data-size="small"] svg {
+  margin-left: -2px;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Rail                                                                       */
+/* -------------------------------------------------------------------------- */
+
+[data-pn-rail] {
+  min-width: 0;
+}
+
+[data-pn-footer] {
+  padding: 8px 24px 0;
+  color: var(--pn-muted);
+  font: 400 12px/15px var(--pn-font);
+  text-align: center;
+}
+
+[data-pn-footer-links] {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 16px;
+}
+
+[data-pn-footer-links] span {
+  display: inline-flex;
+  align-items: center;
+}
+
+[data-pn-footer-mark] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 16px;
+  color: var(--pn-strong);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Profile                                                                    */
+/* -------------------------------------------------------------------------- */
+
+[data-pn-profile] {
+  position: relative;
+  overflow: clip;
+  padding-bottom: 24px;
+}
+
+[data-pn-cover] {
+  height: 198px;
+  background:
+    radial-gradient(120% 140% at 12% 110%, #c9d8e6 0%, rgba(201, 216, 230, 0) 55%),
+    radial-gradient(90% 120% at 85% -10%, #f1e3c8 0%, rgba(241, 227, 200, 0) 60%),
+    linear-gradient(115deg, #dfe8ee 0%, #e9e4dc 55%, #efe3d3 100%);
+}
+
+[data-pn-profile-photo] {
+  position: absolute;
+  top: 102px;
+  left: 24px;
+  width: 160px;
+  height: 160px;
+  padding: 4px;
+  border-radius: 50%;
+  background: var(--pn-card);
+}
+
+[data-pn-profile-photo] img {
+  width: 152px;
+  height: 152px;
+  border-radius: 50%;
+}
+
+[data-pn-profile-tools] {
+  display: flex;
+  justify-content: flex-end;
+  height: 48px;
+  padding: 16px 24px 0;
+  color: var(--pn-text);
+}
+
+[data-pn-profile-body] {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 232px;
+  gap: 24px;
+  margin-top: 46px;
+  padding: 0 24px;
+}
+
+[data-pn-profile-name] {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font: 600 24px/30px var(--pn-font);
+}
+
+[data-pn-profile-name] svg {
+  color: var(--pn-text);
+}
+
+[data-pn-degree] {
+  color: var(--pn-muted);
+  font: 400 14px/17.5px var(--pn-font);
+}
+
+[data-pn-profile-headline] {
+  margin-top: 2px;
+  font: 400 16px/20px var(--pn-font);
+}
+
+[data-pn-profile-meta] {
+  margin-top: 8px;
+  color: var(--pn-muted);
+  font: 400 14px/17.5px var(--pn-font);
+}
+
+[data-pn-contact] {
+  color: var(--pn-blue);
+  font-weight: 600;
+}
+
+[data-pn-connections] {
+  margin-top: 8px;
+  color: var(--pn-muted);
+}
+
+[data-pn-connections] b {
+  font-weight: 600;
+}
+
+[data-pn-mutual] {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  color: var(--pn-muted);
+  font: 400 14px/17.5px var(--pn-font);
+}
+
+[data-pn-mutual] img {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+}
+
+[data-pn-mutual] b {
+  color: var(--pn-text);
+  font-weight: 600;
+}
+
+[data-pn-profile-actions] {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+[data-pn-profile-actions] [data-pn-button] {
+  height: 32px;
+  padding: 0 16px;
+  font: 600 16px/20px var(--pn-font);
+}
+
+[data-pn-profile-orgs] {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 0;
+}
+
+[data-pn-org] {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: 600 14px/17.5px var(--pn-font);
+}
+
+[data-pn-org] svg {
+  flex: none;
+}
+
+[data-pn-section] {
+  margin-top: 8px;
+  padding: 20px 24px 24px;
+}
+
+[data-pn-section-title] {
+  font: 600 20px/25px var(--pn-font);
+}
+
+[data-pn-highlight] {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+[data-pn-highlight] h3 {
+  font: 600 14px/17.5px var(--pn-font);
+}
+
+[data-pn-highlight] p {
+  color: var(--pn-strong);
+  font: 400 14px/17.5px var(--pn-font);
+}
+
+[data-pn-highlight] [data-pn-button] {
+  margin-top: 8px;
+}
+
+[data-pn-about] {
+  margin-top: 12px;
+  font: 400 14px/20px var(--pn-font);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Dialogs                                                                    */
+/* -------------------------------------------------------------------------- */
+
+[data-pn-scrim] {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(0, 0, 0, 0.75);
+}
+
+[data-pn-dialog-frame] {
+  position: fixed;
+  inset: 0;
+  z-index: 51;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 32px 16px;
+  overflow-y: auto;
+  pointer-events: none;
+}
+
+[data-pn-dialog] {
+  width: 100%;
+  border-radius: 8px;
+  background: var(--pn-card);
+  box-shadow: 0 0 0 1px rgba(140, 140, 140, 0.2), 0 4px 12px rgba(0, 0, 0, 0.15);
+  pointer-events: auto;
+}
+
+[data-pn-dialog][data-size="confirm"] {
+  max-width: 320px;
+}
+
+[data-pn-dialog][data-size="medium"] {
+  max-width: 552px;
+}
+
+[data-pn-dialog-head] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 50px;
+  padding: 12px 12px 12px 24px;
+  border-bottom: 1px solid var(--pn-border);
+}
+
+[data-pn-dialog-title] {
+  font: 600 20px/25px var(--pn-font);
+}
+
+[data-pn-dialog-close] {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  margin-right: -2px;
+  border-radius: 50%;
+  color: var(--pn-text);
+  transition: background-color 167ms ease, color 167ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  [data-pn-dialog-close]:hover {
+    background: var(--pn-hover);
+    color: var(--pn-strong);
+  }
+}
+
+[data-pn-dialog-close]:active {
+  background: var(--pn-press);
+}
+
+[data-pn-dialog-body] {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--pn-border);
+  font: 400 12px/15px var(--pn-font);
+}
+
+[data-pn-dialog][data-size="medium"] [data-pn-dialog-body] {
+  font: 400 14px/17.5px var(--pn-font);
+}
+
+[data-pn-dialog-foot] {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 16px 24px;
+}
+
+[data-pn-note-label] {
+  margin-bottom: 8px;
+  font: 600 14px/17.5px var(--pn-font);
+}
+
+[data-pn-dialog-warning] {
+  margin-top: 16px;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Demo note                                                                  */
+/* -------------------------------------------------------------------------- */
+
+[data-pn-demo] {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px 40px;
+  color: rgba(0, 0, 0, 0.5);
+  font: 400 12px/16px var(--font-geist-sans), var(--pn-font);
+  -webkit-font-smoothing: antialiased;
+}
+
+[data-pn-reset] {
+  color: rgba(0, 0, 0, 0.62);
+  text-decoration: underline;
+  text-decoration-color: rgba(0, 0, 0, 0.25);
+  text-underline-offset: 2px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  [data-pn-reset]:hover {
+    color: rgba(0, 0, 0, 0.9);
+    text-decoration-color: currentColor;
+  }
+}
