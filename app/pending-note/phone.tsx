@@ -322,6 +322,71 @@ function PhoneNote({
 
 /* -------------------------------------------------------------------------- */
 /* Invitation Manager → Sent                                                  */
+/**
+ * iOS truncates a label at the character, so a long headline ends "Creati…",
+ * not at the last whole word as CSS line-clamp does. The visible copy is
+ * trimmed to fit before paint and again on resize; screen readers get it whole.
+ */
+function ClampedLine({ text, lines }: { text: string; lines: number }) {
+  const ref = useRef<HTMLSpanElement>(null);
+
+  useLayoutEffect(
+    function clamp() {
+      const element = ref.current;
+      const box = element?.parentElement;
+
+      if (!element || !box) return;
+
+      const range = document.createRange();
+      const fit = () => {
+        // Counts the lines the text lays out on, including any line-clamp hides.
+        const fits = (candidate: string) => {
+          element.textContent = candidate;
+          range.selectNodeContents(element);
+
+          const tops = new Set(Array.from(range.getClientRects(), (rect) => Math.round(rect.top)));
+
+          return tops.size <= lines;
+        };
+
+        if (fits(text)) return;
+
+        // The longest prefix that still fits on `lines` lines with the ellipsis.
+        let low = 0;
+        let high = text.length;
+
+        while (low < high) {
+          const middle = Math.ceil((low + high) / 2);
+
+          if (fits(text.slice(0, middle).trimEnd() + "…")) low = middle;
+          else high = middle - 1;
+        }
+
+        element.textContent = text.slice(0, low).trimEnd() + "…";
+      };
+
+      fit();
+
+      const observer = new ResizeObserver(fit);
+
+      observer.observe(box);
+      document.fonts?.ready.then(fit);
+
+      return () => observer.disconnect();
+    },
+    [text, lines],
+  );
+
+  return (
+    <p data-pn-prow-headline>
+      <span ref={ref} aria-hidden="true">
+        {text}
+      </span>
+      <span className="pn-sr-only">{text}</span>
+    </p>
+  );
+}
+
 /* -------------------------------------------------------------------------- */
 
 function SentScreen({
@@ -395,7 +460,7 @@ function SentScreen({
                       ) : (
                         <p data-pn-prow-name>{invite.name}</p>
                       )}
-                      <p data-pn-prow-headline>{invite.headline}</p>
+                      <ClampedLine text={invite.headline} lines={2} />
                       <p data-pn-prow-sent>{sentLabel(invite.sentAt, context.now)}</p>
                     </div>
                     <button
