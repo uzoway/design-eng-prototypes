@@ -1051,8 +1051,8 @@ button[data-pn-name] {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  min-height: 50px;
-  padding: 12px 12px 12px 24px;
+  min-height: 48px;
+  padding: 8px 12px 8px 24px;
   border-bottom: 1px solid var(--pn-border);
 }
 
@@ -1066,7 +1066,6 @@ button[data-pn-name] {
   place-items: center;
   width: 32px;
   height: 32px;
-  margin-right: -2px;
   border-radius: 50%;
   color: var(--pn-text);
   transition: background-color 167ms ease, color 167ms ease;
@@ -1089,6 +1088,10 @@ button[data-pn-name] {
   font: 400 12px/15px var(--pn-font);
 }
 
+[data-pn-dialog][data-size="confirm"] [data-pn-dialog-body] {
+  padding-right: 16px;
+}
+
 [data-pn-dialog][data-size="medium"] [data-pn-dialog-body] {
   font: 400 14px/17.5px var(--pn-font);
 }
@@ -1097,7 +1100,7 @@ button[data-pn-name] {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
-  padding: 16px 24px;
+  padding: 16px;
 }
 
 [data-pn-note-label] {
