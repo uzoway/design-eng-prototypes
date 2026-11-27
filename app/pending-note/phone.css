@@ -656,7 +656,20 @@
   left: 0;
   height: 1px;
   background: var(--pn-hair);
+  opacity: 0;
   transform-origin: top;
+  /* Fades with the profile push (PUSH in phone.tsx). */
+  transition: opacity 420ms var(--pn-ios);
+}
+
+[data-pn-tabbar][data-edge]::before {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-pn-tabbar]::before {
+    transition: none;
+  }
 }
 
 @media (min-resolution: 2dppx) {

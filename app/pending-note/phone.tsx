@@ -182,7 +182,7 @@ export function Phone(props: PhoneProps) {
         </motion.div>
       </div>
 
-      <TabBar inert={overlay} onNetwork={() => props.onScreen("sent")} />
+      <TabBar inert={overlay} edge={screen === "profile"} onNetwork={() => props.onScreen("sent")} />
 
       <AnimatePresence>
         {withdrawing && (
@@ -616,9 +616,10 @@ const TABS: { tab: NavTab | "post"; label: string }[] = [
   { tab: "jobs", label: "Jobs" },
 ];
 
-function TabBar({ inert, onNetwork }: { inert: boolean; onNetwork: () => void }) {
+/** `edge`: LinkedIn's iOS app draws the bar's top hairline on a profile but not on My Network or the Sent list (IMG_3152–3156). */
+function TabBar({ inert, edge, onNetwork }: { inert: boolean; edge: boolean; onNetwork: () => void }) {
   return (
-    <nav data-pn-tabbar aria-label="Primary" inert={inert}>
+    <nav data-pn-tabbar aria-label="Primary" inert={inert} data-edge={edge ? "" : undefined}>
       <ul data-pn-tabbar-items>
         {TABS.map(({ tab, label }) => (
           <li key={tab}>
