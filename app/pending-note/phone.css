@@ -800,15 +800,17 @@
   margin-top: 20px;
 }
 
+/* LinkedIn sizes the two buttons to their labels (Withdraw comes out wider) and stops 6pt short of the right inset (IMG_3155). */
 [data-pn-sheet-actions] {
   display: flex;
-  gap: 8.33px;
+  gap: 8px;
   margin-top: 19.67px;
+  margin-right: 6px;
 }
 
 [data-pn-sbtn] {
   display: flex;
-  flex: 1 1 0;
+  flex: 1 1 auto;
   align-items: center;
   justify-content: center;
   min-width: 0;
