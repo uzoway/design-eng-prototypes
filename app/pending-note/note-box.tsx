@@ -92,6 +92,7 @@ export function NoteBox(props: NoteBoxProps) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const editRef = useRef<HTMLButtonElement>(null);
   const footRef = useRef<HTMLDivElement>(null);
+  const copyRef = useRef<HTMLButtonElement>(null);
   const lineHeight = useRef(15);
 
   const open = expanded || editing || collapsing;
@@ -407,6 +408,20 @@ export function NoteBox(props: NoteBoxProps) {
   // Quiet except at 20 left, at the limit and over it.
   const spoken = editing ? counterAnnouncement(draft.length, limit) : "";
 
+  useEffect(
+    function focusCopy() {
+      const copy = copyRef.current;
+      const active = document.activeElement;
+
+      // Save is disabled under the pointer (or was never focused, in Safari), so focus would fall to the page.
+      if (!copy || !editing || !closedError) return;
+      if (!active || active === document.body || copy.closest("[data-pn-note]")?.contains(active)) {
+        copy.focus({ preventScroll: true });
+      }
+    },
+    [editing, closedError],
+  );
+
   const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === "Escape") {
       event.preventDefault();
@@ -578,7 +593,7 @@ export function NoteBox(props: NoteBoxProps) {
                     {draft.length}/{limit}
                   </span>
                   {closedError && (
-                    <button type="button" data-pn-button="secondary" onClick={props.onCopy}>
+                    <button ref={copyRef} type="button" data-pn-button="secondary" onClick={props.onCopy}>
                       {props.copied ? "Copied" : "Copy text"}
                     </button>
                   )}

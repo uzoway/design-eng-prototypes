@@ -770,6 +770,7 @@ function Editor({
   const mirrorRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const keyboardApi = useRef<KeyboardApi | null>(null);
+  const copyRef = useRef<HTMLButtonElement>(null);
   const titleId = useId();
   const lineId = useId();
   const viewport = useVisualViewport(!device);
@@ -779,6 +780,14 @@ function Editor({
   const over = draft.length > limit;
   const changed = normalize(draft) !== normalize(invite.note);
   const spoken = counterAnnouncement(draft.length, limit);
+
+  useEffect(
+    function focusCopy() {
+      // Save turns into Copy text. Safari never focused Save on tap, so focus is moved on purpose.
+      if (closedError) copyRef.current?.focus({ preventScroll: true });
+    },
+    [closedError],
+  );
 
   /* The caret, drawn in device mode so it's iOS's 2pt blue bar. -------------- */
 
@@ -1015,7 +1024,7 @@ function Editor({
 
       <div data-pn-editor-foot>
         {closedError ? (
-          <button type="button" data-pn-editor-save data-kind="outline" onClick={onCopy}>
+          <button ref={copyRef} type="button" data-pn-editor-save data-kind="outline" onClick={onCopy}>
             {copied ? "Copied" : "Copy text"}
           </button>
         ) : (
