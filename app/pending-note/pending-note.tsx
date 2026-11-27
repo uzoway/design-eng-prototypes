@@ -7,7 +7,9 @@ import {
   FREE_NOTE_LIMIT,
   isEditable,
   makeInvites,
+  minutesLeft,
   NOTE_LIMIT,
+  sentLabel,
   SUBJECT_ID,
   type Invite,
 } from "./data";
@@ -126,8 +128,25 @@ function App({
   const timers = useRef<number[]>([]);
   const withdrawReturn = useRef<HTMLElement | null>(null);
 
+  const invitesRef = useRef(invites);
+
   useEffect(() => {
-    const tick = window.setInterval(() => setNow(Date.now()), 1000);
+    invitesRef.current = invites;
+  }, [invites]);
+
+  useEffect(() => {
+    // Everything the clock drives reads in minutes or flips when an edit window closes, so it only moves when
+    // something on screen would change. A tick that re-rendered the whole prototype every second cost a frame
+    // on a slow phone whenever it landed mid-animation.
+    const shown = (at: number) =>
+      invitesRef.current
+        .map((invite) => [sentLabel(invite.sentAt, at), isEditable(invite, at), minutesLeft(invite, at)])
+        .join();
+    const tick = window.setInterval(() => {
+      const at = Date.now();
+
+      setNow((current) => (shown(at) === shown(current) ? current : at));
+    }, 1000);
     const pending = timers.current;
 
     return () => {
