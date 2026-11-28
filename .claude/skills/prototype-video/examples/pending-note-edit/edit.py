@@ -10,11 +10,15 @@ v2 shape (Uzo): the whole LinkedIn window for a second, push in on Maya's card, 
 camera still, the note folded back, the cursor gone, pull back out to the window, loop. The pointer
 hides while typing, as macOS does, and comes back when the hand moves to Save.
 
-    WIDTH=1440 ~/.cache/prototype-video/venv/bin/python .claude/skills/prototype-video/examples/pending-note-edit/edit.py [--stills]
+    WIDTH=1180 ~/.cache/prototype-video/venv/bin/python .claude/skills/prototype-video/examples/pending-note-edit/edit.py [--stills | --mp4]
+
+--mp4 renders the same cut for Instagram, which doesn't play GIFs: 1080×608 (16:9 at the 1080 width the
+feed shows), 30fps. The close-up lands at 1.64× there, under the 2× check, but text is the same size on
+a phone as in the GIF (that depends on the CSS width in view, not the file's pixels), so it's forced.
 """
 import os, sys, shutil, subprocess
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'engine'))
-from edit import Take, Segment, Renderer, check
+from edit import Take, Segment, Renderer, check, render
 
 W_WIN = int(os.environ.get('WIDTH', '1440'))
 TAKE = os.environ.get('TAKE', f'briefs/refs/lab-masters/pending-note/take-{W_WIN}')
@@ -60,6 +64,10 @@ if '--stills' in sys.argv:
                     ('7-pull', m['gone'] + 0.5), ('8-end', END - 0.02)]:
         at(T - START).convert('RGB').save(f'{OUT}-stills/{name}.png')
     print('stills in', OUT + '-stills', f'({total:.2f}s)')
+    sys.exit()
+
+if '--mp4' in sys.argv:
+    render(t, f'{OUT}-{round(total)}s', segments, aspect=(1080, 608), platforms=('instagram',), force=True)
     sys.exit()
 
 check(t, segments, W)
